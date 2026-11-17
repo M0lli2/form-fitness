@@ -20,3 +20,9 @@
 Android 구동 테스트 43994266964는 Health Connect ExerciseSessionRecord의 internal 생성자 선택으로 컴파일 실패했다. exerciseRoute=null 및 이름 있는 인자를 지정해 public 생성자를 선택하도록 수정했다. 수정본의 실행 44026988239 결과 확인 필요.
 
 실기기 HealthKit/Health Connect 권한, Apple/Galaxy Watch 페어링, 장시간 백그라운드 동기화, 접근성·화면 품질은 아직 검증 미완료다. 현재 앱을 최종 완성본으로 분류하지 않는다.
+
+## 수정 후 확인 결과
+- iOS: [44027138434](https://github.com/M0lli2/form-fitness/actions/runs/44027138434)에서 ad-hoc 서명 후 설치·첫 실행·종료/재실행·홈 문구 OCR 모두 성공. 저장된 ios-home.png를 직접 열어 오류 화면이 아닌 정상 홈을 확인했다. 운동 저장/건강 연동 검증까지 확장된 결과는 아니다.
+- Android: [44026975815](https://github.com/M0lli2/form-fitness/actions/runs/44026975815) 휴대폰 APK, Wear OS APK, Apple 빌드 모두 성공.
+- Android runtime 44026988239: APK 빌드 성공 후 에뮬레이터 시스템 이미지 다운로드가 No space left on device로 중단. 앱 구동 성공으로 기록하지 않는다. 후속 워크플로는 build/runtime을 서로 다른 머신으로 분리했다.
+- expo-system-ui ~6.0.9를 SDK 54 bundledNativeModules 기준으로 추가했다. 시스템 테마 적용 및 후속 런타임 결과 확인이 필요하다.
