@@ -18,7 +18,7 @@ jobs:
       - run: npm install
       - run: npx expo prebuild --platform ios
       # Release configuration embeds JS, so no Metro server is needed for launch.
-      - run: xcodebuild -workspace ios/FORM.xcworkspace -scheme FORM -sdk iphonesimulator -configuration Release -derivedDataPath build CODE_SIGNING_ALLOWED=NO build
+      - run: xcodebuild -workspace ios/FORM.xcworkspace -scheme FORM -sdk iphonesimulator -configuration Release -derivedDataPath build CODE_SIGNING_ALLOWED=YES CODE_SIGN_IDENTITY=- build
       - name: Boot, install and launch
         run: |
           mkdir -p runtime-evidence
@@ -37,11 +37,26 @@ jobs:
           first = run('xcrun','simctl','launch',udid,'com.mori.form').decode()
           time.sleep(15)
           run('xcrun','simctl','io',udid,'screenshot','runtime-evidence/ios-home.png')
+          # OCR makes a rendered error screen fail even when the app process survives.
+          pathlib.Path('runtime-evidence/assert-home.swift').write_text("""
+          import Foundation
+          import Vision
+          let url = URL(fileURLWithPath: CommandLine.arguments[1])
+          let request = VNRecognizeTextRequest()
+          request.recognitionLevel = .accurate
+          request.recognitionLanguages = ["ko-KR", "en-US"]
+          try VNImageRequestHandler(url: url).perform([request])
+          let text = (request.results ?? []).compactMap { $0.topCandidates(1).first?.string }.joined(separator: "\\n")
+          print(text)
+          guard text.contains("오늘"), !text.contains("entitlement"), !text.contains("failed") else { exit(1) }
+          """)
+          run('swift','runtime-evidence/assert-home.swift','runtime-evidence/ios-home.png')
           # A second launch after termination verifies that startup is repeatable.
           run('xcrun','simctl','terminate',udid,'com.mori.form')
           second = run('xcrun','simctl','launch',udid,'com.mori.form').decode()
           time.sleep(10)
           run('xcrun','simctl','io',udid,'screenshot','runtime-evidence/ios-relaunch.png')
+          run('swift','runtime-evidence/assert-home.swift','runtime-evidence/ios-relaunch.png')
           run('xcrun','simctl','terminate',udid,'com.mori.form')
           pathlib.Path('runtime-evidence/launch.txt').write_text(first + second)
           PY
