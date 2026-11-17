@@ -30,7 +30,8 @@
     "expo-notifications": "~0.32.0",
     "expo-modules-core": "~3.0.0",
     "react-native-safe-area-context": "~5.6.0",
-    "expo-crypto": "~15.0.0"
+    "expo-crypto": "~15.0.0",
+    "expo-system-ui": "~6.0.9"
   },
   "devDependencies": {
     "typescript": "~5.9.2",
