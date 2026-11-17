@@ -55,7 +55,7 @@ class FormDeviceModule : Module() {
   }
   AsyncFunction("saveWorkout") Coroutine { id: String, name: String, start: String, end: String ->
    val a = Instant.parse(start); val b = Instant.parse(end); require(b > a)
-   client.insertRecords(listOf(ExerciseSessionRecord(a, null, b, null, ExerciseSessionRecord.EXERCISE_TYPE_STRENGTH_TRAINING, title = name, metadata = Metadata.manualEntry(clientRecordId = "form-$id", clientRecordVersion = 1)))); Unit
+   client.insertRecords(listOf(ExerciseSessionRecord(startTime = a, startZoneOffset = null, endTime = b, endZoneOffset = null, exerciseType = ExerciseSessionRecord.EXERCISE_TYPE_STRENGTH_TRAINING, title = name, metadata = Metadata.manualEntry(clientRecordId = "form-$id", clientRecordVersion = 1), exerciseRoute = null))); Unit
   }
   AsyncFunction("watchStatus") Coroutine { -> val nodes = Wearable.getNodeClient(context).connectedNodes.await(); mapOf("paired" to nodes.isNotEmpty(), "connected" to nodes.any { it.isNearby }) }
   AsyncFunction("sendWatch") Coroutine { payload: String ->
