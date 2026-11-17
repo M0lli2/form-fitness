@@ -3,7 +3,8 @@ apply plugin: 'expo-module-gradle-plugin'
 
 group = 'com.mori.form.device'
 version = '0.1.0'
-android { namespace 'com.mori.form.device'; defaultConfig { minSdkVersion 28 } }
+// Expo's module plugin reads these values while configuring the local module.
+android { namespace 'com.mori.form.device'; defaultConfig { minSdkVersion 28; versionCode 1; versionName '0.1.0' } }
 dependencies {
   implementation 'androidx.health.connect:connect-client:1.1.0'
   implementation 'androidx.activity:activity-ktx:1.10.1'
