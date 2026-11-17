@@ -1,0 +1,52 @@
+# Install and exercise the actual native app; screenshots/XML/logs are review evidence.
+name: Android runtime smoke
+on:
+  workflow_dispatch:
+  push:
+    paths: ['.github/workflows/runtime-smoke.yml', 'scripts/runtime-smoke.py']
+permissions:
+  contents: read
+jobs:
+  runtime:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - run: npm install
+      - run: npx expo prebuild --platform android --no-install
+      - name: Embed JavaScript in debug APK for offline launch
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('android/app/build.gradle')
+          p.write_text(p.read_text() + '\nreact { debuggableVariants = [] }\n')
+          PY
+      - run: cd android && ./gradlew assembleDebug -PreactNativeArchitectures=x86_64
+      - name: Enable emulator acceleration
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          arch: x86_64
+          target: google_apis
+          disable-animations: true
+          script: python3 scripts/runtime-smoke.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: android-runtime-evidence
+          path: runtime-evidence/
+      - uses: actions/upload-artifact@v4
+        with:
+          name: form-offline-debug
+          path: android/app/build/outputs/apk/debug/*.apk
