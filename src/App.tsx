@@ -15,7 +15,7 @@ import { uid, makeSession, validateSession, volume, estimated1RM, validateBody, 
 import { connectHealth, readHealth, exportBody, exportWorkout } from './health';
 import Device from '../modules/form-device';
 import catalog from './exercises.json';
-import {measurementDate} from './core.mjs';
+import {measurementDate, localDateInput} from './core.mjs';
 import {FormTheme} from './ui-v2/Theme';
 import {FocusedWorkout} from './ui-v2/FocusedWorkout';
 import {Surface} from './ui-v2/Primitives';
@@ -210,7 +210,7 @@ function BodyForm({ item, onSave, onExport }: {
     item?: BodyEntry;
     onSave: (e: BodyEntry) => void;
     onExport: (e: BodyEntry) => void;
-}) { const [form, setForm] = useState<any>({ ...item, date: item?.date.slice(0, 10) || new Date().toLocaleDateString('en-CA'), weight: item?.weight?.toString() || '', photo: item?.photo || null }); function field(key: string, label: string) { return <View key={key} style={{ gap: 6 }}><Label size={12} muted>{label}</Label><Input placeholder={label} numeric={key !== 'date' && key !== 'note'} value={String(form[key] ?? '')} onChangeText={value => setForm((x: any) => ({ ...x, [key]: value }))}/></View>; } return <>{[['date', '측정일 (YYYY-MM-DD)'], ['weight', '체중 (kg) · 필수'], ['muscle', '골격근량 (kg)'], ['bodyFat', '체지방률 (%)'], ['height', '키 (cm)'], ['waist', '허리둘레 (cm)'], ['visceralFat', '내장지방 레벨'], ['bmr', '기초대사량 (kcal)'], ['note', '메모']].map(([key, label]) => field(key, label))}<Button secondary title="결과지 사진 첨부" onPress={async () => { try {
+}) { const [form, setForm] = useState<any>({ ...item, date: localDateInput(item?.date ?? new Date()), weight: item?.weight?.toString() || '', photo: item?.photo || null }); function field(key: string, label: string) { return <View key={key} style={{ gap: 6 }}><Label size={12} muted>{label}</Label><Input placeholder={label} numeric={key !== 'date' && key !== 'note'} value={String(form[key] ?? '')} onChangeText={value => setForm((x: any) => ({ ...x, [key]: value }))}/></View>; } return <>{[['date', '측정일 (YYYY-MM-DD)'], ['weight', '체중 (kg) · 필수'], ['muscle', '골격근량 (kg)'], ['bodyFat', '체지방률 (%)'], ['height', '키 (cm)'], ['waist', '허리둘레 (cm)'], ['visceralFat', '내장지방 레벨'], ['bmr', '기초대사량 (kcal)'], ['note', '메모']].map(([key, label]) => field(key, label))}<Button secondary title="결과지 사진 첨부" onPress={async () => { try {
     const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: .85 });
     if (!result.canceled) {
         const directory = FS.documentDirectory + 'inbody/';

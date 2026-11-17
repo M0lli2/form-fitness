@@ -1,4 +1,10 @@
 export const uid = () => `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+/** Format the stored instant as a local calendar day without UTC slicing or locale assumptions. */
+export function localDateInput(value = new Date()) {
+    const date = new Date(value);
+    if (!Number.isFinite(+date)) throw Error('측정일을 확인하세요.');
+    return [date.getFullYear(), String(date.getMonth() + 1).padStart(2, '0'), String(date.getDate()).padStart(2, '0')].join('-');
+}
 /** Parse a measurement day locally; reject rollover dates such as February 30. */
 export function measurementDate(value) {
     const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
