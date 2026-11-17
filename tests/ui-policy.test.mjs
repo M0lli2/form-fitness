@@ -1,7 +1,14 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {resolveMaterial,remainingSeconds,parseSetInput,resolveMode} from '../src/ui-v2/policy.mjs';
-import {validateBackup} from '../src/core.mjs';
+import {validateBackup,measurementDate,validateBody} from '../src/core.mjs';
+test('measurement dates reject rollover and allow today before noon',()=>{
+ assert.throws(()=>measurementDate('2026-02-30'));
+ assert.throws(()=>measurementDate('2026-13-01'));
+ const d=new Date();
+ const today=[d.getFullYear(),String(d.getMonth()+1).padStart(2,'0'),String(d.getDate()).padStart(2,'0')].join('-');
+ assert.equal(validateBody({date:measurementDate(today),weight:70}).weight,70);
+});
 // Guard accessibility, deadline calculations and imported watch history against regressions.
 test('content and reduced transparency always stay opaque',()=>{
  const flags={enabled:true,reduceTransparency:false,role:'control',platform:'ios',nativeAvailable:true};

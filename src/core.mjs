@@ -1,4 +1,13 @@
 export const uid = () => `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+/** Parse a measurement day locally; reject rollover dates such as February 30. */
+export function measurementDate(value) {
+    const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+    if (!match) throw Error('측정일은 YYYY-MM-DD 형식으로 입력하세요.');
+    const [, y, m, d] = match.map(Number);
+    const date = new Date(y, m - 1, d);
+    if (date.getFullYear() !== y || date.getMonth() !== m - 1 || date.getDate() !== d) throw Error('존재하지 않는 날짜입니다.');
+    return date.toISOString();
+}
 export function numberIn(value, min, max, label) { const n = Number(value); if (String(value).trim() === '' || !Number.isFinite(n) || n < min || n > max)
     throw Error(`${label}: ${min}~${max} 범위로 입력하세요.`); return n; }
 export function validateBody(input) { const date = new Date(input.date); if (!Number.isFinite(+date) || +date > Date.now() + 60000)

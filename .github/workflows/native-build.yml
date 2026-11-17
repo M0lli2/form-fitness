@@ -1,6 +1,15 @@
 # 서명 없는 빌드 확인용. 스토어 업로드/개발자 인증서는 별도로 관리합니다.
 name: Native build validation
-on: [workflow_dispatch, push]
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'modules/**'
+      - 'watchos/**'
+      - 'wearos/**'
+      - 'plugins/**'
+      - 'app.json'
+      - 'package*.json'
 permissions:
   contents: read
 jobs:
