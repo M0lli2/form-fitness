@@ -17,7 +17,7 @@ export function FormText({variant='body', secondary=false, style, ...props}:Text
 }
 
 /** 운동표/인바디 같은 content에는 Glass를 사용하지 않는다. */
-export function Surface({role='content', style, children, ...props}:ViewProps & {role?:'content'|'navigation'|'control'}) {
+export function Surface({role='content', style, children, ...props}:Omit<ViewProps,'role'> & {role?:'content'|'navigation'|'control'}) {
   const {palette,mode,glass} = useFormTheme();
   const material = resolveMaterial({enabled:glass, reduceTransparency:false, role, platform:Platform.OS, nativeAvailable:isLiquidGlassAvailable()});
   const shape = {borderRadius:role === 'content' ? geometry.cardRadius : geometry.controlRadius};

@@ -1,6 +1,6 @@
 # 서명 없는 빌드 확인용. 스토어 업로드/개발자 인증서는 별도로 관리합니다.
 name: Native build validation
-on: workflow_dispatch
+on: [workflow_dispatch, push]
 permissions:
   contents: read
 jobs:
@@ -16,6 +16,8 @@ jobs:
           distribution: temurin
           java-version: '17'
       - uses: android-actions/setup-android@v3
+        with:
+          packages: 'platform-tools'
       - run: npm install
       - run: npx expo prebuild --platform android --no-install
       - run: cd android && ./gradlew assembleDebug
@@ -32,6 +34,8 @@ jobs:
           distribution: temurin
           java-version: '17'
       - uses: android-actions/setup-android@v3
+        with:
+          packages: 'platform-tools'
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.11.1'
