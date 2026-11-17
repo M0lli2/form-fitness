@@ -1,0 +1,52 @@
+# Simulator installation/launch evidence; HealthKit/watch pairing requires physical devices.
+name: iOS runtime smoke
+on:
+  workflow_dispatch:
+  push:
+    paths: ['.github/workflows/ios-runtime.yml']
+permissions:
+  contents: read
+jobs:
+  simulator:
+    runs-on: macos-15
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install
+      - run: npx expo prebuild --platform ios
+      # Release configuration embeds JS, so no Metro server is needed for launch.
+      - run: xcodebuild -workspace ios/FORM.xcworkspace -scheme FORM -sdk iphonesimulator -configuration Release -derivedDataPath build CODE_SIGNING_ALLOWED=NO build
+      - name: Boot, install and launch
+        run: |
+          mkdir -p runtime-evidence
+          python3 - <<'PY'
+          import json, subprocess, time, pathlib
+          def run(*args):
+              return subprocess.check_output(args, stderr=subprocess.STDOUT)
+          devices = json.loads(run('xcrun','simctl','list','devices','available','--json'))['devices']
+          phone = next(d for group in devices.values() for d in group if d['name'].startswith('iPhone'))
+          udid = phone['udid']
+          if phone['state'] != 'Booted':
+              run('xcrun','simctl','boot',udid)
+          run('xcrun','simctl','bootstatus',udid,'-b')
+          app = 'build/Build/Products/Release-iphonesimulator/FORM.app'
+          run('xcrun','simctl','install',udid,app)
+          first = run('xcrun','simctl','launch',udid,'com.mori.form').decode()
+          time.sleep(15)
+          run('xcrun','simctl','io',udid,'screenshot','runtime-evidence/ios-home.png')
+          # A second launch after termination verifies that startup is repeatable.
+          run('xcrun','simctl','terminate',udid,'com.mori.form')
+          second = run('xcrun','simctl','launch',udid,'com.mori.form').decode()
+          time.sleep(10)
+          run('xcrun','simctl','io',udid,'screenshot','runtime-evidence/ios-relaunch.png')
+          run('xcrun','simctl','terminate',udid,'com.mori.form')
+          pathlib.Path('runtime-evidence/launch.txt').write_text(first + second)
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ios-runtime-evidence
+          path: runtime-evidence/
