@@ -2,6 +2,7 @@
 This smoke test does not verify Health permissions, watch pairing or visual quality.
 """
 import json
+import os
 import pathlib
 import re
 import subprocess
@@ -13,26 +14,39 @@ OUT.mkdir(exist_ok=True)
 PACKAGE = "com.mori.form"
 
 def adb(*args):
-    return subprocess.check_output(["adb", *args], stderr=subprocess.STDOUT)
+    return subprocess.check_output(["adb", *args], stderr=subprocess.STDOUT, timeout=20)
 
 def capture(name):
-    adb("shell", "uiautomator", "dump", "/sdcard/form-ui.xml")
-    raw = adb("shell", "cat", "/sdcard/form-ui.xml")
-    (OUT / (name + ".xml")).write_bytes(raw)
+    # Keep pixels even when startup has no accessible window yet.
     (OUT / (name + ".png")).write_bytes(adb("exec-out", "screencap", "-p"))
-    return ET.fromstring(raw)
+    adb("shell", "rm", "-f", "/sdcard/form-ui.xml")
+    output = adb("shell", "uiautomator", "dump", "--compressed", "/sdcard/form-ui.xml")
+    (OUT / (name + "-dump.txt")).write_bytes(output)
+    raw = adb("shell", "cat", "/sdcard/form-ui.xml")
+    root = ET.fromstring(raw)
+    (OUT / (name + ".xml")).write_bytes(raw)
+    return root
 
 def labels(root):
     return [n.get("text", "") + " " + n.get("content-desc", "") for n in root.iter("node")]
 
 def wait_for(text, name):
-    deadline = time.monotonic() + 60
+    deadline = time.monotonic() + 120
+    last_error = None
     while time.monotonic() < deadline:
-        root = capture(name)
-        if any(text in label for label in labels(root)):
-            return root
+        try:
+            root = capture(name)
+            # Match the app package, not labels in system or launcher windows.
+            nodes = [n for n in root.iter("node") if n.get("package") == PACKAGE]
+            if any(text in (n.get("text", "") + " " + n.get("content-desc", "")) for n in nodes):
+                return root
+        except (subprocess.CalledProcessError, subprocess.TimeoutExpired, ET.ParseError) as error:
+            # A transient startup dump failure may retry; the overall assertion still fails.
+            last_error = str(error)
+            with (OUT / "capture-errors.txt").open("a", encoding="utf-8") as log:
+                log.write(name + ": " + last_error + "\n")
         time.sleep(2)
-    raise AssertionError("Visible UI never showed: " + text)
+    raise AssertionError("Visible UI never showed: " + text + "; capture error: " + str(last_error))
 
 def tap_exact(text, root):
     for n in root.iter("node"):
@@ -46,14 +60,14 @@ def tap_exact(text, root):
 
 results = []
 try:
-    adb("install", "-r", "android/app/build/outputs/apk/debug/app-debug.apk")
+    adb("install", "-r", os.environ.get("FORM_APK", "android/app/build/outputs/apk/release/app-release.apk"))
     adb("logcat", "-c")
     adb("shell", "monkey", "-p", PACKAGE, "-c", "android.intent.category.LAUNCHER", "1")
     root = wait_for("오늘", "01-home")
     results.append("native home rendered")
     for control, expected, name in [
         ("루틴", "새 루틴", "02-routines"),
-        ("기록", "기록", "03-history"),
+        ("기록", "최근 6주 운동 볼륨", "03-history"),
         ("내 정보", "화면 스타일", "04-settings"),
     ]:
         tap_exact(control, root)
@@ -62,11 +76,12 @@ try:
     adb("shell", "am", "force-stop", PACKAGE)
     adb("shell", "monkey", "-p", PACKAGE, "-c", "android.intent.category.LAUNCHER", "1")
     wait_for("오늘", "05-relaunch")
-    results.append("encrypted database reload rendered home")
+    results.append("force-stop and relaunch rendered home")
     logs = adb("logcat", "-d").decode("utf-8", errors="replace")
     if "FATAL EXCEPTION" in logs or "JavascriptException" in logs:
         raise AssertionError("Runtime exception found; inspect logcat")
 finally:
+    (OUT / "activity.txt").write_bytes(adb("shell", "dumpsys", "activity", "activities"))
     (OUT / "logcat.txt").write_bytes(adb("logcat", "-d"))
     (OUT / "results.json").write_text(json.dumps(results, ensure_ascii=False, indent=2))
 print(json.dumps(results, ensure_ascii=False))
