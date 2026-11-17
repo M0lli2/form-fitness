@@ -1,0 +1,50 @@
+{
+  "expo": {
+    "name": "FORM",
+    "slug": "form-native",
+    "version": "0.1.0",
+    "scheme": "form",
+    "orientation": "default",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "ios": {
+      "bundleIdentifier": "com.mori.form",
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSHealthShareUsageDescription": "걸음 수, 심박수, 운동, 체중 및 체지방을 내 운동 기록과 함께 보여줍니다.",
+        "NSHealthUpdateUsageDescription": "동의한 운동과 체성분 기록을 건강 앱에 저장합니다.",
+        "NSPhotoLibraryUsageDescription": "인바디 결과지 사진을 기록에 첨부합니다."
+      },
+      "entitlements": {
+        "com.apple.developer.healthkit": true
+      }
+    },
+    "android": {
+      "package": "com.mori.form",
+      "allowBackup": false,
+      "permissions": [
+        "android.permission.health.READ_STEPS",
+        "android.permission.health.READ_HEART_RATE",
+        "android.permission.health.READ_WEIGHT",
+        "android.permission.health.READ_BODY_FAT",
+        "android.permission.health.READ_EXERCISE",
+        "android.permission.health.WRITE_WEIGHT",
+        "android.permission.health.WRITE_BODY_FAT",
+        "android.permission.health.WRITE_EXERCISE",
+        "android.permission.POST_NOTIFICATIONS"
+      ]
+    },
+    "plugins": [
+      [
+        "expo-sqlite",
+        {
+          "useSQLCipher": true
+        }
+      ],
+      "expo-secure-store",
+      "expo-notifications",
+      "expo-image-picker",
+      "./plugins/withFormNative.cjs"
+    ]
+  }
+}

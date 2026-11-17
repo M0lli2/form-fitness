@@ -1,0 +1,1 @@
+{"platforms":["apple","android"],"apple":{"modules":["FormDeviceModule"]},"android":{"modules":["com.mori.form.device.FormDeviceModule"]}}

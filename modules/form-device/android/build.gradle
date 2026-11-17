@@ -1,0 +1,12 @@
+apply plugin: 'com.android.library'
+apply plugin: 'expo-module-gradle-plugin'
+
+group = 'com.mori.form.device'
+version = '0.1.0'
+android { namespace 'com.mori.form.device'; defaultConfig { minSdkVersion 28 } }
+dependencies {
+  implementation 'androidx.health.connect:connect-client:1.1.0'
+  implementation 'androidx.activity:activity-ktx:1.10.1'
+  implementation 'com.google.android.gms:play-services-wearable:19.0.0'
+  implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.10.2'
+}

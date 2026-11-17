@@ -23,7 +23,7 @@ export function FormTheme({preferences, children}:{preferences:Preferences; chil
       ? AccessibilityInfo.addEventListener('reduceTransparencyChanged', setReduceTransparency) : null;
     return () => {live = false; motion.remove(); transparency?.remove();};
   }, []);
-  const mode = resolveMode(preferences.mode, systemMode);
+  const mode = resolveMode(preferences.mode, systemMode) as 'light'|'dark';
   return <ThemeContext.Provider value={{palette:colors[mode], mode, glass:preferences.glass && !reduceTransparency, reduceMotion}}>{children}</ThemeContext.Provider>;
 }
 export function useFormTheme() {
@@ -31,3 +31,4 @@ export function useFormTheme() {
   if (!value) throw Error('FormTheme provider가 필요합니다.');
   return value;
 }
+

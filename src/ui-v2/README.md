@@ -16,3 +16,4 @@ react, react-native, expo-glass-effect, expo-blur. 기존 Expo SDK와 호환되�
 
 ## 검증 구분
 policy.mjs의 순수 함수만 호스팅 JS 환경에서 검증했습니다. React Native 렌더링·TypeScript 전체 타입 검사·접근성 실기기 검증은 미실행입니다.
+

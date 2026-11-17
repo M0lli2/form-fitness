@@ -21,3 +21,4 @@ export function parseSetInput(weight, reps) {
   if (weightValue < 0 || weightValue > 1000 || repsValue < 1 || repsValue > 1000) throw Error('중량은 0~1000, 횟수는 1~1000 범위여야 합니다.');
   return {weight: weightValue, reps: repsValue};
 }
+

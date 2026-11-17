@@ -1,0 +1,14 @@
+node_modules/
+.expo/
+android/
+ios/
+dist/
+*.jks
+*.keystore
+*.p12
+*.mobileprovision
+.env*
+!*.example
+wearos/.gradle/
+wearos/**/build/
+wearos/local.properties

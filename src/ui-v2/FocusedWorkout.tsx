@@ -82,3 +82,4 @@ const styles=StyleSheet.create({
   history:{flexDirection:'row',justifyContent:'space-between',alignItems:'center',gap:12,paddingVertical:8},
   controls:{marginHorizontal:12,marginBottom:12,gap:10},
 });
+

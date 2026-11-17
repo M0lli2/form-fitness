@@ -1,0 +1,33 @@
+# XcodeGen으로 생성하는 독립 watchOS 앱. 배포 시 휴대폰 Xcode 프로젝트에 embed합니다.
+name: FORMWatch
+options:
+  bundleIdPrefix: com.mori.form
+  deploymentTarget:
+    watchOS: '10.0'
+targets:
+  FORMWatch:
+    type: application
+    platform: watchOS
+    sources: [Sources]
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.mori.form.watchkitapp
+        SWIFT_VERSION: '5.0'
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_WKCompanionAppBundleIdentifier: com.mori.form
+        INFOPLIST_KEY_WKApplication: YES
+        INFOPLIST_KEY_WKRunsIndependentlyOfCompanionApp: YES
+        INFOPLIST_KEY_NSHealthShareUsageDescription: 운동 중 심박수와 활동 에너지를 표시합니다.
+        INFOPLIST_KEY_NSHealthUpdateUsageDescription: 완료한 운동을 Apple 건강과 피트니스에 저장합니다.
+        INFOPLIST_KEY_WKBackgroundModes: workout-processing
+        CODE_SIGN_ENTITLEMENTS: FORMWatch.entitlements
+        TARGETED_DEVICE_FAMILY: '4'
+    entitlements:
+      path: FORMWatch.entitlements
+      properties:
+        com.apple.developer.healthkit: true
+schemes:
+  FORMWatch:
+    build:
+      targets:
+        FORMWatch: all

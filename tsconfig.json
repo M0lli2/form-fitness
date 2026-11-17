@@ -1,0 +1,1 @@
+{"extends":"expo/tsconfig.base","compilerOptions":{"strict":true,"allowJs":true,"checkJs":false,"resolveJsonModule":true,"noEmit":true},"include":["**/*.ts","**/*.tsx"],"exclude":["node_modules","android","ios","wearos"]}
