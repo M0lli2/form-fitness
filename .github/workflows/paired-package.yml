@@ -44,12 +44,14 @@ jobs:
       - run: gradle -p wearos assembleDebug -PformDebugKeystore="$GITHUB_WORKSPACE/android/app/debug.keystore"
       - name: Verify pair signing
         shell: bash
+        env:
+          PHONE_BUILD_RUN: ${{ github.event.workflow_run.id || inputs.apk_run_id || '44209141146' }}
+          PHONE_NATIVE_SHA: ${{ github.event.workflow_run.head_sha || 'see-selected-build-run' }}
         run: |
           set -euo pipefail
-          echo 'Phone build run: ${{ github.event.workflow_run.id || inputs.apk_run_id || \'44209141146\' }}' > paired-evidence/provenance.txt
-          echo 'Native source: ${{ github.event.workflow_run.head_sha }}' >> paired-evidence/provenance.txt
-          git rev-parse HEAD >> paired-evidence/provenance.txt
           mkdir -p paired-evidence
+          python3 -c 'import os,pathlib; pathlib.Path("paired-evidence/provenance.txt").write_text("Phone build run: "+os.environ["PHONE_BUILD_RUN"]+"\nNative source: "+os.environ["PHONE_NATIVE_SHA"]+"\n")'
+          git rev-parse HEAD >> paired-evidence/provenance.txt
           python3 scripts/check-apk-pair.py phone-apk/app-release.apk wearos/app/build/outputs/apk/debug/app-debug.apk | tee paired-evidence/certificates.txt
       - uses: actions/upload-artifact@v4
         if: always()

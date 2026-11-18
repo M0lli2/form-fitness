@@ -102,7 +102,13 @@ try:
     root = seek("운동 마치고 저장", "28-save")
     tap_exact("운동 마치고 저장", root)
     root = wait_for("오늘의 운동을 기록했습니다", "29-saved-alert")
-    adb("shell", "input", "keyevent", "KEYCODE_BACK")
+    # React Native confirmation alerts are not necessarily cancelable with Android Back.
+    for label in ("확인", "OK"):
+        if find(root, label) is not None:
+            tap_exact(label, root)
+            break
+    else:
+        raise AssertionError("Saved-workout confirmation button missing")
     root = wait_for("최근 6주 운동 볼륨", "30-history")
     root = seek(exercise, "31-history-entry")
     results.append("exercise guide -> completed set -> saved workout is visible in history")
