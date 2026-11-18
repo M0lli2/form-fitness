@@ -60,7 +60,13 @@ function Main({ state, setState }: {
         setBusy(false);
     } }
     /** 타이머는 남은 초를 감소시키지 않고 종료 시각으로 계산해 백그라운드 복귀에도 정확합니다. */
-    useEffect(() => { const id = setInterval(() => setNow(Date.now()), 1000); return () => clearInterval(id); }, []);
+    // 운동이 없는 홈·설정에서는 전체 화면을 매초 다시 그리지 않습니다.
+    useEffect(() => {
+        if (!state.active) return;
+        setNow(Date.now());
+        const id = setInterval(() => setNow(Date.now()), 1000);
+        return () => clearInterval(id);
+    }, [state.active?.id]);
     useEffect(() => { const end = state.active?.restEndsAt; if (end && now >= end) {
         change(x => ({ ...x, active: x.active ? { ...x.active, restEndsAt: null } : null }));
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => { });

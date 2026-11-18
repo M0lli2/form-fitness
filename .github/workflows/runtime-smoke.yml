@@ -3,7 +3,7 @@ name: Android runtime smoke
 on:
   workflow_dispatch:
   push:
-    paths: ['.github/workflows/runtime-smoke.yml', 'scripts/runtime-smoke.py', 'modules/**', 'plugins/**', 'package*.json']
+    paths: ['.github/workflows/runtime-smoke.yml', 'scripts/runtime-smoke.py', 'modules/**', 'plugins/**', 'package*.json', 'src/App.tsx', 'src/core.mjs']
 permissions:
   contents: read
 jobs:
