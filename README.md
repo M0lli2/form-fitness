@@ -2,7 +2,7 @@
 
 미니멀한 iOS·Android 운동 기록 앱. React Native의 네이티브 뷰, Swift HealthKit 모듈, Kotlin Health Connect 모듈, SwiftUI Apple Watch 앱, Compose Wear OS 앱을 포함합니다. WebView나 PWA를 앱으로 포장하지 않습니다.
 
-> **현재 단계: 개발 소스 / 실기기 검증 전.** 앱스토어 출시 제품이 아닙니다. 로컬 도메인 테스트와 구문 검사를 통과했지만 이 작업 환경에는 Android SDK·Xcode가 없으며 npm 접속도 제한되어 있습니다. 네이티브 컴파일, 권한 팝업, 워치 페어링, 스토어 심사는 검증 완료로 표시하지 않습니다. 실제 결과는 [검증 기록](docs/VALIDATION.md)을 확인하세요.
+> **현재 단계: 네이티브 빌드 및 시뮬레이터 검증 중.** Android·iOS·Wear OS·watchOS 컴파일에 성공했고, iOS 홈 첫 실행·재실행 화면을 확인했습니다. Android Release 구동 검증은 진행 중입니다. 건강 권한·워치 페어링·실기기 설치·스토어 배포는 미검증입니다. 최신 결과는 [검증 기록](docs/VALIDATION.md)을 확인하세요.
 
 ## 이번 통합 변경
 

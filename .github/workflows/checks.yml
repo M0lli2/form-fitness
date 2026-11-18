@@ -12,6 +12,7 @@ jobs:
         with:
           node-version: '22'
       - run: npm install --ignore-scripts
+      - run: python3 -m py_compile scripts/runtime-smoke.py scripts/runtime-journeys.py
       - run: npm test
       - run: npm run check
       - run: npm run typecheck

@@ -1,5 +1,7 @@
 export const uid = () => `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
-/** Format the stored instant as a local calendar day without UTC slicing or locale assumptions. */
+/** Format the stored instant as a local calendar day without UTC slicing or locale assumptions.
+ * @param {string | number | Date} value
+ */
 export function localDateInput(value = new Date()) {
     const date = new Date(value);
     if (!Number.isFinite(+date)) throw Error('측정일을 확인하세요.');
