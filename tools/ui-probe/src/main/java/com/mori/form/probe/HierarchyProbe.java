@@ -15,6 +15,7 @@ import org.xmlpull.v1.XmlSerializer;
  */
 public final class HierarchyProbe extends Instrumentation {
     @Override public void onCreate(Bundle arguments) { super.onCreate(arguments); start(); }
+    @Override public void onCreate(Bundle arguments) { super.onCreate(arguments); start(); }
     @Override public void onStart() {
         Bundle result = new Bundle();
         try {
