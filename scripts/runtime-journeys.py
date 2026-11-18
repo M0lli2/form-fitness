@@ -14,7 +14,16 @@ OUT, PACKAGE = api["OUT"], api["PACKAGE"]
 results = list(api["results"])
 
 def find(root, label):
-    return next((n for n in root.iter("node") if n.get("visible-to-user", "true") == "true" and (n.get("text") == label or n.get("content-desc") == label)), None)
+    for node in root.iter("node"):
+        if node.get("visible-to-user", "true") != "true":
+            continue
+        if node.get("text") != label and node.get("content-desc") != label:
+            continue
+        bounds = list(map(int, re.findall(r"\d+", node.get("bounds", ""))))
+        # Clipped controls may be reported visible with inverted rectangles.
+        if len(bounds) == 4 and bounds[2] > bounds[0] and bounds[3] > bounds[1]:
+            return node
+    return None
 
 def seek(label, name):
     # Scroll only through the app; bound the search so a missing control fails.
@@ -39,7 +48,11 @@ def seek(label, name):
 def selected(label, name, attribute="selected"):
     deadline = time.monotonic() + 45
     while time.monotonic() < deadline:
-        root = capture(name)
+        try:
+            root = capture(name)
+        except (ET.ParseError, subprocess.CalledProcessError, subprocess.TimeoutExpired):
+            time.sleep(.5)
+            continue
         node = find(root, label)
         if node is not None and node.get(attribute) == "true":
             print("PASS: " + name, flush=True)
