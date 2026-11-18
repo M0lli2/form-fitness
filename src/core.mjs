@@ -52,7 +52,10 @@ catch {
 export function weekStart(date = new Date()) { const d = new Date(date); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() - ((d.getDay() + 6) % 7)); return d; }
 export function bmi(weight, height) { return height ? weight / (height / 100) ** 2 : null; }
 export function validateBackup(value) { if (value?.schema !== 1 || !Array.isArray(value.history) || !Array.isArray(value.body) || !Array.isArray(value.routines))
-    throw Error('지원하지 않는 백업 파일입니다.'); if (value.history.length > 10000 || value.body.length > 10000)
+    throw Error('지원하지 않는 백업 파일입니다.'); if (value.customExercises !== undefined) {
+    if (!Array.isArray(value.customExercises) || value.customExercises.length > 2000) throw Error('사용자 운동 형식을 확인하세요.');
+    for (const exercise of value.customExercises) validateCustomExercise(exercise);
+} if (value.history.length > 10000 || value.body.length > 10000)
     throw Error('백업 크기 제한을 초과했습니다.'); for (const h of value.history) {
     if (typeof h.id !== 'string' || typeof h.name !== 'string' || !Number.isFinite(Date.parse(h.startedAt)) || !Number.isFinite(Date.parse(h.endedAt)) || !Array.isArray(h.exercises))
         throw Error('운동 기록 형식이 올바르지 않습니다.');
@@ -76,4 +79,22 @@ export function nextBodyRevision(previous) {
     if (!Number.isInteger(revision) || revision < 1 || revision >= 2147483647)
         throw Error('기록 버전을 확인하세요.');
     return revision + 1;
+}
+
+/** Validate user-defined movements before catalog display or backup import. */
+export function validateCustomExercise(input) {
+    const field = (value, label, max = 120) => {
+        if (typeof value !== 'string' || !value.trim() || value.trim().length > max)
+            throw Error(label + ' 입력을 확인하세요.');
+        return value.trim();
+    };
+    if (!['strength','cardio','isometric'].includes(input?.type)) throw Error('운동 기록 방식을 선택하세요.');
+    if (!Array.isArray(input.steps) || input.steps.length < 1 || input.steps.length > 12) throw Error('운동 방법은 1~12단계로 입력하세요.');
+    return {
+        id: input.id ? field(input.id, '운동 ID') : 'custom-' + uid(),
+        name: field(input.name, '운동 이름', 80), muscle: field(input.muscle, '운동 부위', 40),
+        equipment: field(input.equipment, '사용 장비', 60), type: input.type, level: '사용자 등록',
+        steps: input.steps.map(step => field(step, '운동 방법', 500)),
+        caution: typeof input.caution === 'string' ? input.caution.trim().slice(0,1000) : ''
+    };
 }

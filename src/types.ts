@@ -59,6 +59,7 @@ export type Routine = {
 };
 export type State = {
     schema: 1;
+    customExercises: Exercise[];
     history: Session[];
     body: BodyEntry[];
     routines: Routine[];

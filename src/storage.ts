@@ -6,7 +6,7 @@ import type { State } from './types';
 import data from './exercises.json';
 let db: SQLite.SQLiteDatabase;
 let writes = Promise.resolve();
-export const freshState = (): State => ({ schema: 1, history: [], body: [], routines: data.routines, active: null, seen: [], settings: { goal: 3, rest: 90, health: false, contrast: false, units: 'kg', theme: 'system', glass: false } });
+export const freshState = (): State => ({ schema: 1, customExercises: [], history: [], body: [], routines: data.routines, active: null, seen: [], settings: { goal: 3, rest: 90, health: false, contrast: false, units: 'kg', theme: 'system', glass: false } });
 export async function loadState(): Promise<State> {
     let key = await SecureStore.getItemAsync('form.database.key');
     if (!key) {
