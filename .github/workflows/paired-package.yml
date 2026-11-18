@@ -1,0 +1,54 @@
+# Reuse a built phone APK and verify a matching wearable certificate without rebuilding React Native.
+name: Android paired-device package
+on:
+  workflow_dispatch:
+    inputs:
+      apk_run_id:
+        description: Runtime build containing the phone APK
+        required: true
+        default: '44209141146'
+  push:
+    paths: ['.github/workflows/paired-package.yml', 'scripts/check-apk-pair.py']
+permissions:
+  contents: read
+  actions: read
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.11.1'
+      - uses: actions/download-artifact@v4
+        with:
+          name: form-offline-release
+          run-id: ${{ inputs.apk_run_id || '44209141146' }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: phone-apk/
+      - run: npm ci --ignore-scripts
+      - run: npx expo prebuild --platform android --no-install
+      - run: gradle -p wearos assembleDebug -PformDebugKeystore="$GITHUB_WORKSPACE/android/app/debug.keystore"
+      - name: Verify pair signing
+        run: |
+          mkdir -p paired-evidence
+          python3 scripts/check-apk-pair.py phone-apk/app-release.apk wearos/app/build/outputs/apk/debug/app-debug.apk | tee paired-evidence/certificates.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: paired-signature-evidence
+          path: paired-evidence/
+      - uses: actions/upload-artifact@v4
+        with:
+          name: form-paired-device-test-apks
+          path: |
+            phone-apk/*.apk
+            wearos/app/build/outputs/apk/debug/*.apk
