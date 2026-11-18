@@ -8,7 +8,7 @@ on:
         required: true
         default: '44076887909'
   push:
-    paths: ['tools/ui-probe/**', '.github/workflows/android-journeys.yml', 'scripts/runtime-journeys.py']
+    paths: ['tools/ui-probe/**', '.github/workflows/android-journeys.yml', 'scripts/runtime-journeys.py', 'scripts/runtime-smoke.py']
   workflow_run:
     workflows: ['Android runtime smoke']
     types: [completed]

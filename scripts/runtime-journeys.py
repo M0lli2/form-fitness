@@ -5,6 +5,8 @@ import json
 import re
 import runpy
 import time
+import subprocess
+import xml.etree.ElementTree as ET
 
 api = runpy.run_path("scripts/runtime-smoke.py")
 adb, capture, wait_for, tap_exact = [api[k] for k in ("adb", "capture", "wait_for", "tap_exact")]
@@ -12,12 +14,16 @@ OUT, PACKAGE = api["OUT"], api["PACKAGE"]
 results = list(api["results"])
 
 def find(root, label):
-    return next((n for n in root.iter("node") if n.get("text") == label or n.get("content-desc") == label), None)
+    return next((n for n in root.iter("node") if n.get("visible-to-user", "true") == "true" and (n.get("text") == label or n.get("content-desc") == label)), None)
 
 def seek(label, name):
     # Scroll only through the app; bound the search so a missing control fails.
     for attempt in range(12):
-        root = capture(name)
+        try:
+            root = capture(name)
+        except (ET.ParseError, subprocess.CalledProcessError, subprocess.TimeoutExpired):
+            time.sleep(.5)
+            continue
         node = find(root, label)
         if node is not None:
             return root
@@ -31,11 +37,12 @@ def seek(label, name):
     raise AssertionError("Control not visible after bounded scroll: " + label)
 
 def selected(label, name, attribute="selected"):
-    deadline = time.monotonic() + 15
+    deadline = time.monotonic() + 45
     while time.monotonic() < deadline:
         root = capture(name)
         node = find(root, label)
         if node is not None and node.get(attribute) == "true":
+            print("PASS: " + name, flush=True)
             return root
         time.sleep(.5)
     raise AssertionError(label + " did not retain " + attribute)

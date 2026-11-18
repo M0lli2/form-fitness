@@ -18,7 +18,14 @@ public final class HierarchyProbe extends Instrumentation {
     @Override public void onStart() {
         Bundle result = new Bundle();
         try {
-            AccessibilityNodeInfo root = getUiAutomation().getRootInActiveWindow();
+            android.app.UiAutomation automation = getUiAutomation();
+            AccessibilityNodeInfo root = null;
+            // A theme/navigation transition can briefly remove the active window.
+            long deadline = android.os.SystemClock.uptimeMillis() + 4000;
+            while (root == null && android.os.SystemClock.uptimeMillis() < deadline) {
+                root = automation.getRootInActiveWindow();
+                if (root == null) android.os.SystemClock.sleep(150);
+            }
             if (root == null) throw new IllegalStateException("No active accessibility window");
             File target = new File(getContext().getFilesDir(), "ui.xml");
             try (FileOutputStream output = new FileOutputStream(target)) {

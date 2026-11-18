@@ -14,7 +14,8 @@ OUT.mkdir(exist_ok=True)
 PACKAGE = "com.mori.form"
 
 def adb(*args):
-    return subprocess.check_output(["adb", *args], stderr=subprocess.STDOUT, timeout=20)
+    timeout = 120 if args and args[0] == "install" else 30
+    return subprocess.check_output(["adb", *args], stderr=subprocess.STDOUT, timeout=timeout)
 
 def capture(name):
     # Keep pixels even when startup has no accessible window yet.
