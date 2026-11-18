@@ -4,6 +4,12 @@
 
 > **현재 단계: 네이티브 테스트 빌드.** Android에서 운동 저장·재실행 복원과 다크·Glass 설정 유지까지 확인했습니다. iOS는 시뮬레이터 홈 실행과 재실행을 확인했습니다. 실기기 건강 권한·워치 페어링·스토어 배포 검증이 남아 있습니다. [검증 기록](docs/VALIDATION.md)
 
+## 설치
+
+- **Android·Wear OS** — [동일 서명 테스트 APK 다운로드](https://github.com/M0lli2/form-fitness/actions/runs/44246921064/artifacts/14401473315)
+- **iPhone·Apple Watch** — [TestFlight·등록 기기 설치 방법](docs/INSTALL.md#iphone--apple-watch-설치)
+- [설치 순서와 남은 실기기 검증](docs/INSTALL.md)
+
 ## 앱 실행 화면
 
 GitHub Actions의 Android 에뮬레이터와 iPhone 시뮬레이터에서 캡처한 화면입니다. 운동 히스토리에는 자동 테스트가 저장한 푸시업 기록이 표시됩니다.
