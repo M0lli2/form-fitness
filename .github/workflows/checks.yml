@@ -30,4 +30,10 @@ jobs:
       - run: npm test
       - run: npm run check
       - run: npm run typecheck
-      - run: npx expo export --platform android --output-dir /tmp/form-bundle
+      - run: npx expo export --platform android --output-dir /tmp/form-bundle --source-maps
+      - run: node scripts/report-runtime-dependencies.mjs /tmp/form-bundle
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: bundle-security-evidence
+          path: bundle-security-report.json
