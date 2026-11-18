@@ -1,6 +1,10 @@
 # Reuse a built phone APK and verify a matching wearable certificate without rebuilding React Native.
 name: Android paired-device package
 on:
+  workflow_run:
+    workflows: ['Android runtime smoke']
+    types: [completed]
+    branches: [main]
   workflow_dispatch:
     inputs:
       apk_run_id:
@@ -14,6 +18,7 @@ permissions:
   actions: read
 jobs:
   package:
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -31,7 +36,7 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           name: form-offline-release
-          run-id: ${{ inputs.apk_run_id || '44209141146' }}
+          run-id: ${{ github.event.workflow_run.id || inputs.apk_run_id || '44209141146' }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
           path: phone-apk/
       - run: npm ci --ignore-scripts
@@ -41,6 +46,9 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          echo 'Phone build run: ${{ github.event.workflow_run.id || inputs.apk_run_id || \'44209141146\' }}' > paired-evidence/provenance.txt
+          echo 'Native source: ${{ github.event.workflow_run.head_sha }}' >> paired-evidence/provenance.txt
+          git rev-parse HEAD >> paired-evidence/provenance.txt
           mkdir -p paired-evidence
           python3 scripts/check-apk-pair.py phone-apk/app-release.apk wearos/app/build/outputs/apk/debug/app-debug.apk | tee paired-evidence/certificates.txt
       - uses: actions/upload-artifact@v4
