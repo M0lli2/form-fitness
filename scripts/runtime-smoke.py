@@ -39,6 +39,8 @@ def wait_for(text, name):
             # Match the app package, not labels in system or launcher windows.
             nodes = [n for n in root.iter("node") if n.get("package") == PACKAGE]
             if any(text in (n.get("text", "") + " " + n.get("content-desc", "")) for n in nodes):
+                # Capture again after the asserted UI exists; the first pixel capture may precede navigation.
+                (OUT / (name + ".png")).write_bytes(adb("exec-out", "screencap", "-p"))
                 return root
         except (subprocess.CalledProcessError, subprocess.TimeoutExpired, ET.ParseError) as error:
             # A transient startup dump failure may retry; the overall assertion still fails.

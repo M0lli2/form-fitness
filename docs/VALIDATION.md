@@ -1,4 +1,4 @@
-# 검증 상태 — 2026-11-17
+# 검증 상태 — 2026-11-18
 
 이 문서는 실제 결과와 아직 실행하지 않은 항목을 구분합니다.
 
@@ -11,7 +11,7 @@
 | 의존성 기반 소스 검사 | [6175198 Source checks](https://github.com/M0lli2/form-fitness/actions/runs/44076888020): npm 설치, 테스트, 타입 검사, Android JS 번들 성공 |
 | 4개 플랫폼 컴파일 | [9cddd1f Native build](https://github.com/M0lli2/form-fitness/actions/runs/44028230680): Android, Wear OS, iOS·watchOS 성공 |
 | iOS 홈 구동 | [8d2d1a6 runtime](https://github.com/M0lli2/form-fitness/actions/runs/44027138434): ad-hoc 서명한 시뮬레이터 앱 설치·첫 실행·강제 종료 후 재실행·홈 OCR 성공. 스크린샷 직접 확인 |
-| Android Release 구동 | [6175198 runtime](https://github.com/M0lli2/form-fitness/actions/runs/44076887909): 진행 중. 결과 확인 전 통과로 취급하지 않음 |
+| Android Release 구동 | [6175198 runtime](https://github.com/M0lli2/form-fitness/actions/runs/44076887909): 홈·루틴·기록·설정 문구 및 종료 후 홈 재실행 성공. 홈 스크린샷 직접 확인 |
 
 최신 커밋의 검증 결과는 해당 커밋의 Actions에서 확인합니다. 이전 빌드 성공은 이후 변경 전체의 검증을 의미하지 않습니다. 1d7eec8 날짜 수정은 기능 테스트를 통과했지만 타입 선언 검사에 실패해 후속 커밋에서 JSDoc 매개변수 타입을 보완했습니다.
 
@@ -39,3 +39,11 @@
 - 배포 서명·스토어 등록·심사
 
 현재 최종 출시 완성본으로 분류하지 않습니다.
+
+## 11월 18일 후속 개발
+
+- 44066af에서 날짜 입력 JSDoc 타입을 수정했다.
+- 8deb2e6에서 운동이 없을 때 전체 화면을 매초 다시 그리는 타이머를 중단했다. 활성 운동은 종료 시각 기반 타이머를 유지한다.
+- 별도 saved-data journeys [44079623831](https://github.com/M0lli2/form-fitness/actions/runs/44079623831)는 기본 smoke의 종료/재실행 단계에서 UIAutomator could not get idle state로 실패했다. 저장 설정·실제 운동 저장 흐름에 도달하지 않았으므로 해당 항목은 통과하지 않았다. 실패 시 스크린샷은 정상 홈이었다.
+- 화면 전환 직전의 픽셀이 저장되는 경우를 발견해, 문구 검증 직후 스크린샷을 다시 찍도록 수정했다.
+- 8deb2e6의 Android Release 재빌드는 진행 중이다. 최신 수정본의 구동 결과는 아직 확정하지 않는다.
