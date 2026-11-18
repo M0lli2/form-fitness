@@ -73,3 +73,11 @@
 - [동일 서명 테스트 APK](https://github.com/M0lli2/form-fitness/actions/runs/44246921064): 위 Android 휴대폰 APK와 Wear OS APK의 SHA-256 서명이 일치했다. 실기기 페어링 검증은 남아 있다.
 - [iOS 실행 검증](https://github.com/M0lli2/form-fitness/actions/runs/44245272504): iPhone 시뮬레이터 Release 빌드·설치·홈 실행·재실행까지 성공했다. 추가 XCTest는 테스트 번들의 제품명이 비어 빌드 단계에서 실패했다. 제품명을 지정하고 재검증한다.
 - [소스 검사](https://github.com/M0lli2/form-fitness/actions/runs/44245516445): 테스트 28개·타입 검사·Android 번들이 통과했다. 검사한 JavaScript 소스 그래프에서 확인 대상 5개 빌드 도구 패키지는 발견되지 않았다.
+
+## 설치 파일 후속 검증 (2026-11-18)
+
+- [동일 서명 APK 묶음](https://github.com/M0lli2/form-fitness/actions/runs/44246921064/artifacts/14401473315)의 SHA-256과 이전에 검증한 두 APK의 해시를 확인했다.
+- 두 APK의 바이너리 매니페스트를 열어 앱 ID `com.mori.form`, 홈 화면에서 실행할 수 있는 진입점, 휴대폰의 Health Connect 권한 8개 및 백업 비활성화, 워치의 Wear OS 기기 선언을 확인했다. 권한 요청 UI와 센서 동작은 실제 기기에서 검증해야 한다.
+- 로컬 테스트 28개 및 프로젝트 설정 검사 통과. 오프라인 의존성 설치는 npm 캐시에 필요한 패키지가 없어 전체 타입 검사를 재실행하지 못했다.
+- [수정 후 iOS 검증](https://github.com/M0lli2/form-fitness/actions/runs/44286882058)은 러너 배정 없이 종료됐다. iOS의 기존 홈 실행과 재실행 성공 기록은 유효하며, 추가 UI 테스트는 아직 실행되지 않았다.
+- 운동 안내는 기본 63종의 텍스트 가이드와 주의사항을 제공한다. 회전·확대하거나 동작을 재생하는 3D 가이드는 미구현이다.
