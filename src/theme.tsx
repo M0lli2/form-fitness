@@ -20,13 +20,18 @@ export function Glass({ children, style }: {
     children: React.ReactNode;
     style?: StyleProp<ViewStyle>;
 }) { const { colors, dark, contrast } = useTheme(); return <View style={[styles.card, {borderColor:colors.line,backgroundColor:colors.solid},style]}>{children}</View>; }
-export function Label({ children, size = 14, muted = false, bold = false, style }: {
+export function Label({ children, size = 15, muted = false, bold = false, style }: {
     children: React.ReactNode;
     size?: number;
     muted?: boolean;
     bold?: boolean;
     style?: any;
-}) { const { colors } = useTheme(); return <Text style={[{ fontSize: size, lineHeight: size * 1.5, color: muted ? colors.muted : colors.ink, fontWeight: bold ? '700' : '400' }, style]}>{children}</Text>; }
+}) {
+    const { colors } = useTheme();
+    // Keep the platform's Korean system typeface and scalable text settings.
+    return <Text style={[{ fontSize: size, lineHeight: Math.ceil(size * (size >= 20 ? 1.24 : 1.44)),
+        color: muted ? colors.muted : colors.ink, fontWeight: bold ? '700' : '400' }, style]}>{children}</Text>;
+}
 export function Button({ title, onPress, secondary = false, disabled = false, danger = false }: {
     title: string;
     onPress: () => void;
