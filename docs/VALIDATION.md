@@ -65,3 +65,11 @@
 ### 자동화로 대체할 수 없는 현재 조건
 
 실제 센서·권한·페어링 검증에는 사용 가능한 iPhone/Apple Watch 및 Android/Wear OS 기기 접근이 필요하다. 이 환경에는 adb/Xcode 로컬 도구나 연결된 기기가 없다. 시뮬레이터 통과를 실기기 통과로 바꾸지 않는다. App Store/Play 배포에는 사용자의 개발자 팀·서명·프로비저닝·스토어 프로젝트 접근이 필요하며 현재 제공된 연결은 GitHub다. 계정/클라우드·AI 추천·소셜·전문 운동 영상은 여전히 미구현이다.
+
+## 화면 캡처 및 후속 검증 (2026-11-18)
+
+- [Android Release](https://github.com/M0lli2/form-fitness/actions/runs/44245001027): 7b37312에서 ARM64·x86_64 빌드, 홈·4개 메뉴·재실행 통과.
+- [Android 저장·복원](https://github.com/M0lli2/form-fitness/actions/runs/44246921105): 7b37312 APK와 edbeba0 테스트로 다크 모드·Glass 설정 복원, 푸시업 세트 완료, 운동 저장, 강제 종료 후 히스토리 복원을 모두 확인했다.
+- [동일 서명 테스트 APK](https://github.com/M0lli2/form-fitness/actions/runs/44246921064): 위 Android 휴대폰 APK와 Wear OS APK의 SHA-256 서명이 일치했다. 실기기 페어링 검증은 남아 있다.
+- [iOS 실행 검증](https://github.com/M0lli2/form-fitness/actions/runs/44245272504): iPhone 시뮬레이터 Release 빌드·설치·홈 실행·재실행까지 성공했다. 추가 XCTest는 테스트 번들의 제품명이 비어 빌드 단계에서 실패했다. 제품명을 지정하고 재검증한다.
+- [소스 검사](https://github.com/M0lli2/form-fitness/actions/runs/44245516445): 테스트 28개·타입 검사·Android 번들이 통과했다. 검사한 JavaScript 소스 그래프에서 확인 대상 5개 빌드 도구 패키지는 발견되지 않았다.

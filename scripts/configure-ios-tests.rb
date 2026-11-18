@@ -14,6 +14,8 @@ end
 tests.build_configurations.each do |configuration|
   configuration.build_settings.merge!({
     'PRODUCT_BUNDLE_IDENTIFIER' => 'com.mori.form.uitests',
+    # Xcode names both the runner and the plug-in from PRODUCT_NAME.
+    'PRODUCT_NAME' => 'FORMUITests',
     'SWIFT_VERSION' => '5.0', 'GENERATE_INFOPLIST_FILE' => 'YES',
     'TEST_TARGET_NAME' => 'FORM', 'TARGETED_DEVICE_FAMILY' => '1,2',
     'CODE_SIGN_STYLE' => 'Automatic'

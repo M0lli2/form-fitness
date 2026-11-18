@@ -2,7 +2,21 @@
 
 미니멀한 iOS·Android 운동 기록 앱. React Native의 네이티브 뷰, Swift HealthKit 모듈, Kotlin Health Connect 모듈, SwiftUI Apple Watch 앱, Compose Wear OS 앱을 포함합니다. WebView나 PWA를 앱으로 포장하지 않습니다.
 
-> **현재 단계: 네이티브 빌드 및 시뮬레이터 검증 중.** Android·iOS·Wear OS·watchOS 컴파일에 성공했고, iOS 홈 첫 실행·재실행 화면을 확인했습니다. Android Release 구동 검증은 진행 중입니다. 건강 권한·워치 페어링·실기기 설치·스토어 배포는 미검증입니다. 최신 결과는 [검증 기록](docs/VALIDATION.md)을 확인하세요.
+> **현재 단계: 네이티브 테스트 빌드.** Android에서 운동 저장·재실행 복원과 다크·Glass 설정 유지까지 확인했습니다. iOS는 시뮬레이터 홈 실행과 재실행을 확인했습니다. 실기기 건강 권한·워치 페어링·스토어 배포 검증이 남아 있습니다. [검증 기록](docs/VALIDATION.md)
+
+## 앱 실행 화면
+
+GitHub Actions의 Android 에뮬레이터와 iPhone 시뮬레이터에서 캡처한 화면입니다. 운동 히스토리에는 자동 테스트가 저장한 푸시업 기록이 표시됩니다.
+
+| iPhone 홈 | Android 홈 | 운동 중 휴식 및 세트 완료 |
+| :---: | :---: | :---: |
+| <img src="docs/screenshots/ios-home.png" width="220" alt="iPhone 시뮬레이터의 FORM 홈"> | <img src="docs/screenshots/android-home.png" width="220" alt="Android 에뮬레이터의 FORM 홈"> | <img src="docs/screenshots/android-workout.png" width="220" alt="푸시업 집중 화면의 휴식 타이머와 세트 완료 버튼"> |
+
+| 다크 모드 · Glass 켜짐 | 재실행 후 운동 기록 |
+| :---: | :---: |
+| <img src="docs/screenshots/android-dark-glass.png" width="220" alt="다크 모드와 Liquid Glass를 켠 Android 설정 화면"> | <img src="docs/screenshots/android-history.png" width="220" alt="앱을 재실행한 뒤 남아 있는 푸시업 기록"> |
+
+Android 캡처는 [저장·복원 테스트](https://github.com/M0lli2/form-fitness/actions/runs/44246921105), iPhone 홈 캡처는 [iOS 실행 검증](https://github.com/M0lli2/form-fitness/actions/runs/44245272504)에서 확인할 수 있습니다.
 
 ## 이번 통합 변경
 
@@ -33,7 +47,7 @@
 | 인바디 | 측정일, 체중, 체지방률, 골격근량, 키, 허리둘레, 내장지방 레벨, BMR, 메모, 사진 | 수동 입력. 제조사 API / OCR 미구현 |
 | Apple 건강 | 걸음·심박·체중·체지방·최근 운동 읽기, 체중·체지방·운동 쓰기 | 실기기 검증 전. 피트니스 링 반영은 Apple 정책에 따름 |
 | Android 건강 | Health Connect 읽기·쓰기, 권한 안내 Activity | Samsung Health에서 공유 설정한 호환 데이터만 사용 |
-| Apple Watch | 세트 완료 리모컨, 독립 운동, 심박·에너지, HealthKit 저장 | 앱 타깃 embed·서명·실기기 검증 필요 |
+| Apple Watch | 세트 완료 리모컨, 독립 운동, 심박·에너지, HealthKit 저장 | iPhone 앱에 포함되는 것을 CI에서 확인. 배포 서명·실기기 페어링 검증 필요 |
 | Galaxy Watch | Wear OS 세트 리모컨, 독립 타이머·심박, 휴대폰 전송 | Watch4 이후 Wear OS 대상. Tizen 미지원. 심박 시계열 저장 미구현 |
 | 데이터 | SQLCipher DB, 기기 보안 저장소 키, 백업 병합/내보내기 | 로그인·서버·기기 간 클라우드 동기화 미구현 |
 

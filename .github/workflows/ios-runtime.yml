@@ -15,7 +15,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - run: npm install
+      - run: npm ci
       - run: npx expo prebuild --platform ios
       - run: EAS_BUILD_PLATFORM=ios npm run eas-build-post-install
       - run: ruby scripts/configure-ios-tests.rb
@@ -66,6 +66,12 @@ jobs:
         run: |
           PHONE=$(xcrun simctl list devices booted --json | python3 -c 'import json,sys; print(next(d["udid"] for ds in json.load(sys.stdin)["devices"].values() for d in ds if d["name"].startswith("iPhone")))')
           xcodebuild -workspace ios/FORM.xcworkspace -scheme FORMUITests -destination "platform=iOS Simulator,id=$PHONE" -configuration Release -derivedDataPath build -resultBundlePath runtime-evidence/ui-tests.xcresult CODE_SIGNING_ALLOWED=YES CODE_SIGN_IDENTITY=- test
+      - name: Export readable XCTest results
+        if: always()
+        run: |
+          if [ -d runtime-evidence/ui-tests.xcresult ]; then
+            xcrun xcresulttool get test-results summary --path runtime-evidence/ui-tests.xcresult > runtime-evidence/ui-test-summary.json
+          fi
       - uses: actions/upload-artifact@v4
         if: always()
         with:
