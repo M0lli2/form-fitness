@@ -6,7 +6,7 @@ export async function connectHealth() { if (!await Device.healthAvailable())
     throw Error('허용된 건강 권한이 없습니다.'); return Device.readHealth(); }
 export const readHealth = () => Device.readHealth();
 /** 안정적인 ID로 재시도를 하므로 플랫폼에서 같은 기록을 중복 생성하지 않습니다. */
-export async function exportBody(entry: BodyEntry) { await Device.saveBody(entry.id, entry.date, entry.weight, entry.bodyFat ?? null); }
+export async function exportBody(entry: BodyEntry) { await Device.saveBody(entry.id, entry.date, entry.weight, entry.bodyFat ?? null, entry.revision ?? 1); }
 export async function exportWorkout(session: Session) { if (!session.endedAt)
     throw Error('완료되지 않은 운동입니다.'); if (session.external && session.sync !== 'watch')
     throw Error('워치/외부에서 가져온 기록은 다시 내보내지 않습니다.'); await Device.saveWorkout(session.id, session.name, session.startedAt, session.endedAt); }

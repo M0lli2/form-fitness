@@ -15,7 +15,7 @@ type DeviceModule = {
     healthAvailable(): Promise<boolean>;
     authorize(): Promise<boolean>;
     readHealth(): Promise<HealthSummary>;
-    saveBody(id: string, date: string, weight: number, fat: number | null): Promise<void>;
+    saveBody(id: string, date: string, weight: number, fat: number | null, revision: number): Promise<void>;
     saveWorkout(id: string, name: string, start: string, end: string): Promise<void>;
     watchStatus(): Promise<{
         connected: boolean;

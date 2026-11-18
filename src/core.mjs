@@ -22,6 +22,9 @@ export function validateBody(input) { const date = new Date(input.date); if (!Nu
     throw Error('측정일을 확인하세요.'); const out = { id: input.id || uid(), date: date.toISOString(), weight: numberIn(input.weight, 20, 400, '체중'), source: 'manual', note: String(input.note || '').slice(0, 2000), photo: input.photo || null }; for (const [key, min, max, label] of [['bodyFat', 0, 75, '체지방률'], ['muscle', 1, 150, '골격근량'], ['height', 80, 250, '키'], ['visceralFat', 1, 30, '내장지방 레벨'], ['bmr', 300, 5000, '기초대사량'], ['waist', 30, 250, '허리둘레']]) {
     if (input[key] !== undefined && input[key] !== null && input[key] !== '')
         out[key] = numberIn(input[key], min, max, label);
+} if (input.revision !== undefined) {
+    if (!Number.isInteger(input.revision) || input.revision < 1 || input.revision > 2147483647) throw Error('기록 버전을 확인하세요.');
+    out.revision = input.revision;
 } if (out.muscle && out.muscle > out.weight)
     throw Error('골격근량은 체중보다 클 수 없습니다.'); return out; }
 export function volume(session) { return session.exercises.reduce((sum, e) => sum + e.sets.filter(s => s.done && s.kind !== 'warmup').reduce((a, s) => a + (s.weight || 0) * (s.reps || 0), 0), 0); }
@@ -63,3 +66,14 @@ export function validateBackup(value) { if (value?.schema !== 1 || !Array.isArra
     validateBody(b); for (const r of value.routines)
     if (typeof r.id !== 'string' || typeof r.name !== 'string' || !Array.isArray(r.ids) || r.ids.some(id => typeof id !== 'string'))
         throw Error('루틴 형식이 올바르지 않습니다.'); return value; }
+
+/** Keep export revisions stable on retries and increment only when a local edit is saved.
+ * @param {{revision?: number} | null | undefined} previous
+ */
+export function nextBodyRevision(previous) {
+    if (!previous) return 1;
+    const revision = previous.revision ?? 1;
+    if (!Number.isInteger(revision) || revision < 1 || revision >= 2147483647)
+        throw Error('기록 버전을 확인하세요.');
+    return revision + 1;
+}

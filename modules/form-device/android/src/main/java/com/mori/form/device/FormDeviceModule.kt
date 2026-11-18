@@ -46,11 +46,11 @@ class FormDeviceModule : Module() {
    val workouts = if (HealthPermission.getReadPermission(ExerciseSessionRecord::class) in granted) client.readRecords(ReadRecordsRequest(ExerciseSessionRecord::class, range, ascendingOrder = false, pageSize = 100)).records.map { mapOf("id" to it.metadata.id, "name" to (it.title ?: "Health Connect 운동"), "start" to it.startTime.toString(), "end" to it.endTime.toString()) } else emptyList()
    mapOf("steps" to steps, "heartRate" to heart, "weight" to weight, "bodyFat" to fat, "workouts" to workouts)
   }
-  AsyncFunction("saveBody") Coroutine { id: String, date: String, weight: Double, fat: Double? ->
-   require(weight in 20.0..400.0); require(fat == null || fat in 0.0..75.0)
+  AsyncFunction("saveBody") Coroutine { id: String, date: String, weight: Double, fat: Double?, revision: Int ->
+   require(revision >= 1); require(weight in 20.0..400.0); require(fat == null || fat in 0.0..75.0)
    val time = Instant.parse(date)
-   val records = mutableListOf<Record>(WeightRecord(time, null, Mass.kilograms(weight), Metadata.manualEntry(clientRecordId = "form-$id-weight", clientRecordVersion = 1)))
-   if (fat != null) records.add(BodyFatRecord(time, null, androidx.health.connect.client.units.Percentage(fat), Metadata.manualEntry(clientRecordId = "form-$id-fat", clientRecordVersion = 1)))
+   val records = mutableListOf<Record>(WeightRecord(time, null, Mass.kilograms(weight), Metadata.manualEntry(clientRecordId = "form-$id-weight", clientRecordVersion = revision.toLong())))
+   if (fat != null) records.add(BodyFatRecord(time, null, androidx.health.connect.client.units.Percentage(fat), Metadata.manualEntry(clientRecordId = "form-$id-fat", clientRecordVersion = revision.toLong())))
    client.insertRecords(records); Unit
   }
   AsyncFunction("saveWorkout") Coroutine { id: String, name: String, start: String, end: String ->

@@ -36,6 +36,7 @@ export type Session = {
     external?: boolean;
 };
 export type BodyEntry = {
+    revision?: number;
     id: string;
     date: string;
     weight: number;

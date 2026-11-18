@@ -25,10 +25,10 @@ public final class FormDeviceModule: Module {
       let (s,h,w,f,x) = try await (steps,hr,weight,fat,workouts)
       return ["steps": s as Any? ?? NSNull(), "heartRate": h as Any? ?? NSNull(), "weight": w as Any? ?? NSNull(), "bodyFat": f.map { $0 * 100 } as Any? ?? NSNull(), "workouts": x]
     }
-    AsyncFunction("saveBody") { (id: String, date: String, weight: Double, fat: Double?) async throws in
-      guard weight >= 20, weight <= 400, let time = Self.date(date) else { throw FormError.invalid }
-      var values: [HKSample] = [self.quantity(.bodyMass, unit: .gramUnit(with: .kilo), value: weight, date: time, id: id + "-weight")]
-      if let f = fat { guard f >= 0, f <= 75 else { throw FormError.invalid }; values.append(self.quantity(.bodyFatPercentage, unit: .percent(), value: f / 100, date: time, id: id + "-fat")) }
+    AsyncFunction("saveBody") { (id: String, date: String, weight: Double, fat: Double?, revision: Int) async throws in
+      guard revision >= 1, revision <= 2147483647, weight >= 20, weight <= 400, let time = Self.date(date) else { throw FormError.invalid }
+      var values: [HKSample] = [self.quantity(.bodyMass, unit: .gramUnit(with: .kilo), value: weight, date: time, id: id + "-weight", revision: revision)]
+      if let f = fat { guard f >= 0, f <= 75 else { throw FormError.invalid }; values.append(self.quantity(.bodyFatPercentage, unit: .percent(), value: f / 100, date: time, id: id + "-fat", revision: revision)) }
       try await self.health.save(values)
     }
     AsyncFunction("saveWorkout") { (id: String, name: String, start: String, end: String) async throws in
@@ -51,7 +51,7 @@ public final class FormDeviceModule: Module {
   private var writeTypes: Set<HKSampleType> { [HKObjectType.quantityType(forIdentifier: .bodyMass)!, HKObjectType.quantityType(forIdentifier: .bodyFatPercentage)!, HKObjectType.workoutType()] }
   private var readTypes: Set<HKObjectType> { [.quantityType(forIdentifier: .stepCount)!, .quantityType(forIdentifier: .heartRate)!, .quantityType(forIdentifier: .bodyMass)!, .quantityType(forIdentifier: .bodyFatPercentage)!, .workoutType()] }
   static func date(_ text: String) -> Date? { let f = ISO8601DateFormatter(); f.formatOptions = [.withInternetDateTime, .withFractionalSeconds]; return f.date(from: text) ?? ISO8601DateFormatter().date(from: text) }
-  private func quantity(_ type: HKQuantityTypeIdentifier, unit: HKUnit, value: Double, date: Date, id: String) -> HKQuantitySample { HKQuantitySample(type: HKObjectType.quantityType(forIdentifier: type)!, quantity: HKQuantity(unit: unit, doubleValue: value), start: date, end: date, metadata: [HKMetadataKeySyncIdentifier: "form-" + id, HKMetadataKeySyncVersion: 1]) }
+  private func quantity(_ type: HKQuantityTypeIdentifier, unit: HKUnit, value: Double, date: Date, id: String, revision: Int) -> HKQuantitySample { HKQuantitySample(type: HKObjectType.quantityType(forIdentifier: type)!, quantity: HKQuantity(unit: unit, doubleValue: value), start: date, end: date, metadata: [HKMetadataKeySyncIdentifier: "form-" + id, HKMetadataKeySyncVersion: revision]) }
   private func latest(_ type: HKQuantityTypeIdentifier, unit: HKUnit) async throws -> Double? {
     try await withCheckedThrowingContinuation { continuation in
       let query = HKSampleQuery(sampleType: HKObjectType.quantityType(forIdentifier: type)!, predicate: nil, limit: 1, sortDescriptors: [NSSortDescriptor(key: HKSampleSortIdentifierEndDate, ascending: false)]) { _, samples, error in
