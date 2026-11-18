@@ -135,7 +135,7 @@ function Main({ state, setState }: {
         if (focused && target?.type === 'strength') {
             const detail = exercises.find(e => e.id === target.id);
             const previous = state.history.flatMap(h => h.exercises).find(e => e.id === target.id)?.sets.find(s => s.done);
-            return <View style={{minHeight:650}}><FocusedWorkout key={target.id} exercise={{...target,equipment:detail?.equipment ?? '',position:active.exercises.indexOf(target)+1,total:active.exercises.length,previous:previous ? previous.weight+' kg × '+previous.reps : null}} startedAt={Date.parse(active.startedAt)} restDeadline={active.restEndsAt} guide={<Label>{detail?.steps[0] ?? '편안한 자세에서 시작하세요.'}</Label>} onComplete={async (id, values) => {
+            return <View style={{minHeight:650}}><FocusedWorkout key={target.id} exercise={{...target,equipment:detail?.equipment ?? '',position:active.exercises.indexOf(target)+1,total:active.exercises.length,previous:previous ? displayWeight(previous.weight)+' '+unit+' × '+previous.reps : null}} units={unit} startedAt={Date.parse(active.startedAt)} restDeadline={active.restEndsAt} guide={<Label>{detail?.steps[0] ?? '편안한 자세에서 시작하세요.'}</Label>} onComplete={async (id, values) => {
                 await completeSet(target.id,id,values);
             }} onSkipRest={()=>run(async()=>{await patchActive(x=>({...x,restEndsAt:null}));if(notification.current)await Notifications.cancelScheduledNotificationAsync(notification.current);})} onOpenList={()=>setFocused(false)} onOpenGuide={()=>setModal({type:'exercise',item:detail})} onNext={()=>setFocused(false)}/></View>;
         }

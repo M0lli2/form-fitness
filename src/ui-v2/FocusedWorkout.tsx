@@ -2,7 +2,7 @@ import React, {useEffect,useRef,useState} from 'react';
 import {Alert,ScrollView,StyleSheet,TextInput,useWindowDimensions,View} from 'react-native';
 import {Action,FormText,Surface} from './Primitives';
 import {useFormTheme} from './Theme';
-import {parseSetInput,remainingSeconds} from './policy.mjs';
+import {parseSetInput,remainingSeconds,displayMass,parseMass} from './policy.mjs';
 
 export type FocusedSet={id:string;weight:number;reps:number;done:boolean};
 export type FocusedExercise={
@@ -11,6 +11,7 @@ export type FocusedExercise={
 };
 type Props={
   exercise:FocusedExercise;
+  units:'kg'|'lb';
   startedAt:number;
   restDeadline:number|null;
   guide:React.ReactNode;
@@ -37,12 +38,12 @@ export function FocusedWorkout(props:Props){
   const rest=props.restDeadline===null?0:remainingSeconds(props.restDeadline,now);
 
   useEffect(()=>{const timer=setInterval(()=>setNow(Date.now()),500);return()=>clearInterval(timer);},[]);
-  useEffect(()=>{setWeight(current ? String(current.weight) : '');setReps(current ? String(current.reps) : '');},[current?.id,current?.weight,current?.reps]);
+  useEffect(()=>{setWeight(current ? String(displayMass(current.weight,props.units)) : '');setReps(current ? String(current.reps) : '');},[current?.id,current?.weight,current?.reps,props.units]);
 
   async function complete(){
     if(!current || lock.current)return;
     try {
-      const values=parseSetInput(weight,reps);
+      const values=parseSetInput(String(parseMass(weight,props.units)),reps);
       lock.current=true;setBusy(true);
       await props.onComplete(current.id,values);
     }catch(error){Alert.alert('세트를 저장하지 못했습니다',error instanceof Error?error.message:String(error));}
@@ -62,10 +63,10 @@ export function FocusedWorkout(props:Props){
       <Surface>
         <FormText variant="heading">{current ? String(props.exercise.sets.indexOf(current)+1)+'번째 세트' : '모든 세트 완료'}</FormText>
         {current && <View style={[styles.inputs,fontScale>=1.5 && {flexDirection:'column'}]}>
-          <View style={styles.field}><FormText variant="caption" secondary>중량 · kg</FormText><TextInput accessibilityLabel="현재 세트 중량 kg" keyboardType="decimal-pad" selectTextOnFocus value={weight} onChangeText={setWeight} editable={!busy} style={[styles.input,{color:palette.text,backgroundColor:palette.raised}]}/></View>
+          <View style={styles.field}><FormText variant="caption" secondary>중량 · {props.units}</FormText><TextInput accessibilityLabel={'현재 세트 중량 '+props.units} keyboardType="decimal-pad" selectTextOnFocus value={weight} onChangeText={setWeight} editable={!busy} style={[styles.input,{color:palette.text,backgroundColor:palette.raised}]}/></View>
           <View style={styles.field}><FormText variant="caption" secondary>반복 · 회</FormText><TextInput accessibilityLabel="현재 세트 반복 횟수" keyboardType="number-pad" selectTextOnFocus value={reps} onChangeText={setReps} editable={!busy} style={[styles.input,{color:palette.text,backgroundColor:palette.raised}]}/></View>
         </View>}
-        {props.exercise.sets.map((set,index)=><View key={set.id} style={styles.history}><FormText variant="caption" secondary>{index+1}세트</FormText><FormText variant="label" style={{fontVariant:['tabular-nums']}}>{set.weight} kg × {set.reps}</FormText><FormText variant="caption" accessibilityLabel={set.done?'완료':'미완료'}>{set.done?'완료':'대기'}</FormText></View>)}
+        {props.exercise.sets.map((set,index)=><View key={set.id} style={styles.history}><FormText variant="caption" secondary>{index+1}세트</FormText><FormText variant="label" style={{fontVariant:['tabular-nums']}}>{displayMass(set.weight,props.units)} {props.units} × {set.reps}</FormText><FormText variant="caption" accessibilityLabel={set.done?'완료':'미완료'}>{set.done?'완료':'대기'}</FormText></View>)}
       </Surface>
     </ScrollView>
     <Surface role="control" style={styles.controls}>

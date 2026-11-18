@@ -22,3 +22,18 @@ export function parseSetInput(weight, reps) {
   return {weight: weightValue, reps: repsValue};
 }
 
+
+/** All persisted weights stay in kg; display units never change the stored quantity.
+ * @param {number} kg
+ * @param {'kg' | 'lb'} unit
+ */
+export function displayMass(kg, unit) {
+  return Math.round(kg * (unit === 'lb' ? 2.2046226218 : 1) * 100) / 100;
+}
+/** @param {string | number} input @param {'kg' | 'lb'} unit */
+export function parseMass(input, unit) {
+  const value = Number(String(input).trim().replace(',', '.'));
+  const kg = value / (unit === 'lb' ? 2.2046226218 : 1);
+  if (!String(input).trim() || !Number.isFinite(kg) || kg < 0 || kg > 1000) throw Error('중량 범위를 확인하세요.');
+  return kg;
+}
