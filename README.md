@@ -9,7 +9,7 @@
 - Planfit 공개 화면을 참고한 한 운동 집중 기록 화면을 실제 앱에 연결했습니다.
 - 무채색 테마와 시스템 글꼴, 내용 영역의 불투명 패널, 조작·탐색 영역의 선택형 유리 효과를 적용했습니다.
 - 세트 입력과 완료를 함께 저장하며 워치 독립 운동 백업 복원을 수정했습니다.
-- 99% 기능·화면 동등성은 검증되지 않았습니다. 현재 63종 운동 안내와 수동 인바디 입력을 제공합니다.
+- 99% 기능·화면 동등성은 검증되지 않았습니다. 현재 기본 63종 운동 안내, 사용자 운동 등록, 수동 인바디 입력을 제공합니다.
 
 ## 디자인 검토
 
@@ -29,7 +29,7 @@
 | 휴식 | 종료 시각 기준 타이머, 로컬 알림, 취소 | OS 강제 종료·절전 모드 실기기 확인 필요 |
 | 루틴 | 생성·편집·운동 선택, 기본 전신·상체·하체·맨몸 루틴 | 주간 캘린더 예약 미구현 |
 | 성장 | 히스토리, 주간 볼륨, 추정 1RM | 심화 근육별 분석·소셜 미구현 |
-| 운동법 | 한국어 63종, 부위·장비 검색, 3단계 설명, 주의사항 | 모든 운동을 망라하지 않음. 동작 영상·3D·트레이너 감수는 후속 |
+| 운동법 | 한국어 기본 63종, 사용자 운동 등록, 부위·장비 검색, 3단계 설명, 주의사항 | 모든 운동을 망라하지 않음. 동작 영상·3D·트레이너 감수는 후속 |
 | 인바디 | 측정일, 체중, 체지방률, 골격근량, 키, 허리둘레, 내장지방 레벨, BMR, 메모, 사진 | 수동 입력. 제조사 API / OCR 미구현 |
 | Apple 건강 | 걸음·심박·체중·체지방·최근 운동 읽기, 체중·체지방·운동 쓰기 | 실기기 검증 전. 피트니스 링 반영은 Apple 정책에 따름 |
 | Android 건강 | Health Connect 읽기·쓰기, 권한 안내 Activity | Samsung Health에서 공유 설정한 호환 데이터만 사용 |
@@ -63,13 +63,14 @@ npx expo install --check
 npm test
 npm run check
 npm run typecheck
-npx expo prebuild
+npx expo prebuild --platform android
 npm run android
 # macOS:
+npm run ios:prepare
 npm run ios
 ```
 
-SDK 54를 기준으로 의존성을 선언했습니다. npm 설치가 완료되면 생성된 `package-lock.json`을 커밋해 고정해야 합니다. `expo install --check`에 불일치가 나오면 해당 SDK가 권장하는 버전으로 맞춘 뒤 테스트하세요. 네이티브 모듈 수정 후에는 앱을 다시 빌드해야 합니다.
+SDK 54와 CI에서 검증한 `package-lock.json`으로 의존성을 고정했습니다. 재현 설치에는 `npm ci`를 사용합니다. `expo install --check`에 불일치가 나오면 해당 SDK가 권장하는 버전으로 맞춘 뒤 테스트하세요. 네이티브 모듈 수정 후에는 앱을 다시 빌드해야 합니다.
 
 ### 개발 빌드 / 배포 빌드
 
@@ -88,7 +89,7 @@ EAS 계정·프로젝트 연결·개발자 서명은 저장소에 포함하지 �
 3. `FORMWatch.xcodeproj`를 Xcode로 열고 개발자 Team을 선택합니다.
 4. 휴대폰 앱과 워치 앱에 HealthKit capability를 활성화합니다.
 5. 휴대폰: `com.mori.form`, 워치: `com.mori.form.watchkitapp`, companion: `com.mori.form`을 일치시킵니다.
-6. 배포용 휴대폰 프로젝트에는 watch 앱을 추가하고 Embed Watch Content를 구성합니다. 현재 prebuild는 이 embed를 자동 생성하지 않습니다.
+6. `npm run ios:prepare`로 휴대폰 프로젝트에 워치 타깃과 Embed Watch Content를 추가합니다. EAS iOS 빌드는 post-install hook에서 같은 절차를 실행합니다. CI에서 iPhone 앱 내부 `Watch/FORMWatch.app` 존재까지 확인했습니다. 서명된 EAS 배포는 개발자 계정에서 별도 검증해야 합니다.
 7. 페어링된 실제 iPhone/Apple Watch에 설치해 권한·심박·전송을 검증합니다.
 
 Apple Watch가 HealthKit에 저장한 운동은 휴대폰에서 다시 내보내지 않습니다. 운동 중 프로세스 종료 복구와 저장 실패 재시도는 출시 전 보강 항목입니다.
@@ -148,3 +149,11 @@ GitHub Actions의 `Source checks`는 push 시 실행합니다. `Native build val
 6. App Store / Play Console 건강 권한·개인정보·심사 정보 작성 및 서명 배포.
 
 상위 앱의 모든 기능과 모든 운동을 완료했다고 주장하지 않습니다. 목표와 실제 구현·검증 상태를 구분하여 유지합니다.
+
+## 후속 구현·검증 기록 (2026-11-18)
+
+- 집중 기록 화면 kg/lb 변환 일관성과 인바디 수정 버전 처리를 보강했습니다. 건강 재전송은 저장된 revision을 유지하며 로컬 편집 저장 때만 올립니다.
+- 기본 목록에 없는 운동은 사용자 운동으로 등록해 루틴·세트 기록·백업에서 사용합니다.
+- 로컬 회귀 테스트 26개 통과. e210fcc 전체 타입 검사와 Android JS 번들 성공.
+- 8deb2e6 Android Release 홈·4개 메뉴·재실행 검증 성공. Apple Watch embed는 1462eee / 0672495 Apple job 성공.
+- npm audit 호환 업데이트 실험에서는 React Native Flow 구문 번들이 실패하여 해당 자동 수정 lock을 채택하지 않았습니다. 배포 전 의존성 보안 업데이트 검증이 남아 있습니다.
