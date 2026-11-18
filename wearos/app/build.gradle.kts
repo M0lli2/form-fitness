@@ -3,6 +3,16 @@ android {
  namespace = "com.mori.form.wear"
  compileSdk = 36
  defaultConfig { applicationId = "com.mori.form"; minSdk = 30; targetSdk = 36; versionCode = 1; versionName = "0.1.0" }
+ // A paired debug build must use the same certificate as the phone app.
+ val companionKey = providers.gradleProperty("formDebugKeystore").orNull
+ if (companionKey != null) {
+  signingConfigs.getByName("debug") {
+   storeFile = file(companionKey)
+   storePassword = "android"
+   keyAlias = "androiddebugkey"
+   keyPassword = "android"
+  }
+ }
  buildFeatures { compose = true }
  compileOptions { sourceCompatibility = JavaVersion.VERSION_17; targetCompatibility = JavaVersion.VERSION_17 }
  kotlinOptions { jvmTarget = "17" }
