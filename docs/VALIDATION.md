@@ -47,3 +47,21 @@
 - 별도 saved-data journeys [44079623831](https://github.com/M0lli2/form-fitness/actions/runs/44079623831)는 기본 smoke의 종료/재실행 단계에서 UIAutomator could not get idle state로 실패했다. 저장 설정·실제 운동 저장 흐름에 도달하지 않았으므로 해당 항목은 통과하지 않았다. 실패 시 스크린샷은 정상 홈이었다.
 - 화면 전환 직전의 픽셀이 저장되는 경우를 발견해, 문구 검증 직후 스크린샷을 다시 찍도록 수정했다.
 - 8deb2e6의 Android Release 재빌드는 진행 중이다. 최신 수정본의 구동 결과는 아직 확정하지 않는다.
+
+## 추가 구현 및 검증 (2026-11-18)
+
+- 사용자 운동 등록: 이름·부위·장비·기록 방식·방법·주의사항을 입력하고 루틴/운동/백업에서 사용한다.
+- 집중 기록 화면에 lb 설정을 반영한다. 저장 값은 kg로 유지하며 입력만 변환한다.
+- 인바디 편집 저장 시 revision을 올려 HealthKit SyncVersion / Health Connect clientRecordVersion에 전달한다. 같은 저장본의 재시도는 버전을 유지한다.
+- 위 변경의 로컬 테스트 26개 통과. e210fcc Source checks에서 타입 검사·Android JS 번들까지 통과했다.
+- 8deb2e6 및 ea2de14 Android Release 기본 구동 검증 통과.
+- [1462eee native build 44206323528](https://github.com/M0lli2/form-fitness/actions/runs/44206323528): Android/Wear OS/Apple 모두 성공. Apple job은 iPhone 프로젝트에 워치 타깃 추가 및 iPhone 앱 내부 Watch/FORMWatch.app 존재까지 검사했다.
+- [0672495 Apple job](https://github.com/M0lli2/form-fitness/actions/runs/44206498369)은 워치 포함 빌드 성공. 휴대폰/Wear OS 동일 인증서 검사 결과는 별도 확인이 필요하다.
+- saved-data journeys는 에뮬레이터 데이터 파티션 공간 부족으로 부팅 전 실패했다. 디스크 2048M과 부팅 제한 시간을 지정했다. 새 관찰 도구의 중복 onCreate 선언도 제거했다. 이 전체 흐름은 통과 결과를 아직 기록하지 않는다.
+- package-lock.json을 실제 CI 설치 결과로 고정했고 Source checks는 npm ci를 사용한다.
+- 의존성 감사는 40개 영향 패키지(높음 29·중간 11)를 보고했다. npm audit fix --package-lock-only 호환 업데이트 실험은 React Native Flow 번들 오류로 실패했다. 실패한 lock은 채택하지 않았다. picomatch 관련 GHSA-fc5q-39xc-vjpf는 확인 당시 수정 버전이 없어 출시 전 별도 대응이 필요하다.
+- 최신 runtime 빌드는 Android 실기기용 arm64-v8a와 에뮬레이터용 x86_64를 함께 포함하도록 구성했다. CI 테스트 서명은 production 서명이 아니다.
+
+### 자동화로 대체할 수 없는 현재 조건
+
+실제 센서·권한·페어링 검증에는 사용 가능한 iPhone/Apple Watch 및 Android/Wear OS 기기 접근이 필요하다. 이 환경에는 adb/Xcode 로컬 도구나 연결된 기기가 없다. 시뮬레이터 통과를 실기기 통과로 바꾸지 않는다. App Store/Play 배포에는 사용자의 개발자 팀·서명·프로비저닝·스토어 프로젝트 접근이 필요하며 현재 제공된 연결은 GitHub다. 계정/클라우드·AI 추천·소셜·전문 운동 영상은 여전히 미구현이다.

@@ -4,6 +4,9 @@ on:
   workflow_dispatch:
   push:
     paths: ['.github/workflows/runtime-smoke.yml', 'scripts/runtime-smoke.py', 'modules/**', 'plugins/**', 'package*.json', 'src/App.tsx', 'src/core.mjs']
+concurrency:
+  group: android-runtime-${{ github.ref }}
+  cancel-in-progress: true
 permissions:
   contents: read
 jobs:
@@ -22,7 +25,7 @@ jobs:
       - run: npm install
       - run: npx expo prebuild --platform android --no-install
       # Release embeds JS and bypasses the development launcher. CI signing is not store signing.
-      - run: cd android && ./gradlew assembleRelease -PreactNativeArchitectures=x86_64
+      - run: cd android && ./gradlew assembleRelease -PreactNativeArchitectures=arm64-v8a,x86_64
       - uses: actions/upload-artifact@v4
         with:
           name: form-offline-release
@@ -44,6 +47,8 @@ jobs:
           sudo udevadm trigger --name-match=kvm
       - uses: reactivecircus/android-emulator-runner@v2
         with:
+          disk-size: 2048M
+          emulator-boot-timeout: 180
           api-level: 35
           arch: x86_64
           target: google_apis
