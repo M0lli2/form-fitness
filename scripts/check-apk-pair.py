@@ -6,7 +6,7 @@ import subprocess
 import sys
 
 def certificate_digest(output):
-    match = re.search(r"^Signer.*certificate SHA-256 digest:\s*([0-9a-fA-F:]+)", output, re.MULTILINE)
+    match = re.search(r"^(?:V[0-9.]+\s+)?Signer.*certificate SHA-256 digest:\s*([0-9a-fA-F:]+)", output, re.MULTILINE)
     if not match:
         raise AssertionError("Missing signer certificate in apksigner output:\n" + output)
     digest = match.group(1).replace(":", "").lower()
@@ -17,7 +17,7 @@ def certificate_digest(output):
 if __name__ == "__main__":
     if sys.argv[1:] == ["--self-test"]:
         value = "ab" * 32
-        for label in ["Signer #1", "Signer (minSdkVersion=28, maxSdkVersion=2147483647)"]:
+        for label in ["Signer #1", "Signer (minSdkVersion=28, maxSdkVersion=2147483647)", "V2 Signer:", "V3.1 Signer:"]:
             assert certificate_digest(label + " certificate SHA-256 digest: " + value) == value
         assert certificate_digest("Signer #1 certificate SHA-256 digest: " + ":".join(["AB"]*32)) == value
         try:

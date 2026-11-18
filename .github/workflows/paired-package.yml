@@ -38,7 +38,9 @@ jobs:
       - run: npx expo prebuild --platform android --no-install
       - run: gradle -p wearos assembleDebug -PformDebugKeystore="$GITHUB_WORKSPACE/android/app/debug.keystore"
       - name: Verify pair signing
+        shell: bash
         run: |
+          set -euo pipefail
           mkdir -p paired-evidence
           python3 scripts/check-apk-pair.py phone-apk/app-release.apk wearos/app/build/outputs/apk/debug/app-debug.apk | tee paired-evidence/certificates.txt
       - uses: actions/upload-artifact@v4
