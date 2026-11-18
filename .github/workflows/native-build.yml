@@ -10,6 +10,7 @@ on:
       - 'plugins/**'
       - 'app.json'
       - 'package*.json'
+      - 'scripts/embed-watch.rb'
 permissions:
   contents: read
 jobs:
@@ -62,6 +63,10 @@ jobs:
           node-version: '22'
       - run: npm install
       - run: npx expo prebuild --platform ios
-      - run: xcodebuild -workspace ios/FORM.xcworkspace -scheme FORM -sdk iphonesimulator -configuration Debug CODE_SIGNING_ALLOWED=NO build
+      - run: ruby scripts/embed-watch.rb
+      - name: Build iPhone app with embedded watch companion
+        run: |
+          xcodebuild -workspace ios/FORM.xcworkspace -scheme FORM -destination 'generic/platform=iOS Simulator' -configuration Debug -derivedDataPath build CODE_SIGNING_ALLOWED=NO build
+          test -d build/Build/Products/Debug-iphonesimulator/FORM.app/Watch/FORMWatch.app
       - run: brew install xcodegen
       - run: cd watchos && xcodegen generate && xcodebuild -project FORMWatch.xcodeproj -scheme FORMWatch -sdk watchsimulator CODE_SIGNING_ALLOWED=NO build
