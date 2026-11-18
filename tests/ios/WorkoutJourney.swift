@@ -40,4 +40,17 @@ final class WorkoutJourney: XCTestCase {
         tap("라이트")
         attach("light-settings")
     }
+    func testExerciseLibraryMotionGuide() {
+        tap("운동도감")
+        tap("푸시업")
+        XCTAssertTrue(app.staticTexts["3D 자세 가이드"].waitForExistence(timeout: 15))
+        tap("동작 재생")
+        XCTAssertTrue(app.staticTexts["동작 반복 재생 중"].waitForExistence(timeout: 10))
+        tap("일시 정지")
+        tap("회전")
+        XCTAssertTrue(control("운동 관절과 장비의 3차원 자세, 오른쪽").exists)
+        tap("확대")
+        XCTAssertTrue(app.buttons["축소"].exists)
+        attach("exercise-library-motion-guide")
+    }
 }

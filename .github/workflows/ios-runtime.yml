@@ -3,7 +3,7 @@ name: iOS runtime smoke
 on:
   workflow_dispatch:
   push:
-    paths: ['.github/workflows/ios-runtime.yml', 'scripts/configure-ios-tests.rb', 'tests/ios/**']
+    paths: ['.github/workflows/ios-runtime.yml', 'scripts/configure-ios-tests.rb', 'tests/ios/**', 'src/**', 'app.json', 'package*.json', 'modules/**', 'plugins/**', 'watchos/**']
 permissions:
   contents: read
 jobs:

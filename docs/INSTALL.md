@@ -2,6 +2,8 @@
 
 ## Android · Galaxy Watch 테스트 설치
 
+소스 커밋 `5880e30`에는 운동도감, 3D 자세 8종, 운동 추가 전 자세 미리보기와 홈·탭 UI 개선이 포함됩니다. 현재 다운로드 가능한 APK는 이 변경 이전에 검증한 테스트 빌드입니다. [최신 Android 빌드 상태](https://github.com/M0lli2/form-fitness/actions/runs/44292623016)
+
 GitHub에 로그인한 뒤 [휴대폰·Wear OS APK 묶음](https://github.com/M0lli2/form-fitness/actions/runs/44246921064/artifacts/14401473315)을 다운로드하고 압축을 풉니다. GitHub Actions 아티팩트 만료 시 [재빌드 워크플로](https://github.com/M0lli2/form-fitness/actions/workflows/runtime-smoke.yml)와 [동일 서명 패키징 워크플로](https://github.com/M0lli2/form-fitness/actions/workflows/paired-package.yml)에서 같은 방식으로 새 파일을 만들 수 있습니다.
 
 | 대상 | 압축 안의 파일 | 검증 범위 |

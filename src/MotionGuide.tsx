@@ -5,6 +5,7 @@ import {bones, floor, motions, project, samplePose} from './motion-guide.mjs';
 
 const HEIGHT = 210;
 const CYCLE_MS = 3600;
+const directions = ['정면', '오른쪽 앞', '오른쪽', '오른쪽 뒤', '뒤', '왼쪽 뒤', '왼쪽', '왼쪽 앞'];
 const angles = [0, Math.PI / 4, Math.PI / 2, Math.PI * 3 / 4, Math.PI, Math.PI * 5 / 4, Math.PI * 3 / 2, Math.PI * 7 / 4];
 
 /** Native views render the projected joints, so the guide works offline without a web view. */
@@ -63,7 +64,7 @@ export function MotionGuide({exerciseId}: {exerciseId: string}) {
 
     return <Glass>
         <Label bold size={17}>3D 자세 가이드</Label>
-        <View accessible accessibilityLabel="운동 관절과 장비의 3차원 자세"
+        <View accessible accessibilityLabel={`운동 관절과 장비의 3차원 자세, ${directions[angleIndex]}`}
             onLayout={e => setWidth(e.nativeEvent.layout.width)} style={[styles.stage,{backgroundColor:colors.bg}]}>
             {width>0 && floor.map(([a,b],i) => line(map(a),map(b),colors.line,1,'floor-'+i))}
             {width>0 && limbSegments.sort((l,r) => l.a[2]+l.b[2]-r.a[2]-r.b[2]).map(({a,b,head},i) =>
