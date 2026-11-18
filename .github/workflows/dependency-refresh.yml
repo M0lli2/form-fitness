@@ -1,0 +1,38 @@
+# Test compatible vulnerability updates without silently changing the tracked dependency graph.
+name: Compatible dependency refresh
+on:
+  workflow_dispatch:
+  push:
+    paths: ['.github/workflows/dependency-refresh.yml']
+permissions:
+  contents: read
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Resolve compatible audit fixes
+        run: |
+          python3 - <<'PY'
+          import subprocess
+          result = subprocess.run(['npm','audit','fix','--package-lock-only','--ignore-scripts'])
+          if result.returncode not in (0,1):
+              raise SystemExit(result.returncode)
+          PY
+      - run: npm ci --ignore-scripts
+      - run: npm test && npm run check && npm run typecheck
+      - run: npx expo export --platform android --output-dir /tmp/refreshed-bundle
+      - name: Report remaining vulnerabilities
+        continue-on-error: true
+        run: npm audit --json > dependency-audit.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: tested-dependency-refresh
+          path: |
+            package-lock.json
+            dependency-audit.json
