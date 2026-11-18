@@ -1,0 +1,7 @@
+// Separate emulator-only observer; never linked into the production app.
+plugins { id 'com.android.application' version '8.9.2' }
+android {
+    namespace 'com.mori.form.probe'
+    compileSdk 35
+    defaultConfig { applicationId 'com.mori.form.probe'; minSdk 28; targetSdk 35; versionCode 1; versionName '1' }
+}

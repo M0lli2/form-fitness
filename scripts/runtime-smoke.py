@@ -19,10 +19,17 @@ def adb(*args):
 def capture(name):
     # Keep pixels even when startup has no accessible window yet.
     (OUT / (name + ".png")).write_bytes(adb("exec-out", "screencap", "-p"))
-    adb("shell", "rm", "-f", "/sdcard/form-ui.xml")
-    output = adb("shell", "uiautomator", "dump", "--compressed", "/sdcard/form-ui.xml")
-    (OUT / (name + "-dump.txt")).write_bytes(output)
-    raw = adb("shell", "cat", "/sdcard/form-ui.xml")
+    if os.environ.get("FORM_UI_PROBE") == "1":
+        output = adb("shell", "am", "instrument", "-w", "com.mori.form.probe/.HierarchyProbe")
+        (OUT / (name + "-dump.txt")).write_bytes(output)
+        if b"FORM_PROBE_OK" not in output:
+            raise ET.ParseError(output.decode("utf-8", errors="replace"))
+        raw = adb("exec-out", "run-as", "com.mori.form.probe", "cat", "files/ui.xml")
+    else:
+        adb("shell", "rm", "-f", "/sdcard/form-ui.xml")
+        output = adb("shell", "uiautomator", "dump", "--compressed", "/sdcard/form-ui.xml")
+        (OUT / (name + "-dump.txt")).write_bytes(output)
+        raw = adb("shell", "cat", "/sdcard/form-ui.xml")
     root = ET.fromstring(raw)
     (OUT / (name + ".xml")).write_bytes(raw)
     return root
@@ -63,6 +70,11 @@ def tap_exact(text, root):
 results = []
 try:
     adb("install", "-r", os.environ.get("FORM_APK", "android/app/build/outputs/apk/release/app-release.apk"))
+    if os.environ.get("FORM_UI_PROBE") == "1":
+        probe_apks = list(pathlib.Path("tools/ui-probe/build/outputs/apk/debug").glob("*.apk"))
+        if len(probe_apks) != 1:
+            raise AssertionError("Expected exactly one emulator observer APK")
+        adb("install", "-r", str(probe_apks[0]))
     adb("logcat", "-c")
     adb("shell", "monkey", "-p", PACKAGE, "-c", "android.intent.category.LAUNCHER", "1")
     root = wait_for("오늘", "01-home")
