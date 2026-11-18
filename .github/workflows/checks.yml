@@ -12,6 +12,19 @@ jobs:
         with:
           node-version: '22'
       - run: npm install --ignore-scripts
+      - name: Save resolved dependency versions
+        uses: actions/upload-artifact@v4
+        with:
+          name: dependency-lock
+          path: package-lock.json
+      - name: Collect dependency vulnerability report
+        continue-on-error: true
+        run: npm audit --json > dependency-audit.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: dependency-audit
+          path: dependency-audit.json
       - run: python3 -m py_compile scripts/runtime-smoke.py scripts/runtime-journeys.py
       - run: npm test
       - run: npm run check
