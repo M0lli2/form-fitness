@@ -62,7 +62,13 @@ def selected(label, name, attribute="selected"):
 
 try:
     root = wait_for("오늘", "10-home")
-    root = seek("이번 주 · 운동 0회", "10-home-week-volume")
+    # Bring the whole card above the floating bar before tapping a weekday.
+    viewport = next(root.iter("node")).get("bounds", "")
+    _, _, viewport_width, viewport_height = map(int, re.findall(r"\d+", viewport))
+    adb("shell", "input", "swipe", str(viewport_width//2), str(int(viewport_height*.80)),
+        str(viewport_width//2), str(int(viewport_height*.47)), "460")
+    time.sleep(.6)
+    root = wait_for("이번 주 · 운동 0회", "10-home-week-volume")
     # Select a visible weekday by its accessible name without relying on a fixed date.
     weekday = next((node.get("content-desc") for node in root.iter("node")
                     if re.match(r"^[월화수목금토일]요일 ", node.get("content-desc", ""))
