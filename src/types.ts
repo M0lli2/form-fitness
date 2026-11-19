@@ -24,6 +24,7 @@ export type Session = {
     startedAt: string;
     endedAt?: string;
     restEndsAt: number | null;
+    preparing?: true;
     pausedAt?: number;
     pausedMs?: number;
     pausedRestMs?: number;

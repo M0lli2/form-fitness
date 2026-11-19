@@ -43,6 +43,7 @@ export function validateSession(session) { if (!session.exercises.some(e => e.se
 export function makeSession(name, exercises, history = []) { return { id: uid(), name, startedAt: new Date().toISOString(), restEndsAt: null, exercises: exercises.map(e => { const old = history.flatMap(h => h.exercises).find(x => x.id === e.id); return { id: e.id, name: e.name, type: e.type, muscle: e.muscle, sets: Array.from({ length: e.type === 'strength' ? 3 : 1 }, (_, i) => ({ id: uid(), weight: old?.sets[i]?.weight || 0, reps: old?.sets[i]?.reps || 10, seconds: e.type === 'cardio' ? 1200 : 30, distance: 0, rpe: '', kind: 'normal', done: false })), note: '' }; }) }; }
 /** Persist the pause instant and the remaining rest so both survive an app restart. */
 export function toggleWorkoutPause(session, now = Date.now()) {
+    if (session.preparing) return session;
     const {pausedAt, pausedRestMs, ...current} = session;
     if (pausedAt !== undefined) {
         return {...current, pausedMs:(current.pausedMs ?? 0) + Math.max(0, now - pausedAt),
@@ -52,18 +53,29 @@ export function toggleWorkoutPause(session, now = Date.now()) {
         pausedRestMs:Math.max(0, (current.restEndsAt ?? now) - now)};
 }
 export function workoutElapsedSeconds(session, now = Date.now()) {
+    if (session.preparing) return 0;
     const end = session.pausedAt ?? (session.endedAt ? Date.parse(session.endedAt) : now);
     const pausedMs = Number.isFinite(session.pausedMs) ? Math.max(0, session.pausedMs) : 0;
     return Math.max(0, Math.floor((end - Date.parse(session.startedAt) - pausedMs) / 1000));
 }
 export function closeWorkout(session, now = Date.now()) {
+    if (session.preparing) throw Error('먼저 운동을 시작하세요.');
     validateSession(session);
     const {pausedAt, pausedRestMs, ...record} = session;
     const end = Math.max(now, Date.parse(record.startedAt) + 1);
     return {...record, endedAt:new Date(end).toISOString(), restEndsAt:null,
         pausedMs:(record.pausedMs ?? 0) + (pausedAt === undefined ? 0 : Math.max(0, end - pausedAt))};
 }
-export function applyWatchCommand(session, cmd, seen) { if (!session || session.pausedAt !== undefined || !cmd || seen.includes(cmd.id) || cmd.sessionId !== session.id || cmd.action !== 'completeSet')
+/** Save the selection before starting the clock; older saved sessions have no preparing flag. */
+export function prepareWorkout() {
+    return {...makeSession('자유 운동',[]),preparing:true};
+}
+export function beginPreparedWorkout(session, now = Date.now()) {
+    if (!session.preparing) return session;
+    const {preparing, ...ready} = session;
+    return {...ready,startedAt:new Date(now).toISOString()};
+}
+export function applyWatchCommand(session, cmd, seen) { if (!session || session.preparing || session.pausedAt !== undefined || !cmd || seen.includes(cmd.id) || cmd.sessionId !== session.id || cmd.action !== 'completeSet')
     return { session, accepted: false }; const clone = structuredClone(session), e = clone.exercises.find(x => x.id === cmd.exerciseId), s = e?.sets.find(x => x.id === cmd.setId); if (!s || s.done)
     return { session, accepted: false }; s.done = true; try {
     validateSession(clone);

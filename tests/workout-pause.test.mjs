@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {applyWatchCommand, closeWorkout, toggleWorkoutPause, workoutElapsedSeconds} from '../src/core.mjs';
+import {applyWatchCommand, beginPreparedWorkout, prepareWorkout, closeWorkout, toggleWorkoutPause, workoutElapsedSeconds} from '../src/core.mjs';
 
 const workout = {
     id:'session', name:'스쿼트', startedAt:new Date(0).toISOString(), restEndsAt:20_000,
@@ -36,4 +36,18 @@ test('a paused workout rejects watch set completion, and resume permits it', () 
     const command = {id:'command',sessionId:'session',exerciseId:'squat',setId:'next',action:'completeSet'};
     assert.equal(applyWatchCommand(paused,command,[]).accepted,false);
     assert.equal(applyWatchCommand(toggleWorkoutPause(paused,12_000),command,[]).accepted,true);
+});
+
+test('preparing a blank workout neither starts nor pauses the clock before the explicit start', () => {
+    const draft = JSON.parse(JSON.stringify({...prepareWorkout(),exercises:workout.exercises}));
+    assert.equal(workoutElapsedSeconds(draft,200_000),0);
+    assert.equal(toggleWorkoutPause(draft,80_000),draft);
+    assert.throws(()=>closeWorkout(draft,90_000),/먼저 운동을 시작/);
+    assert.equal(applyWatchCommand(draft,{id:'watch',sessionId:draft.id,exerciseId:'squat',setId:'next',action:'completeSet'},[]).accepted,false);
+    const started = beginPreparedWorkout(draft,150_000);
+    assert.equal(started.id,draft.id);
+    assert.deepEqual(started.exercises,draft.exercises);
+    assert.equal(started.preparing,undefined);
+    assert.equal(workoutElapsedSeconds(started,154_000),4);
+    assert.equal(beginPreparedWorkout(started,200_000),started);
 });
