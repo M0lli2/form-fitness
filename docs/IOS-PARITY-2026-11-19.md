@@ -343,7 +343,7 @@ HStack {
 
 ```diff
 -      - run: git diff --exit-code c4452e4792243e61ddb1dc84adc3ff63a904ca2c HEAD -- package.json package-lock.json app.json modules plugins
-+      # 네이티브 브리지가 바뀐 커밋(이 PR)을 기준으로 삼는다. 기준 바이너리와 같은 시점이어야 한다.
++      # 네이티브 브리지가 바뀐 커밋(이 PR의 머지 커밋)을 기준으로 삼는다. 기준 바이너리와 같은 시점이어야 한다.
 +      - run: git diff --exit-code <이 PR 머지 커밋 SHA> HEAD -- package.json package-lock.json app.json modules plugins
 ```
 
@@ -392,7 +392,7 @@ Android는 릴리스 APK를 워크플로로 만들고 서명 일치까지 검사
 
 ## 10. GPT로 이어서 작업할 때 체크리스트
 
-1. `git fetch origin && git checkout feat/ios-parity` (또는 머지된 `main`)
+1. `git fetch origin && git checkout feat/ios-parity` (또는 머지된 `main`). PR: <https://github.com/M0lli2/form-fitness/pull/4>
 2. 이 문서의 5절 파일 6개가 실제 코드와 같은지 확인 → 다르면 4절 표로 되돌아가 차이를 다시 판정.
 3. `npm ci --ignore-scripts && npm test && npm run check && npm run typecheck` → 80/80, `OK`, 타입 성공이어야 한다.
 4. 계약을 바꿨다면 `scripts/ios-parity.mjs`의 파서나 `scripts/check-project.mjs`의 `contract` 배열을 **함께** 갱신한다(둘 중 하나만 바꾸면 검사가 실패한다).
