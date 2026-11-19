@@ -1,6 +1,8 @@
 /** FORM 네이티브 앱 진입점. UI는 React Native 뷰이며 WebView를 사용하지 않습니다. */
 import {MotionGuide} from './MotionGuide';
+import {WeeklyVolume} from './WeeklyVolume';
 import {motions} from './motion-guide.mjs';
+import {filterExercises, groupChips, muscleChips, searchExercise} from './muscle-filter.mjs';
 import React, { useEffect, useRef, useState } from 'react';
 import { Alert, AppState, Image, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StatusBar, StyleSheet, Switch, TextInput, View } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
@@ -31,10 +33,7 @@ const pageDescriptions: Record<string,string> = {
     body: '측정값과 결과지를 한곳에 모으세요.',
     settings: '화면, 운동 기본값과 연결 기기를 관리하세요.',
 };
-const matchesExercise = (exercise: Exercise, query: string) => {
-    const haystack = `${exercise.name} ${exercise.muscle} ${exercise.equipment}`.toLocaleLowerCase();
-    return query.trim().toLocaleLowerCase().split(/\s+/).every(term => haystack.includes(term));
-};
+const matchesExercise = (exercise: Exercise, query: string) => searchExercise(exercise, query);
 const hasMotion = (id: string) => Object.prototype.hasOwnProperty.call(motions,id);
 const dateText = (v: string) => new Date(v).toLocaleDateString('ko-KR');
 const clock = (seconds: number) => `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
@@ -58,7 +57,7 @@ function Main({ state, setState }: {
         type: string;
         item?: any;
         fromPicker?: boolean;
-    } | null>(null), [query, setQuery] = useState(''), [muscle, setMuscle] = useState('전체'), [equipment, setEquipment] = useState('전체'), [now, setNow] = useState(Date.now()), [busy, setBusy] = useState(false), [health, setHealth] = useState<any>(null), [watch, setWatch] = useState<any>(null);
+    } | null>(null), [query, setQuery] = useState(''), [muscle, setMuscle] = useState('전체'), [equipment, setEquipment] = useState('전체'), [targets, setTargets] = useState<string[]>([]), [includeSecondary, setIncludeSecondary] = useState(true), [now, setNow] = useState(Date.now()), [busy, setBusy] = useState(false), [health, setHealth] = useState<any>(null), [watch, setWatch] = useState<any>(null);
     const stateRef = useRef(state);
     stateRef.current = state;
     const queue = useRef(Promise.resolve());
@@ -293,8 +292,16 @@ function Main({ state, setState }: {
                     await Notifications.cancelScheduledNotificationAsync(notification.current); }) }])}/></>;
     }
     function library() {
-        const filtered = exercises.filter(e => (muscle === '전체' || e.muscle === muscle)
-            && (equipment === '전체' || e.equipment === equipment) && matchesExercise(e,query));
+        // 큰 부위 이름은 근육 그룹으로, '둔근'·'종아리'·'전신' 같은 나머지 부위명은 운동도감 부위로 걸러냅니다.
+        const group = groupChips().find(g => g.name === muscle);
+        const detailNames = muscleChips().filter(m => targets.includes(m.id)).map(m => m.name);
+        const filtered = filterExercises(exercises, {
+            query,
+            muscles: targets,
+            groups: group ? [group.id] : [],
+            parts: group || muscle === '전체' ? [] : [muscle],
+            includeSecondary,
+        }).filter(e => equipment === '전체' || e.equipment === equipment);
         const filters = (label: string, values: string[], selected: string, onSelect: (value: string) => void) =>
             <View style={s.group}>
                 <Label size={13} bold>{label}</Label>
@@ -303,8 +310,26 @@ function Main({ state, setState }: {
                 </ScrollView>
             </View>;
         return <>
-            <Input value={query} onChangeText={setQuery} placeholder="운동명, 부위, 장비 검색" search/>
-            {filters('부위',['전체',...new Set(exercises.map(e=>e.muscle))],muscle,setMuscle)}
+            <Input value={query} onChangeText={setQuery} placeholder="운동명, 부위, 근육, 장비 검색" search/>
+            {filters('부위', ['전체', ...new Set([...groupChips().map(g => g.name), ...exercises.map(e => e.muscle)])], muscle,
+                value => { setMuscle(value); setTargets([]); })}
+            <View style={s.group}>
+                <View style={s.spread}>
+                    <Label size={13} bold>타깃 근육</Label>
+                    <Pressable accessibilityRole="switch" accessibilityState={{checked: includeSecondary}}
+                        accessibilityLabel={includeSecondary ? '보조근 포함' : '주동근만'}
+                        onPress={() => setIncludeSecondary(value => !value)} style={s.inlineLink}>
+                        <Label size={12} muted>보조근 포함 {includeSecondary ? '✓' : '✗'}</Label>
+                    </Pressable>
+                </View>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+                    <View style={s.row}>{muscleChips().map(m => <Chip key={m.id} title={m.name} active={targets.includes(m.id)}
+                        onPress={() => { setMuscle('전체'); setTargets(value => value.includes(m.id) ? value.filter(id => id !== m.id) : [...value, m.id]); }}/>)}</View>
+                </ScrollView>
+            </View>
+            {(group || detailNames.length > 0) && <Label muted size={12}>
+                {group ? `${group.name} 전체` : detailNames.join(' · ')}{includeSecondary ? ' · 보조근 포함' : ' · 주동근만'}
+            </Label>}
             {filters('장비',['전체',...new Set(exercises.map(e=>e.equipment))],equipment,setEquipment)}
             <View style={s.spread}>
                 <View style={s.flex}><Section title="운동 목록" right={`${filtered.length}개`}/></View>
@@ -339,6 +364,7 @@ function Main({ state, setState }: {
             <Glass><Section title="최근 6주 운동 볼륨" right={unit}/>
                 <BarChart points={weeks.map(w=>({...w,value:displayWeight(w.value)}))} unit={unit}/>
             </Glass>
+            <Glass><WeeklyVolume history={history} unit={unit}/></Glass>
             <Button secondary title="인바디·체성분 기록" onPress={()=>setPage('body')}/>
             <Section title="운동 히스토리" right={`${history.length}개`}/>
             {history.length ? history.map(h => <Pressable key={h.id} accessibilityRole="button" onPress={()=>setModal({type:'history',item:h})}>
