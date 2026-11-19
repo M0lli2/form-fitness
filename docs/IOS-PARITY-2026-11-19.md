@@ -305,6 +305,7 @@ HStack {
 | `npm run check` | `JSON, iOS/Android bridge, health types, watch actions, entitlements and companion identifiers: OK` |
 | `npm run typecheck` (`tsc --noEmit`) | 성공 |
 | `python3 -m py_compile scripts/runtime-smoke.py scripts/runtime-journeys.py` | 성공(변경 없음, CI와 동일 단계) |
+| `python3 scripts/check-apk-pair.py --self-test` | `Certificate parser regression fixtures passed` |
 
 이 환경에는 Xcode/macOS·Android SDK·시뮬레이터가 없어 **Swift/Kotlin 컴파일과 실기기 실행은 로컬에서 확인할 수 없다.** 아래 CI가 그 역할을 한다.
 

@@ -25,6 +25,12 @@ JSON, iOS/Android bridge, health types, watch actions, entitlements and companio
 
 typecheck exit: 0
 
+## python3 -m py_compile scripts/runtime-smoke.py scripts/runtime-journeys.py
+성공(출력 없음, exit 0)
+
+## python3 scripts/check-apk-pair.py --self-test
+Certificate parser regression fixtures passed
+
 ## 검사 항목
 - JSON 자산 파싱(package.json, app.json, tsconfig.json, eas.json, src/exercises.json, expo-module.config.json)
 - iOS/Android AsyncFunction·Events 계약 비교(9개 메서드)
