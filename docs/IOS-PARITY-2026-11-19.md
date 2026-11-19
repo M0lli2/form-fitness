@@ -338,7 +338,9 @@ HStack {
 
 ## 9. 남은 작업 (다음 사람이 그대로 적용할 것)
 
-### 9.1 `Android UI repack regression` 기준 커밋 올리기 — **선행 조건**
+### 9.1 `Android UI repack regression` 기준 커밋 올리기 — **적용 완료 (2026-11-19)**
+
+> 커밋 [`8ba23f1`](https://github.com/M0lli2/form-fitness/commit/8ba23f149ec7e4a4d1a653ec5bdadea04c8c1ad7)에서 적용했습니다. 가드 기준 커밋 `f2b4678`(PR #4 머지 커밋), `run-id` `44502285463`(같은 커밋에서 성공한 `Android runtime smoke`, `form-offline-release` 39,239,433 bytes), provenance `Base native commit` `f2b4678`. 확인 실행: [44504381137](https://github.com/M0lli2/form-fitness/actions/runs/44504381137) — `prepare`·`journeys` 성공. 첫 시도의 `journeys`는 마지막 `adb logcat -d`가 exit 255로 끝나 실패했지만(그 앞 01~05 화면 캡처·UI 프로브는 모두 정상) 재실행에서 통과했습니다. 아래 원문은 이력으로 남깁니다.
 
 이 워크플로의 `prepare` 잡은 `package.json`, `package-lock.json`, `app.json`, `modules`, `plugins`를 **0.2.0 기준 커밋 `c4452e4`와 바이트 비교**한다. 이번 PR은 iOS 네이티브(`modules/form-device/ios`)를 바꿨으므로, 다음에 `src/**`가 push되어 이 워크플로가 실행되면 diff가 생겨 실패한다. 기준을 현재 `main`으로 올려야 한다.
 
