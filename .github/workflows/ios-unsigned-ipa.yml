@@ -112,9 +112,7 @@ jobs:
             EXPANDED_CODE_SIGN_IDENTITY="" \
             DEVELOPMENT_TEAM="" \
             PROVISIONING_PROFILE_SPECIFIER="" \
-            ARCHS=arm64 \
-            ONLY_ACTIVE_ARCH=NO \
-            build | tee xcodebuild-watch.log | tail -n 40
+          build | tee xcodebuild-watch.log | tail -n 40
           APP=build-ipa-watch/Build/Products/Release-iphoneos/Form.app
           test -d "$APP/Watch/FORMWatch.app"
           rm -rf stage-watch && mkdir -p stage-watch/Payload
