@@ -33,7 +33,7 @@ Android 휴대폰 APK는 검증된 베이스에 새 Hermes 번들을 넣어 동�
    ```sh
    npm ci
    npm run ios:prepare
-   open ios/FORM.xcworkspace
+   open ios/Form.xcworkspace
    ```
 
 3. Xcode의 `FORM` 및 `FORMWatch` 타깃에서 같은 개발자 팀으로 자동 서명을 설정합니다. 두 타깃의 버전·빌드 번호를 맞추고, `FORM` 스킴과 일반 iOS 기기 대상을 선택해 **Product → Archive**를 실행합니다.

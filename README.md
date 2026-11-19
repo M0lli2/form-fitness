@@ -1,4 +1,4 @@
-# FORM — Native Fitness Journal
+# Form — 운동 기록
 
 미니멀한 iOS·Android 운동 기록 앱. React Native의 네이티브 뷰, Swift HealthKit 모듈, Kotlin Health Connect 모듈, SwiftUI Apple Watch 앱, Compose Wear OS 앱을 포함합니다. WebView나 PWA를 앱으로 포장하지 않습니다.
 
@@ -8,13 +8,35 @@
 
 WWIT의 Planfit 화면에서 운동을 고르고 세트를 입력하는 흐름을 참고했습니다. 홈, 루틴·세트 기록, 운동도감·자세 안내, 기록·인바디, 설정의 타이포그래피와 조작 요소를 정리했습니다. [UI 변경 내역](docs/WWIT-UI-UPDATE.md) · [로컬 검증](docs/evidence/2026-11-19-local-tests.txt)
 
-## 테스터 피드백 반영
+## 버전별 변경사항
 
-3D 자세 가이드를 22종으로 늘리고, 근육을 눌러 자극 포인트와 수축 단계를 확인할 수 있게 했습니다. 운동 기록에 최근 7일 근육별 운동량 히트맵을 추가했고, 운동도감에는 세부 근육 검색과 보조근 포함 필터를 추가했습니다. 이번 기능은 Android와 iOS의 공유 화면에 반영했습니다.
+| 버전 | 배포·변경 내용 |
+|---|---|
+| 0.2.0 | 앱 표시 이름 **Form**, Android·iOS 빌드 번호 2. 근육 기능을 포함하며 일시정지→계속하기→저장 종료를 검증 경로에 추가했습니다. |
+| 0.1.0 피드백 프리뷰 | 3D 자세 22종, 근육 해부 그래픽과 터치, 주간 근육 볼륨, 운동도감 근육 필터. [Android 프리뷰](https://github.com/M0lli2/form-fitness/releases/tag/preview-2026-11-19-feedback) |
+| 0.1.0 초기 프리뷰 | 운동 기록, 3D 자세 8종, 라이트·다크와 Liquid Glass. [초기 프리뷰](https://github.com/M0lli2/form-fitness/releases/tag/preview-2026-11-19) |
+
+## 기능 사용법
+
+| 기능 | 사용 방법 |
+|---|---|
+| 운동 시작·일시정지·종료 | 루틴 또는 운동도감에서 시작합니다. 일시정지하면 운동 시간과 휴식 타이머가 멈춥니다. 계속하기로 기록을 이어가고 운동 종료에서 완료한 세트를 저장합니다. |
+| 3D 자세·근육 정보 | 운동도감에서 3D 표시가 있는 운동을 열어 재생하거나 8방향으로 회전합니다. 모델의 근육 또는 범례를 누르면 자극 포인트와 자세 팁이 열립니다. |
+| 주간 근육 볼륨 | 기록 화면의 **이번 주 근육 볼륨**에서 최근 7일간 완료한 세트가 어느 근육에 분포했는지 앞면·배면으로 봅니다. |
+| 근육별 운동 검색 | 운동도감의 **타깃 근육**에서 세부 근육을 선택합니다. 보조근 포함 스위치와 장비 필터를 함께 사용할 수 있습니다. |
+| 인바디·건강·워치 | 기록에서 체성분과 결과지 사진을 저장합니다. 내 정보에서 건강 앱 연결과 워치 연결 상태를 확인합니다. |
+
+### 피드백 반영판 실제 화면
+
+아래 화면은 피드백 기능이 처음 적용된 0.1.0 Android 에뮬레이터에서 캡처했습니다. [실행 기록과 원본 이미지](https://github.com/M0lli2/form-fitness/actions/runs/44474655697)
+
+| 운동도감 근육 필터 | 3D 근육 해부 | 회전한 자세 |
+|---|---|---|
+| <img src="docs/screenshots/feedback-android-muscle-filter.png" width="235" alt="운동도감 타깃 근육 필터"> | <img src="docs/screenshots/feedback-android-anatomy.png" width="235" alt="운동 자세 가이드의 근육 레이어"> | <img src="docs/screenshots/feedback-android-anatomy-turned.png" width="235" alt="회전한 운동 자세와 근육 레이어"> |
 
 ## 설치
 
-- **Android·Wear OS** — [11월 19일 초기 프리뷰 다운로드](https://github.com/M0lli2/form-fitness/releases/tag/preview-2026-11-19). 휴대폰 APK에 이번 UI와 3D 가이드를 포함했습니다. Wear OS APK는 동일 서명의 기존 동반 앱입니다. [APK 검증 기록](docs/evidence/2026-11-19-android-apk.txt)
+- **Android·Wear OS** — [0.1.0 초기 프리뷰 다운로드](https://github.com/M0lli2/form-fitness/releases/tag/preview-2026-11-19). 휴대폰 APK에 이번 UI와 3D 가이드를 포함했습니다. Wear OS APK는 동일 서명의 기존 동반 앱입니다. [APK 검증 기록](docs/evidence/2026-11-19-android-apk.txt)
 - **iPhone·Apple Watch** — [TestFlight·등록 기기 설치 방법](docs/INSTALL.md#iphone--apple-watch-설치)
 - [설치 순서와 남은 실기기 검증](docs/INSTALL.md)
 

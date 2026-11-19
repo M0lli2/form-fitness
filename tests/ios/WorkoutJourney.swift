@@ -48,7 +48,10 @@ final class WorkoutJourney: XCTestCase {
         XCTAssertTrue(app.staticTexts["동작 반복 재생 중"].waitForExistence(timeout: 10))
         tap("일시 정지")
         tap("회전")
-        XCTAssertTrue(control("운동 관절과 장비의 3차원 자세, 오른쪽").exists)
+        let rotated = app.descendants(matching: .any).matching(
+            NSPredicate(format: "label BEGINSWITH %@", "운동 관절과 장비의 3차원 자세, 오른쪽")
+        ).firstMatch
+        XCTAssertTrue(rotated.waitForExistence(timeout: 10))
         tap("확대")
         XCTAssertTrue(app.buttons["축소"].exists)
         attach("exercise-library-motion-guide")

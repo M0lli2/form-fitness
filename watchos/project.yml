@@ -12,6 +12,9 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.mori.form.watchkitapp
+        INFOPLIST_KEY_CFBundleDisplayName: Form
+        MARKETING_VERSION: '0.2.0'
+        CURRENT_PROJECT_VERSION: '2'
         SWIFT_VERSION: '5.0'
         GENERATE_INFOPLIST_FILE: YES
         INFOPLIST_KEY_WKCompanionAppBundleIdentifier: com.mori.form

@@ -20,7 +20,7 @@ jobs:
       - run: EAS_BUILD_PLATFORM=ios npm run eas-build-post-install
       - run: ruby scripts/configure-ios-tests.rb
       # Release configuration embeds JS, so no Metro server is needed for launch.
-      - run: xcodebuild -workspace ios/FORM.xcworkspace -scheme FORM -destination 'generic/platform=iOS Simulator' -configuration Release -derivedDataPath build CODE_SIGNING_ALLOWED=YES CODE_SIGN_IDENTITY=- build
+      - run: xcodebuild -workspace ios/Form.xcworkspace -scheme Form -destination 'generic/platform=iOS Simulator' -configuration Release -derivedDataPath build CODE_SIGNING_ALLOWED=YES CODE_SIGN_IDENTITY=- build
       - name: Boot, install and launch
         run: |
           mkdir -p runtime-evidence
@@ -34,7 +34,7 @@ jobs:
           if phone['state'] != 'Booted':
               run('xcrun','simctl','boot',udid)
           run('xcrun','simctl','bootstatus',udid,'-b')
-          app = 'build/Build/Products/Release-iphonesimulator/FORM.app'
+          app = 'build/Build/Products/Release-iphonesimulator/Form.app'
           run('xcrun','simctl','install',udid,app)
           first = run('xcrun','simctl','launch',udid,'com.mori.form').decode()
           time.sleep(15)
@@ -65,7 +65,7 @@ jobs:
       - name: Exercise native navigation and persisted preferences
         run: |
           PHONE=$(xcrun simctl list devices booted --json | python3 -c 'import json,sys; print(next(d["udid"] for ds in json.load(sys.stdin)["devices"].values() for d in ds if d["name"].startswith("iPhone")))')
-          xcodebuild -workspace ios/FORM.xcworkspace -scheme FORMUITests -destination "platform=iOS Simulator,id=$PHONE" -configuration Release -derivedDataPath build -resultBundlePath runtime-evidence/ui-tests.xcresult CODE_SIGNING_ALLOWED=YES CODE_SIGN_IDENTITY=- test
+          xcodebuild -workspace ios/Form.xcworkspace -scheme FORMUITests -destination "platform=iOS Simulator,id=$PHONE" -configuration Release -derivedDataPath build -resultBundlePath runtime-evidence/ui-tests.xcresult CODE_SIGNING_ALLOWED=YES CODE_SIGN_IDENTITY=- test
       - name: Export readable XCTest results
         if: always()
         run: |

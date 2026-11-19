@@ -1,8 +1,8 @@
 # Add a UI-only test target to the generated project; never ship test code in FORM.
 require 'xcodeproj'
-project_path = 'ios/FORM.xcodeproj'
+project_path = 'ios/Form.xcodeproj'
 project = Xcodeproj::Project.open(project_path)
-phone = project.targets.find { |target| target.name == 'FORM' }
+phone = project.targets.find { |target| target.name == 'Form' }
 abort 'FORM target missing' unless phone
 tests = project.targets.find { |target| target.name == 'FORMUITests' }
 unless tests

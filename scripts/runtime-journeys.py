@@ -86,6 +86,7 @@ try:
     root = wait_for("새 루틴", "20-routines")
     tap_exact("운동도감", root)
     root = wait_for("운동 목록", "21-library")
+    root = wait_for("타깃 근육", "21-muscle-filter")
     # Choose the first catalog exercise by its observed UI name.
     catalog = json.loads(open("src/exercises.json", encoding="utf-8").read())
     exercise = catalog["exercises"][0]["name"]
@@ -109,10 +110,14 @@ try:
     root = seek("세트 완료", "25-workout")
     tap_exact("세트 완료", root)
     root = wait_for("2번째 세트", "26-completed-set")
-    root = seek("전체 운동 목록", "27-workout-list")
-    tap_exact("전체 운동 목록", root)
-    root = seek("운동 마치고 저장", "28-save")
-    tap_exact("운동 마치고 저장", root)
+    root = seek("일시정지", "27-pause")
+    tap_exact("일시정지", root)
+    root = wait_for("일시정지됨", "27-workout-paused")
+    tap_exact("계속하기", root)
+    root = seek("운동 종료", "28-stop")
+    tap_exact("운동 종료", root)
+    root = wait_for("저장하고 종료", "28-stop-confirmation")
+    tap_exact("저장하고 종료", root)
     root = wait_for("오늘의 운동을 기록했습니다", "29-saved-alert")
     # React Native confirmation alerts are not necessarily cancelable with Android Back.
     for label in ("확인", "OK"):
@@ -122,6 +127,7 @@ try:
     else:
         raise AssertionError("Saved-workout confirmation button missing")
     root = wait_for("최근 6주 운동 볼륨", "30-history")
+    root = seek("이번 주 근육 볼륨", "30-muscle-heatmap")
     root = seek(exercise, "31-history-entry")
     results.append("exercise guide -> completed set -> saved workout is visible in history")
     adb("shell", "am", "force-stop", PACKAGE)

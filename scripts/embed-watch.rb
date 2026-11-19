@@ -2,10 +2,12 @@
 # Run after expo prebuild on macOS. Idempotent; does not add signing identities or certificates.
 require 'xcodeproj'
 require 'pathname'
+require 'json'
+app = JSON.parse(File.read(File.expand_path('../app.json', __dir__))).fetch('expo')
 
-path = ARGV.fetch(0, 'ios/FORM.xcodeproj')
+path = ARGV.fetch(0, 'ios/Form.xcodeproj')
 project = Xcodeproj::Project.open(path)
-phone = project.targets.find { |target| target.name == 'FORM' }
+phone = project.targets.find { |target| target.name == 'Form' }
 abort 'FORM iOS target was not generated' unless phone
 watch = project.targets.find { |target| target.name == 'FORMWatch' }
 unless watch
@@ -22,7 +24,7 @@ watch.build_configurations.each do |configuration|
     'PRODUCT_NAME' => 'FORMWatch',
     'SWIFT_VERSION' => '5.0',
     'GENERATE_INFOPLIST_FILE' => 'YES',
-    'INFOPLIST_KEY_CFBundleDisplayName' => 'FORM',
+    'INFOPLIST_KEY_CFBundleDisplayName' => app.fetch('name'),
     'INFOPLIST_KEY_WKCompanionAppBundleIdentifier' => 'com.mori.form',
     'INFOPLIST_KEY_WKApplication' => 'YES',
     'INFOPLIST_KEY_WKRunsIndependentlyOfCompanionApp' => 'YES',
@@ -34,8 +36,8 @@ watch.build_configurations.each do |configuration|
     'SDKROOT' => 'watchos',
     'SUPPORTED_PLATFORMS' => 'watchos watchsimulator',
     'WATCHOS_DEPLOYMENT_TARGET' => '10.0',
-    'MARKETING_VERSION' => '0.1.0',
-    'CURRENT_PROJECT_VERSION' => '1',
+    'MARKETING_VERSION' => app.fetch('version'),
+    'CURRENT_PROJECT_VERSION' => app.fetch('ios').fetch('buildNumber'),
     'SKIP_INSTALL' => 'YES'
   })
 end
@@ -51,6 +53,6 @@ end
 project.save
 # Reopen saved output to verify the target dependency and embed phase survived serialization.
 saved = Xcodeproj::Project.open(path)
-abort 'Watch embed verification failed' unless saved.targets.find { |target| target.name == 'FORM' }
+abort 'Watch embed verification failed' unless saved.targets.find { |target| target.name == 'Form' }
   .copy_files_build_phases.any? { |item| item.name == 'Embed Watch Content' && !item.files.empty? }
 puts 'FORMWatch companion target and Embed Watch Content configured'

@@ -3,7 +3,7 @@ name: Android runtime smoke
 on:
   workflow_dispatch:
   push:
-    paths: ['.github/workflows/runtime-smoke.yml', 'scripts/runtime-smoke.py', 'modules/**', 'plugins/**', 'package*.json', 'src/**', 'src/core.mjs']
+    paths: ['.github/workflows/runtime-smoke.yml', 'scripts/runtime-smoke.py', 'app.json', 'modules/**', 'plugins/**', 'package*.json', 'src/**', 'src/core.mjs']
 concurrency:
   group: android-runtime-${{ github.ref }}
   cancel-in-progress: true
