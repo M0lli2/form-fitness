@@ -84,6 +84,25 @@ try:
     root = selected("라이트", "12-light")
     tap_exact("다크", root)
     root = selected("다크", "13-dark")
+    # Keep both settings away from the floating tabs when checking their horizontal alignment.
+    adb("shell", "input", "swipe", str(viewport_width//2), str(int(viewport_height*.80)),
+        str(viewport_width//2), str(int(viewport_height*.43)), "460")
+    time.sleep(.6)
+    root = seek("휴식 시간 늘리기", "13-settings-steppers")
+    def horizontal_bounds(label):
+        node = find(root, label)
+        if node is None:
+            raise AssertionError("Missing stepper control: " + label)
+        left, _, right, _ = map(int, re.findall(r"\d+", node.get("bounds", "")))
+        return (left, right)
+    for suffix in (" 줄이기", " 늘리기"):
+        if horizontal_bounds("주간 목표" + suffix) != horizontal_bounds("휴식 시간" + suffix):
+            raise AssertionError("Stepper button columns are misaligned: " + suffix)
+    results.append("weekly goal and rest duration stepper buttons align horizontally")
+    # Return to the appearance controls to continue the original persistence journey.
+    adb("shell", "input", "swipe", str(viewport_width//2), str(int(viewport_height*.30)),
+        str(viewport_width//2), str(int(viewport_height*.85)), "350")
+    root = wait_for("Liquid Glass 효과", "13-appearance-restored")
     tap_exact("Liquid Glass 효과", root)
     root = selected("Liquid Glass 효과", "14-dark-glass", "checked")
     # Confirm persistence with a real write and a killed process, not just another home launch.

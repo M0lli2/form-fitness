@@ -4,7 +4,7 @@ import {WeeklyVolume} from './WeeklyVolume';
 import {motions} from './motion-guide.mjs';
 import {filterExercises, groupChips, muscleChips, searchExercise} from './muscle-filter.mjs';
 import React, { useEffect, useRef, useState } from 'react';
-import { Alert, AppState, Image, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StatusBar, StyleSheet, Switch, TextInput, View } from 'react-native';
+import { Alert, AppState, Image, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StatusBar, StyleSheet, Switch, TextInput, useWindowDimensions, View } from 'react-native';
 import { SafeAreaProvider, SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
@@ -473,7 +473,7 @@ function Main({ state, setState }: {
         </>;
     }
     /** 사용자 선택 없이 권한 팝업이나 건강 읽기를 시작하지 않습니다. */
-    function settings() { return <><Glass><Section title="화면 스타일"/><View style={s.metrics}>{[['system', '시스템'], ['light', '라이트'], ['dark', '다크']].map(([key, label]) => <Chip key={key} title={label} active={state.settings.theme === key} onPress={() => change(x => ({ ...x, settings: { ...x.settings, theme: key as any } }))}/>)}</View><View style={s.spread}><Label>Liquid Glass</Label><Switch accessibilityLabel="Liquid Glass 효과" value={state.settings.glass} onValueChange={glass => change(x => ({ ...x, settings: { ...x.settings, glass } }))}/></View><View style={s.spread}><Label>투명도 줄이기</Label><Switch accessibilityLabel="투명도 줄이기" value={state.settings.contrast} onValueChange={contrast => change(x => ({ ...x, settings: { ...x.settings, contrast } }))}/></View><Label muted size={13}>탭과 조작 영역에 유리 효과를 적용합니다. 투명도 줄이기를 켜면 단색을 사용합니다.</Label></Glass><Glass><Section title="운동 설정"/><View style={s.spread}><Label>무게 표시</Label><View style={s.row}>{['kg', 'lb'].map(u => <Chip key={u} title={u} active={unit === u} onPress={() => change(x => ({ ...x, settings: { ...x.settings, units: u as any } }))}/>)}</View></View><View style={s.spread}><Label>주간 목표</Label><Stepper value={state.settings.goal} min={1} max={7} onChange={goal => change(x => ({ ...x, settings: { ...x.settings, goal } }))}/></View><View style={s.spread}><Label>휴식 시간 (초)</Label><Stepper value={state.settings.rest} min={15} max={600} step={15} onChange={rest => change(x => ({ ...x, settings: { ...x.settings, rest } }))}/></View><Button secondary title="휴식 알림 권한 설정" onPress={() => run(async () => { const p = await Notifications.requestPermissionsAsync(); Alert.alert(p.granted ? '알림이 허용되었습니다' : '알림이 허용되지 않았습니다'); })}/></Glass><Glass><Section title={Platform.OS === 'ios' ? 'Apple 건강 · 피트니스' : 'Health Connect · Samsung Health'}/><Label muted size={12}>읽기: 걸음·심박·체중·체지방·최근 30일 운동. 쓰기: 선택한 운동·체중·체지방. 기기 및 앱이 공유하는 데이터만 표시됩니다.</Label><Button disabled={busy} title={health ? "건강 데이터 다시 연결" : "건강 앱 연결"} onPress={() => run(async () => { setHealth(await connectHealth()); await change(x => ({ ...x, settings: { ...x.settings, health: true } })); })}/>{health && <><Label>오늘 걸음 {health.steps ?? '데이터 없음'} · 최근 심박 {health.heartRate ?? '—'} bpm</Label><Label>체중 {health.weight ?? '—'} kg · 체지방 {health.bodyFat ?? '—'}%</Label><Label muted size={11}>권한 거부와 데이터 부재는 iOS에서 구분할 수 없습니다.</Label>{health.workouts?.slice(0, 5).map((h: any) => <Label key={h.id} muted size={11}>{dateText(h.start)} · {h.name}</Label>)}<Button secondary title="새로고침" onPress={() => run(async () => setHealth(await readHealth()))}/></>}<Label muted size={11}>피트니스 링은 Apple이 실제 측정 데이터와 정책에 따라 반영합니다. 골격근량은 건강 앱 제지방량으로 내보내지 않습니다.</Label></Glass><Glass><Section title={Platform.OS === 'ios' ? 'Apple Watch' : 'Galaxy Watch · Wear OS'}/><Label muted size={12}>동일한 앱을 워치에도 설치해야 합니다. Galaxy Watch4 이후 Wear OS 기기가 대상이며 Tizen 기기는 지원하지 않습니다.</Label><Button secondary title="워치 연결 확인" onPress={() => run(async () => setWatch(await Device.watchStatus()))}/>{watch && <Label>{watch.connected ? '워치와 연결되어 있습니다.' : watch.paired ? '페어링됨 · 현재 연결 대기' : '연결된 워치 앱이 없습니다.'}</Label>}<Label muted size={13}>워치에서 다음 세트를 확인하고 완료를 기록할 수 있습니다.</Label></Glass><Glass><Section title="내 데이터"/><Button secondary title="인바디·체성분 기록" onPress={()=>setPage('body')}/><Button secondary title="백업 파일 내보내기" onPress={() => Alert.alert('백업 파일', '백업은 암호화되지 않은 건강 기록을 포함합니다. 결과지 사진은 제외됩니다. 안전한 위치에 저장하세요.', [{ text: '취소' }, { text: '내보내기', onPress: () => run(async () => { const path = FS.cacheDirectory + 'form-backup.json'; await FS.writeAsStringAsync(path, JSON.stringify({ ...state, active: null, body: state.body.map(x => ({ ...x, photo: null })) }, null, 2)); await Sharing.shareAsync(path, { mimeType: 'application/json' }); }) }])}/><Button secondary title="백업 가져오기" onPress={() => run(async () => { const file = await DocumentPicker.getDocumentAsync({ type: 'application/json', copyToCacheDirectory: true }); if (file.canceled)
+    function settings() { return <><Glass><Section title="화면 스타일"/><View style={s.metrics}>{[['system', '시스템'], ['light', '라이트'], ['dark', '다크']].map(([key, label]) => <Chip key={key} title={label} active={state.settings.theme === key} onPress={() => change(x => ({ ...x, settings: { ...x.settings, theme: key as any } }))}/>)}</View><View style={s.spread}><Label>Liquid Glass</Label><Switch accessibilityLabel="Liquid Glass 효과" value={state.settings.glass} onValueChange={glass => change(x => ({ ...x, settings: { ...x.settings, glass } }))}/></View><View style={s.spread}><Label>투명도 줄이기</Label><Switch accessibilityLabel="투명도 줄이기" value={state.settings.contrast} onValueChange={contrast => change(x => ({ ...x, settings: { ...x.settings, contrast } }))}/></View><Label muted size={13}>탭과 조작 영역에 유리 효과를 적용합니다. 투명도 줄이기를 켜면 단색을 사용합니다.</Label></Glass><Glass><Section title="운동 설정"/><View style={s.spread}><Label>무게 표시</Label><View style={s.row}>{['kg', 'lb'].map(u => <Chip key={u} title={u} active={unit === u} onPress={() => change(x => ({ ...x, settings: { ...x.settings, units: u as any } }))}/>)}</View></View><View style={s.settingStepperRow}><Label style={s.flex}>주간 목표</Label><Stepper name="주간 목표" value={state.settings.goal} min={1} max={7} onChange={goal => change(x => ({ ...x, settings: { ...x.settings, goal } }))}/></View><View style={s.settingStepperRow}><Label style={s.flex}>휴식 시간 (초)</Label><Stepper name="휴식 시간" value={state.settings.rest} min={15} max={600} step={15} onChange={rest => change(x => ({ ...x, settings: { ...x.settings, rest } }))}/></View><Button secondary title="휴식 알림 권한 설정" onPress={() => run(async () => { const p = await Notifications.requestPermissionsAsync(); Alert.alert(p.granted ? '알림이 허용되었습니다' : '알림이 허용되지 않았습니다'); })}/></Glass><Glass><Section title={Platform.OS === 'ios' ? 'Apple 건강 · 피트니스' : 'Health Connect · Samsung Health'}/><Label muted size={12}>읽기: 걸음·심박·체중·체지방·최근 30일 운동. 쓰기: 선택한 운동·체중·체지방. 기기 및 앱이 공유하는 데이터만 표시됩니다.</Label><Button disabled={busy} title={health ? "건강 데이터 다시 연결" : "건강 앱 연결"} onPress={() => run(async () => { setHealth(await connectHealth()); await change(x => ({ ...x, settings: { ...x.settings, health: true } })); })}/>{health && <><Label>오늘 걸음 {health.steps ?? '데이터 없음'} · 최근 심박 {health.heartRate ?? '—'} bpm</Label><Label>체중 {health.weight ?? '—'} kg · 체지방 {health.bodyFat ?? '—'}%</Label><Label muted size={11}>권한 거부와 데이터 부재는 iOS에서 구분할 수 없습니다.</Label>{health.workouts?.slice(0, 5).map((h: any) => <Label key={h.id} muted size={11}>{dateText(h.start)} · {h.name}</Label>)}<Button secondary title="새로고침" onPress={() => run(async () => setHealth(await readHealth()))}/></>}<Label muted size={11}>피트니스 링은 Apple이 실제 측정 데이터와 정책에 따라 반영합니다. 골격근량은 건강 앱 제지방량으로 내보내지 않습니다.</Label></Glass><Glass><Section title={Platform.OS === 'ios' ? 'Apple Watch' : 'Galaxy Watch · Wear OS'}/><Label muted size={12}>동일한 앱을 워치에도 설치해야 합니다. Galaxy Watch4 이후 Wear OS 기기가 대상이며 Tizen 기기는 지원하지 않습니다.</Label><Button secondary title="워치 연결 확인" onPress={() => run(async () => setWatch(await Device.watchStatus()))}/>{watch && <Label>{watch.connected ? '워치와 연결되어 있습니다.' : watch.paired ? '페어링됨 · 현재 연결 대기' : '연결된 워치 앱이 없습니다.'}</Label>}<Label muted size={13}>워치에서 다음 세트를 확인하고 완료를 기록할 수 있습니다.</Label></Glass><Glass><Section title="내 데이터"/><Button secondary title="인바디·체성분 기록" onPress={()=>setPage('body')}/><Button secondary title="백업 파일 내보내기" onPress={() => Alert.alert('백업 파일', '백업은 암호화되지 않은 건강 기록을 포함합니다. 결과지 사진은 제외됩니다. 안전한 위치에 저장하세요.', [{ text: '취소' }, { text: '내보내기', onPress: () => run(async () => { const path = FS.cacheDirectory + 'form-backup.json'; await FS.writeAsStringAsync(path, JSON.stringify({ ...state, active: null, body: state.body.map(x => ({ ...x, photo: null })) }, null, 2)); await Sharing.shareAsync(path, { mimeType: 'application/json' }); }) }])}/><Button secondary title="백업 가져오기" onPress={() => run(async () => { const file = await DocumentPicker.getDocumentAsync({ type: 'application/json', copyToCacheDirectory: true }); if (file.canceled)
         return; const parsed = validateBackup(JSON.parse(await FS.readAsStringAsync(file.assets[0].uri))); Alert.alert('백업 병합', '동일한 ID는 현재 기록을 유지하고, 새로운 기록만 가져옵니다.', [{ text: '취소' }, { text: '병합', onPress: () => change(x => ({ ...x, history: [...x.history, ...parsed.history.filter((h: Session) => !x.history.some(a => a.id === h.id))], body: [...x.body, ...parsed.body.filter((h: BodyEntry) => !x.body.some(a => a.id === h.id)).map((h: BodyEntry) => ({ ...h, photo: null }))], customExercises: [...(x.customExercises ?? []), ...(parsed.customExercises ?? []).filter((e: Exercise) => !(x.customExercises ?? []).some(a => a.id === e.id))], routines: [...x.routines, ...parsed.routines.filter((r: any) => !x.routines.some(a => a.id === r.id))] })) }]); })}/><Button secondary danger title="이 기기의 앱 기록 삭제" onPress={() => Alert.alert('앱 기록 삭제', '이 기기의 운동·체성분 기록을 삭제합니다. 건강 앱에 내보낸 기록은 해당 앱에서 별도로 삭제해야 합니다.', [{ text: '취소' }, { text: '삭제', style: 'destructive', onPress: () => run(async () => { await change(() => freshState()); if (notification.current)
                 await Notifications.cancelScheduledNotificationAsync(notification.current); const folder = FS.documentDirectory + 'inbody/'; await FS.deleteAsync(folder, { idempotent: true }); }) }])}/><Label muted size={11}>건강 데이터는 암호화된 로컬 DB에 저장됩니다. 사진은 앱 전용 폴더에 저장되며 별도 파일 암호화는 적용하지 않았습니다. 로그인·서버·광고 SDK는 없습니다.</Label></Glass></>; }
     // A focused workout owns its scroll region; its controls must remain above the tab bar.
@@ -540,13 +540,36 @@ function Numeric({ value, label, onChange }: {
     onChange(n);
 else
     setText(String(value)); }} style={[s.input, s.flex, { color: colors.ink, borderColor: colors.line, textAlign: 'center' }]}/>; }
-function Stepper({ value, min, max, step = 1, onChange }: {
-    value: number;
-    min: number;
-    max: number;
-    step?: number;
-    onChange: (n: number) => void;
-}) { return <View style={s.row}><Button secondary title="−" disabled={value <= min} onPress={() => onChange(Math.max(min, value - step))}/><Label>{value}</Label><Button secondary title="+" disabled={value >= max} onPress={() => onChange(Math.min(max, value + step))}/></View>; }
+/** Both preferences share the same number column, even when one value has more digits. */
+function Stepper({name,value,min,max,step=1,onChange}: {
+    name:string;
+    value:number;
+    min:number;
+    max:number;
+    step?:number;
+    onChange:(value:number)=>void;
+}) {
+    const {colors} = useTheme();
+    const {fontScale} = useWindowDimensions();
+    const valueWidth = Math.max(44,Math.ceil(36*fontScale));
+    return <View style={s.stepper}>
+        {[-1,1].map(direction => {
+            const decreasing=direction<0;
+            const disabled=decreasing?value<=min:value>=max;
+            return <React.Fragment key={direction}>
+                {!decreasing && <View style={[s.stepperValue,{width:valueWidth}]}>
+                    <Label style={s.figure}>{value}</Label>
+                </View>}
+                <Pressable accessibilityRole="button" accessibilityLabel={name+(decreasing?' 줄이기':' 늘리기')}
+                    accessibilityState={{disabled}} disabled={disabled}
+                    onPress={()=>onChange(Math.max(min,Math.min(max,value+direction*step)))}
+                    style={({pressed})=>[s.stepperButton,{backgroundColor:colors.soft,opacity:disabled ? .4 : pressed ? .75 : 1}]}>
+                    <Label bold size={17}>{decreasing?'−':'+'}</Label>
+                </Pressable>
+            </React.Fragment>;
+        })}
+    </View>;
+}
 /** Shared exercise rows keep the picker and catalog aligned. */
 function ExerciseRow({exercise,onPress}: {exercise:Exercise;onPress:()=>void}) {
     const {colors} = useTheme();
@@ -636,6 +659,10 @@ catch (e) {
 } }}/>{item && <Button secondary title="저장된 체중·체지방을 건강 앱에 내보내기" onPress={() => onExport(item)}/>}</>; }
 const tabPressBounds = {top:0,right:0,bottom:0,left:0};
 const s = StyleSheet.create({
+    settingStepperRow:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:12},
+    stepper:{flexDirection:'row',alignItems:'center',gap:8},
+    stepperButton:{width:46,minHeight:50,borderRadius:15,alignItems:'center',justifyContent:'center',paddingVertical:6},
+    stepperValue:{alignItems:'center',justifyContent:'center'},
     pageTitle:{gap:5,marginBottom:4},
     group:{gap:7},
     listCard:{paddingHorizontal:14,paddingVertical:8,gap:0},
