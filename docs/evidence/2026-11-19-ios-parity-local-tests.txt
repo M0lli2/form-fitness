@@ -1,0 +1,40 @@
+# 2026-11-19 iOS 동기화 로컬 검증 기록
+
+실행 환경: Linux(작업 환경), Node v22.14.0, npm 10.9.2, Python 3.12.16
+저장소: M0lli2/form-fitness, 브랜치 feat/ios-parity
+
+## npm test
+1..80
+# tests 80
+# suites 0
+# pass 80
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1596.288791
+
+## npm run check
+> node scripts/check-project.mjs
+
+JSON, iOS/Android bridge, health types, watch actions, entitlements and companion identifiers: OK
+
+## npm run typecheck
+> form-native@0.1.0 typecheck
+> tsc --noEmit
+
+typecheck exit: 0
+
+## python3 -m py_compile scripts/runtime-smoke.py scripts/runtime-journeys.py
+성공(출력 없음, exit 0)
+
+## python3 scripts/check-apk-pair.py --self-test
+Certificate parser regression fixtures passed
+
+## 검사 항목
+- JSON 자산 파싱(package.json, app.json, tsconfig.json, eas.json, src/exercises.json, expo-module.config.json)
+- iOS/Android AsyncFunction·Events 계약 비교(9개 메서드)
+- 건강 레코드 종류 대응(Steps/HeartRate/Weight/BodyFat/ExerciseSession)
+- 심박 30일 창, 워치 액션(completeSet/workoutFinished), 유산소 초 표시
+- app.json iOS Info.plist 사용 설명·HealthKit 엔타이틀먼트, watchOS 엔타이틀먼트
+- Android 권한 9종, 동반 앱 식별자(com.mori.form)

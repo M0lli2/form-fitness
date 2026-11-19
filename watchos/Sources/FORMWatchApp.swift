@@ -17,13 +17,22 @@ struct WatchHome: View {
         if model.running {
           Text("근력 트레이닝").font(.headline)
           Text(model.start, style: .timer).font(.title2.monospacedDigit())
-          HStack { Text("♥ \(Int(model.heartRate))"); Text("\(Int(model.energy)) kcal") }.font(.caption)
+          // Wear OS와 같이 심박이 아직 없으면 0이 아니라 측정 대기를 표시합니다.
+          HStack {
+            Text(model.heartRate > 0 ? "♥ \(Int(model.heartRate)) bpm" : "심박 측정 대기")
+            Text("\(Int(model.energy)) kcal")
+          }.font(.caption)
           Button(model.paused ? "계속" : "일시정지") { model.togglePause() }
           Button("운동 마치고 저장") { model.end() }.tint(.green).disabled(model.saving)
         } else {
           if let next = model.next, let name = next["exerciseName"] as? String {
             Text(name).font(.headline)
-            Text("\(next["weight"] as? Double ?? 0, specifier: "%.1f") kg × \(next["reps"] as? Int ?? 0)회").font(.caption)
+            // 유산소·아이소메트릭 세트는 중량 대신 시간으로 표시합니다(Wear OS와 동일).
+            if next["type"] as? String == "strength" {
+              Text("\(next["weight"] as? Double ?? 0, specifier: "%.1f") kg × \(next["reps"] as? Int ?? 0)회").font(.caption)
+            } else {
+              Text("\(next["seconds"] as? Int ?? 0)초").font(.caption)
+            }
             if let rest = model.restEnd, rest > Date() { Text(rest, style: .timer).foregroundStyle(.green) }
             Button("세트 완료 ✓") { model.completeSet() }.tint(.green).disabled(model.sentSet == next["setId"] as? String)
             Text("휴대폰 입력값으로 기록됩니다.").font(.system(size: 10)).foregroundStyle(.secondary)

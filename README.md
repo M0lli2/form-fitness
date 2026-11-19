@@ -8,6 +8,8 @@
 
 WWIT의 Planfit 화면에서 운동을 고르고 세트를 입력하는 흐름을 참고했습니다. 홈, 루틴·세트 기록, 운동도감·자세 안내, 기록·인바디, 설정의 타이포그래피와 조작 요소를 정리했습니다. [UI 변경 내역](docs/WWIT-UI-UPDATE.md) · [로컬 검증](docs/evidence/2026-11-19-local-tests.txt)
 
+iOS를 Android와 같은 기능으로 맞춘 감사·변경 기록: [iOS 동기화 기록](docs/IOS-PARITY-2026-11-19.md)
+
 ## 버전별 변경사항
 
 | 버전 | 배포·변경 내용 |
