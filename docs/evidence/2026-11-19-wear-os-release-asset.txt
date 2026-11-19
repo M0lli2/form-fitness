@@ -1,0 +1,38 @@
+Wear OS APK 릴리스 자산 검증 — 2026-11-19 (KST)
+대상: M0lli2/form-fitness v0.2.0 릴리스에 추가한 Form-0.2.0-Wear-OS.apk
+
+[출처]
+워크플로: Native build validation (44476921135), 커밋 c4452e4792243e61ddb1dc84adc3ff63a904ca2c, 성공
+잡: android
+아티팩트: form-paired-wearos-debug (id 14506873142, 8,146,536 bytes 압축)
+원본 경로: wearos/app/build/outputs/apk/debug/app-debug.apk (23,184,400 bytes)
+선택 이유: 이 잡은 -PformDebugKeystore로 휴대폰 디버그 키스토어를 넘겨 워치 APK를 서명하고,
+check-apk-pair.py로 휴대폰 APK와 인증서 일치를 검사한 뒤 업로드한다.
+제외: form-wearos-debug (id 14507110721, 44476921135의 wearos 잡) — 자체 디버그 키스토어로 서명해
+인증서가 휴대폰과 다르다(df62fac39f8a9c49ce61a53262f65a6aa9e93bc93a7c598f499e4bf7d2f5852e).
+
+[자산]
+이름: Form-0.2.0-Wear-OS.apk
+크기: 23,184,400 bytes
+SHA-256: d4371e9ee51aff61744e26d73aceb812e1407b68ad6ba9ae3e852fa1a59b8978
+릴리스에서 다시 내려받은 파일의 SHA-256이 위 값과 일치했다.
+이름 규칙: gh release upload는 자산 이름을 파일명에서 가져오므로, 표시 이름으로 올린 첫 시도는
+app-debug.apk로 등록되어 삭제하고 파일명을 Form-0.2.0-Wear-OS.apk로 바꿔 다시 올렸다.
+현재 v0.2.0 자산은 Form-0.2.0-Android.apk(99,009,409)와 Form-0.2.0-Wear-OS.apk 두 개다.
+
+[서명]
+APK Signature Scheme v2 블록에서 서명 인증서 DER을 꺼내 SHA-256을 계산했다(이 환경에는 apksigner 없음).
+Form-0.2.0-Wear-OS.apk: fac61745dc0903786fb9ede62a962b399f7348f0bb6f899b8332667591033b9c
+Form-0.2.0-Android.apk: fac61745dc0903786fb9ede62a962b399f7348f0bb6f899b8332667591033b9c
+두 파일의 서명 인증서가 같다. 44476921197의 paired-evidence/certificates.txt에 기록된 휴대폰 APK
+인증서(fac61745…)와도 같은 값이다.
+
+[매니페스트 — 바이너리 AndroidManifest.xml 직접 파싱]
+Form-0.2.0-Wear-OS.apk: package com.mori.form, versionCode 2, versionName 0.2.0,
+  uses-feature android.hardware.type.watch, meta-data com.google.android.wearable.standalone=true,
+  minSdk 30, targetSdk 36
+Form-0.2.0-Android.apk: package com.mori.form, versionCode 2, versionName 0.2.0, minSdk 28, targetSdk 36
+ZIP 무결성: 워치 168개 항목, 휴대폰 1009개 항목, 손상 0
+
+[미검증]
+Galaxy Watch 실기기 설치·페어링, 워치 리모컨의 실제 데이터 전달, 독립 운동, 백그라운드 심박.
