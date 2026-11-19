@@ -15,7 +15,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - run: git diff --exit-code c4452e4792243e61ddb1dc84adc3ff63a904ca2c HEAD -- package.json package-lock.json app.json modules plugins
+      - run: git diff --exit-code f2b4678805515283a5b073d810fd189e7e0da153 HEAD -- package.json package-lock.json app.json modules plugins
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
@@ -29,7 +29,7 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           name: form-offline-release
-          run-id: 44476921003
+          run-id: 44502285463
           github-token: ${{ secrets.GITHUB_TOKEN }}
           path: base-apk/
       - run: npm ci --ignore-scripts
@@ -40,7 +40,7 @@ jobs:
           npm view @expo/repack-app version > repack-evidence/tool-version.txt
           VERSION=$(cat repack-evidence/tool-version.txt)
           npx --yes "@expo/repack-app@$VERSION" --platform android --source-app base-apk/app-release.apk --output repack-out/app-release.apk --js-bundle-only --embed-bundle-assets --ks android/app/debug.keystore --ks-key-alias androiddebugkey --ks-pass pass:android --ks-key-pass pass:android
-          echo 'Base native commit: c4452e4792243e61ddb1dc84adc3ff63a904ca2c' > repack-evidence/provenance.txt
+          echo 'Base native commit: f2b4678805515283a5b073d810fd189e7e0da153' > repack-evidence/provenance.txt
           git rev-parse HEAD >> repack-evidence/provenance.txt
       - run: gradle -p tools/ui-probe assembleDebug
       - uses: actions/upload-artifact@v4
