@@ -1,0 +1,145 @@
+# Unsigned arm64 .ipa for free-Apple-ID sideloading (Sideloadly / AltStore).
+# Uses no certificates, provisioning profiles, or paid Apple Developer account.
+name: iOS unsigned IPA
+on:
+  workflow_dispatch:
+    inputs:
+      include_watch:
+        description: 'Also build a variant with the watchOS companion embedded (best effort)'
+        type: boolean
+        default: true
+      release_tag:
+        description: 'Existing release tag to attach the .ipa to (empty = workflow artifact only)'
+        required: false
+        default: ''
+permissions:
+  contents: write
+jobs:
+  ipa:
+    runs-on: macos-15
+    timeout-minutes: 90
+    env:
+      APP_NAME: Form
+      VERSION: 0.2.0
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Toolchain
+        run: |
+          xcodebuild -version
+          xcode-select -p
+          node -v
+          (pod --version || true)
+      - run: npm ci
+      - name: Expo prebuild (iOS)
+        run: npx expo prebuild --platform ios --non-interactive
+      - name: Build Form.app (Release, iphoneos arm64, unsigned)
+        run: |
+          set -o pipefail
+          xcodebuild \
+            -workspace ios/Form.xcworkspace \
+            -scheme Form \
+            -configuration Release \
+            -destination 'generic/platform=iOS' \
+            -derivedDataPath build-ipa \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            EXPANDED_CODE_SIGN_IDENTITY="" \
+            DEVELOPMENT_TEAM="" \
+            PROVISIONING_PROFILE_SPECIFIER="" \
+            ARCHS=arm64 \
+            ONLY_ACTIVE_ARCH=NO \
+            build | tee xcodebuild-phone.log | tail -n 40
+      - name: Package and verify unsigned .ipa
+        run: |
+          set -euo pipefail
+          APP=build-ipa/Build/Products/Release-iphoneos/Form.app
+          test -d "$APP"
+          test -f "$APP/Form"
+          rm -rf stage && mkdir -p stage/Payload
+          cp -R "$APP" stage/Payload/
+          rm -rf stage/Payload/Form.app/_CodeSignature stage/Payload/Form.app/embedded.mobileprovision
+          (cd stage && zip -qry "../Form-${VERSION}-iOS-unsigned.ipa" Payload)
+          test -f "Form-${VERSION}-iOS-unsigned.ipa"
+
+          echo "=== binary ==="
+          file stage/Payload/Form.app/Form
+          lipo -info stage/Payload/Form.app/Form
+          echo "=== identity ==="
+          plutil -extract CFBundleIdentifier raw stage/Payload/Form.app/Info.plist
+          plutil -extract CFBundleVersion raw stage/Payload/Form.app/Info.plist
+          plutil -extract MinimumOSVersion raw stage/Payload/Form.app/Info.plist
+          echo "=== signing state (expected: not signed) ==="
+          codesign -dv stage/Payload/Form.app 2>&1 || true
+          echo "=== bundle layout ==="
+          ls stage/Payload/Form.app | head -n 20
+          echo "=== ipa contents (top) ==="
+          unzip -l "Form-${VERSION}-iOS-unsigned.ipa" | head -n 12
+          sha256sum "Form-${VERSION}-iOS-unsigned.ipa" | tee SHA256SUMS
+          {
+            echo "### Unsigned IPA"
+            echo '```'
+            cat SHA256SUMS
+            lipo -info stage/Payload/Form.app/Form
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+      - name: Upload unsigned .ipa artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: form-ios-unsigned-ipa
+          path: |
+            Form-*-iOS-unsigned.ipa
+            SHA256SUMS
+          if-no-files-found: error
+      - name: Build watch-embedded variant (best effort)
+        if: ${{ inputs.include_watch }}
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          ruby scripts/embed-watch.rb
+          xcodebuild \
+            -workspace ios/Form.xcworkspace \
+            -scheme Form \
+            -configuration Release \
+            -destination 'generic/platform=iOS' \
+            -derivedDataPath build-ipa-watch \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            EXPANDED_CODE_SIGN_IDENTITY="" \
+            DEVELOPMENT_TEAM="" \
+            PROVISIONING_PROFILE_SPECIFIER="" \
+            ARCHS=arm64 \
+            ONLY_ACTIVE_ARCH=NO \
+            build | tee xcodebuild-watch.log | tail -n 40
+          APP=build-ipa-watch/Build/Products/Release-iphoneos/Form.app
+          test -d "$APP/Watch/FORMWatch.app"
+          rm -rf stage-watch && mkdir -p stage-watch/Payload
+          cp -R "$APP" stage-watch/Payload/
+          find stage-watch/Payload -name _CodeSignature -type d -prune -exec rm -rf {} +
+          find stage-watch/Payload -name embedded.mobileprovision -delete
+          (cd stage-watch && zip -qry "../Form-${VERSION}-iOS-unsigned-watch.ipa" Payload)
+          file stage-watch/Payload/Form.app/Watch/FORMWatch.app/FORMWatch
+          sha256sum "Form-${VERSION}-iOS-unsigned-watch.ipa"
+      - name: Upload watch variant (best effort)
+        if: ${{ inputs.include_watch }}
+        continue-on-error: true
+        uses: actions/upload-artifact@v4
+        with:
+          name: form-ios-unsigned-ipa-watch
+          path: Form-*-iOS-unsigned-watch.ipa
+          if-no-files-found: warn
+      - name: Attach to release
+        if: ${{ inputs.release_tag != '' }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ inputs.release_tag }}
+        run: |
+          set -euo pipefail
+          gh release upload "$TAG" "Form-${VERSION}-iOS-unsigned.ipa" --clobber
+          if [ -f "Form-${VERSION}-iOS-unsigned-watch.ipa" ]; then
+            gh release upload "$TAG" "Form-${VERSION}-iOS-unsigned-watch.ipa" --clobber || true
+          fi
