@@ -6,13 +6,11 @@
 
 ## 11월 19일 업데이트
 
-WWIT의 운동 앱 아카이브를 참고해 홈에서 추천 루틴, 운동 시작·이어하기, 주간 진행률을 확인할 수 있게 배치했습니다. 운동도감과 3D 가이드 8종도 포함됩니다. [UI 변경 내역](docs/WWIT-UI-UPDATE.md)
+WWIT의 Planfit 화면에서 운동을 고르고 세트를 입력하는 흐름을 참고했습니다. 홈, 루틴·세트 기록, 운동도감·자세 안내, 기록·인바디, 설정의 타이포그래피와 조작 요소를 정리했습니다. [UI 변경 내역](docs/WWIT-UI-UPDATE.md) · [로컬 검증](docs/evidence/2026-11-19-local-tests.txt)
 
 ## 설치
 
-소스 커밋 `5880e30`에는 운동도감, 3D 자세 8종, 운동 추가 전 자세 미리보기와 홈·탭 UI 개선이 포함됩니다. 현재 다운로드 가능한 APK는 이 변경 이전에 검증한 테스트 빌드입니다. [최신 Android 빌드 상태](https://github.com/M0lli2/form-fitness/actions/runs/44292623016)
-
-- **Android·Wear OS** — [동일 서명 테스트 APK 다운로드](https://github.com/M0lli2/form-fitness/actions/runs/44246921064/artifacts/14401473315)
+- **Android·Wear OS** — [최신 설치 프리뷰 다운로드](https://github.com/M0lli2/form-fitness/releases/tag/preview-2026-11-19). 휴대폰 APK에 이번 UI와 3D 가이드를 포함했습니다. Wear OS APK는 동일 서명의 기존 동반 앱입니다. [APK 검증 기록](docs/evidence/2026-11-19-android-apk.txt)
 - **iPhone·Apple Watch** — [TestFlight·등록 기기 설치 방법](docs/INSTALL.md#iphone--apple-watch-설치)
 - [설치 순서와 남은 실기기 검증](docs/INSTALL.md)
 

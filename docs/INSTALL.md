@@ -2,27 +2,24 @@
 
 ## Android · Galaxy Watch 테스트 설치
 
-11월 19일 홈 UI 업데이트는 현재 소스에 반영돼 있습니다. 아래 APK는 홈 UI 변경 및 운동도감·3D 추가 이전에 검증한 테스트 빌드입니다. 최신 APK가 생성되면 같은 워크플로의 아티팩트에서 받을 수 있습니다.
+[2026-11-19 프리뷰 다운로드](https://github.com/M0lli2/form-fitness/releases/tag/preview-2026-11-19)에서 휴대폰과 워치 파일을 받을 수 있습니다. 비공개 저장소에 접근할 수 있는 GitHub 계정으로 로그인하세요.
 
-소스 커밋 `5880e30`에는 운동도감, 3D 자세 8종, 운동 추가 전 자세 미리보기와 홈·탭 UI 개선이 포함됩니다. 현재 다운로드 가능한 APK는 이 변경 이전에 검증한 테스트 빌드입니다. [최신 Android 빌드 상태](https://github.com/M0lli2/form-fitness/actions/runs/44292623016)
-
-GitHub에 로그인한 뒤 [휴대폰·Wear OS APK 묶음](https://github.com/M0lli2/form-fitness/actions/runs/44246921064/artifacts/14401473315)을 다운로드하고 압축을 풉니다. GitHub Actions 아티팩트 만료 시 [재빌드 워크플로](https://github.com/M0lli2/form-fitness/actions/workflows/runtime-smoke.yml)와 [동일 서명 패키징 워크플로](https://github.com/M0lli2/form-fitness/actions/workflows/paired-package.yml)에서 같은 방식으로 새 파일을 만들 수 있습니다.
-
-| 대상 | 압축 안의 파일 | 검증 범위 |
+| 대상 | 파일 | 검증 범위 |
 |---|---|---|
-| Android 휴대폰 | `phone-apk/app-release.apk` | ARM64·x86_64, JS 내장. CI에서 메뉴, 운동 저장·복원, 테마 복원 |
-| Galaxy Watch4 이후 Wear OS | `wearos/app/build/outputs/apk/debug/app-debug.apk` | 휴대폰 APK와 같은 서명 인증서. 실제 워치 페어링 검증 대기 |
+| Android 휴대폰 | `FORM-Android-preview.apk` | 최신 UI·3D 가이드 번들 내장. API 28 이상, ARM64·x86_64. 서명과 패키지 검사 통과 |
+| Galaxy Watch4 이후 Wear OS | `FORM-Wear-OS.apk` | 기존 동반 앱. 휴대폰 APK와 서명 인증서 일치 |
 
-휴대폰에서는 APK를 파일 앱에서 열어 설치하거나, USB 디버깅을 켠 테스트 기기에 Android Platform Tools로 설치합니다. 워치는 페어링한 상태에서 개발자 옵션의 무선 디버깅으로 연결하고, `adb devices`에 표시된 각 기기 식별자를 사용합니다.
+휴대폰에서 APK를 열어 설치하거나 Android Platform Tools를 사용합니다. 개발자 옵션에서 휴대폰 USB 디버깅과 워치 무선 디버깅을 설정하고 각 식별자를 확인하세요.
 
 ```sh
-adb -s PHONE_SERIAL install -r phone-apk/app-release.apk
-adb -s WATCH_SERIAL install -r wearos/app/build/outputs/apk/debug/app-debug.apk
+adb devices
+adb -s PHONE_SERIAL install -r FORM-Android-preview.apk
+adb -s WATCH_SERIAL install -r FORM-Wear-OS.apk
 ```
 
-APK는 내부 테스트 서명입니다. 이미 같은 앱 ID를 다른 인증서로 설치했다면 업데이트가 거부될 수 있습니다. 기존 기록을 보존하려면 삭제 전에 앱에서 백업합니다. 앱의 JSON 백업에는 결과지 사진이 포함되지 않습니다.
+Android 휴대폰 APK는 검증된 베이스에 새 Hermes 번들을 넣어 동일한 테스트 인증서로 다시 서명한 프리뷰입니다. [정렬, 서명, 패키지 내용 및 해시 결과](evidence/2026-11-19-android-apk.txt)와 [로컬 소스 검증](evidence/2026-11-19-local-tests.txt)을 확인할 수 있습니다. 최신 APK의 기기 실행·건강 권한·페어링은 검증 대기입니다. 이전 실행 결과는 [Android 자동 검증 기록](https://github.com/M0lli2/form-fitness/actions/runs/44246921064)에 있습니다.
 
-검증한 압축 SHA-256: `08a2e07c9aca11a5592c3e786229f4e1c23bfb670730ea021d73fbe05df62b48`
+같은 앱 ID를 다른 인증서로 설치했다면 테스트 APK로 업데이트할 수 없습니다. 앱 기록을 보존하려면 삭제 전에 백업하세요. 앱의 JSON 백업에는 결과지 사진이 포함되지 않습니다.
 
 ## iPhone · Apple Watch 설치
 

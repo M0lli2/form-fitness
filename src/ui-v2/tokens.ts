@@ -2,22 +2,22 @@
 export const colors = {
   light: {
     canvas: '#F4F4F5', surface: '#FFFFFF', raised: '#ECECEE',
-    text: '#121214', secondary: '#56565D', line: '#D0D0D5',
-    action: '#171719', onAction: '#FFFFFF', focus: '#4C56D7',
+    text: '#121214', secondary: '#56565D', line: '#DADCE5',
+    action: '#171719', onAction: '#FFFFFF', focus: '#314D9F',
     success: '#146B48', error: '#B42331', glassFill: 'rgba(255,255,255,0.76)',
     glassRim: 'rgba(255,255,255,0.95)',
   },
   dark: {
     canvas: '#101012', surface: '#1C1C1F', raised: '#2B2B30',
-    text: '#F7F7F8', secondary: '#B8B8C1', line: '#48484F',
-    action: '#F5F5F7', onAction: '#151517', focus: '#BEC2FF',
+    text: '#F7F7F8', secondary: '#B8B8C1', line: '#3F424D',
+    action: '#F5F5F7', onAction: '#151517', focus: '#B7C9FF',
     success: '#8BE0B7', error: '#FFB1BB', glassFill: 'rgba(42,42,47,0.78)',
     glassRim: 'rgba(255,255,255,0.38)',
   },
 } as const;
 export const typeScale = {
-  title: {fontSize:30, lineHeight:39, fontWeight:'700'},
-  heading: {fontSize:22, lineHeight:30, fontWeight:'600'},
+  title: {fontSize:30, lineHeight:39, letterSpacing:-0.45, fontWeight:'700'},
+  heading: {fontSize:22, lineHeight:30, letterSpacing:-0.35, fontWeight:'700'},
   body: {fontSize:17, lineHeight:26, fontWeight:'400'},
   label: {fontSize:15, lineHeight:22, fontWeight:'600'},
   caption: {fontSize:13, lineHeight:20, fontWeight:'400'},

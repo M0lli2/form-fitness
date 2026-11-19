@@ -1,0 +1,12 @@
+FORM Android 프리뷰 정적 검증 — 2026-11-19 (KST)
+베이스: 7b37312의 기존 동일 서명 Android·Wear OS 테스트 페어
+네이티브 소스, Expo 구성, 의존성 잠금 파일: 기존 검증 빌드와 일치
+Hermes 헤더: C61FBC03C103191F60000000 (기존 번들과 일치)
+APK ZIP 정렬: zipalign -c -P 16 4 통과
+APK 서명: apksigner verify 통과
+휴대폰과 Wear OS 서명 인증서 SHA-256: fac61745dc0903786fb9ede62a962b399f7348f0bb6f899b8332667591033b9c
+1009개 ZIP 항목의 압축 해제 후 내용 비교: 최신 assets/index.android.bundle 교체 확인, 나머지 항목이 베이스와 일치
+앱 ID: com.mori.form / versionCode: 1 / 지원 최소 API: 28 / ABI: arm64-v8a, x86_64
+FORM-Android-preview.apk SHA-256: AA8D61AD7E3AF630740B764354CD270CC432A72ECBC4AA1F212E30E849CB35D2
+FORM-Wear-OS.apk SHA-256: C45F97CF77548D7640DCF1DD073F3F86D770B45B06F8E09B5B4E492D0B64BB9D
+최신 프리뷰의 기기 설치·실행 및 워치 페어링: 미검증

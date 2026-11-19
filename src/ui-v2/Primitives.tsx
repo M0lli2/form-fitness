@@ -35,7 +35,7 @@ export function Surface({role='content', style, children, ...props}:Omit<ViewPro
 export function Action({title,onPress,disabled=false,secondary=false}:{title:string;onPress:()=>void;disabled?:boolean;secondary?:boolean}) {
   const {palette}=useFormTheme();
   return <Pressable accessibilityRole="button" accessibilityState={{disabled}} disabled={disabled} onPress={onPress}
-    style={({pressed})=>[styles.action,{backgroundColor:disabled || secondary ? palette.raised : palette.action,borderWidth:pressed?2:0,borderColor:palette.focus}]}>
+    style={({pressed})=>[styles.action,{backgroundColor:disabled || secondary ? palette.raised : palette.action,borderWidth:2,borderColor:pressed?palette.focus:'transparent'}]}>
     <FormText variant="label" style={{textAlign:'center',color:disabled || secondary ? palette.secondary : palette.onAction}}>{title}</FormText>
   </Pressable>;
 }

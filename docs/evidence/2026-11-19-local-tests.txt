@@ -1,40 +1,30 @@
-✔ 운동 ID와 루틴 참조는 유효하고 모든 운동에 자세 설명이 있다 (10.6929ms)
-✔ 완료되지 않은 운동은 저장할 수 없다 (6.803ms)
-✔ 워밍업은 볼륨에서 제외하고 미완료 세트는 계산하지 않는다 (0.7456ms)
-✔ 중량·횟수·시간의 잘못된 값은 저장 전에 거절한다 (1.249ms)
-✔ 인바디 체지방은 백분율 단위로 유지하고 골격근량은 별도로 보관한다 (4.065ms)
-✔ 미래 날짜·비정상 수치·공백 체중은 거절한다 (0.7413ms)
-✔ 이전 기록을 복원하되 완료 체크는 초기화한다 (0.6114ms)
-✔ 워치의 동일 이벤트와 오래된 세션 명령은 중복 반영하지 않는다 (3.2145ms)
-✔ 1RM은 12회 이하 유효 중량만 계산한다 (0.4174ms)
-✔ 백업 스키마와 잘못된 기록을 거절한다 (0.9391ms)
-✔ 주간 시작은 지역 시간 월요일 0시이다 (9.8109ms)
-✔ custom exercises preserve tracking type and validate required fields (2.9184ms)
-✔ custom movements are validated on backup import and old backups remain compatible (0.9403ms)
-✔ measurement input rejects invalid dates (4.3758ms)
-✔ measurement edit preserves local date in Asia/Seoul (351.2671ms)
-✔ measurement edit preserves local date in America/Los_Angeles (201.6222ms)
-✔ measurement edit preserves local date in UTC (193.93ms)
-✔ new records start at one; legacy and edited records increment once (3.1325ms)
-✔ validation and backup reads preserve a saved export revision (13.493ms)
-✔ every 3D guide belongs to a catalog exercise and provides a loop with valid joints (21.1578ms)
-✔ rotating the camera exposes exercise depth rather than scaling a flat drawing (0.6485ms)
-✔ release dependency inspection includes nested and Windows package paths (3.5095ms)
-✔ app source names and unused build tools do not count as bundled packages (0.4595ms)
-✔ measurement dates reject rollover and allow today before noon (11.1482ms)
-✔ content and reduced transparency always stay opaque (0.5926ms)
-✔ rest timer resumes from the deadline after backgrounding (0.3288ms)
-✔ set drafts reject incomplete input and accept decimal comma (2.2989ms)
-✔ watch-only summaries survive backup while malformed empty workouts fail (1.1093ms)
-✔ displayed pounds convert back to the original kg within display precision (2.9889ms)
-✔ unit parsing rejects invalid input and respects kilogram limit (0.947ms)
-ℹ tests 30
-ℹ suites 0
-ℹ pass 30
-ℹ fail 0
-ℹ cancelled 0
-ℹ skipped 0
-ℹ todo 0
-ℹ duration_ms 1121.7396
+FORM 전체 화면 업데이트 로컬 검증 — 2026-11-19 (KST)
+Node v24.14.1
+$ node --test --test-reporter=dot tests/*.test.mjs
+....................
+..........
+30개 통과, 0개 실패 (종료 코드 0)
+$ node scripts/check-project.mjs
 JSON, bridge methods, companion identifiers: OK
-Parsed 35 source files; syntax errors: 0. Dependency-aware type checking is separate.
+$ npm run typecheck
+
+> form-native@0.1.0 typecheck
+> tsc --noEmit
+
+$ expo export --platform android --platform ios --max-workers 2
+Starting Metro Bundler
+
+
+Android Bundled 58407ms index.ts (772 modules)
+iOS Bundled 64038ms index.ts (772 modules)
+
+Android bundles (1):
+_expo/static/js/android/index-e559b505a6b25bccca7a68949275781a.hbc (2.2 MB)
+
+iOS bundles (1):
+_expo/static/js/ios/index-b4913e7f202da1b32fd15d86c7fe3d3c.hbc (2.19 MB)
+
+Files (1):
+metadata.json (244 B)
+
+Exported: native-exports

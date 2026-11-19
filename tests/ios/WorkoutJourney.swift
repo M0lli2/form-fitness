@@ -24,7 +24,7 @@ final class WorkoutJourney: XCTestCase {
     }
     func testThemePersistenceAndNavigation() {
         tap("루틴")
-        XCTAssertTrue(app.buttons["+ 새 루틴 만들기"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.buttons["+ 새 루틴"].waitForExistence(timeout: 10))
         tap("기록")
         XCTAssertTrue(app.staticTexts["최근 6주 운동 볼륨"].waitForExistence(timeout: 10))
         tap("내 정보")

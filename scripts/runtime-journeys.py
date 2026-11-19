@@ -85,7 +85,7 @@ try:
     tap_exact("루틴", root)
     root = wait_for("새 루틴", "20-routines")
     tap_exact("운동도감", root)
-    root = wait_for("자세와 주의사항", "21-library")
+    root = wait_for("운동 목록", "21-library")
     # Choose the first catalog exercise by its observed UI name.
     catalog = json.loads(open("src/exercises.json", encoding="utf-8").read())
     exercise = catalog["exercises"][0]["name"]
