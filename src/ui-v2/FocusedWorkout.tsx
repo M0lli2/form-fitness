@@ -12,7 +12,9 @@ export type FocusedExercise={
 type Props={
   exercise:FocusedExercise;
   units:'kg'|'lb';
-  startedAt:number;
+  elapsedSeconds:number;
+  paused:boolean;
+  now:number;
   restDeadline:number|null;
   guide:React.ReactNode;
   onComplete:(setId:string,values:{weight:number;reps:number})=>Promise<void>;
@@ -31,17 +33,16 @@ const time=(s:number)=>String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60)
 export function FocusedWorkout(props:Props){
   const {palette}=useFormTheme();
   const {fontScale}=useWindowDimensions();
-  const [now,setNow]=useState(Date.now()),[weight,setWeight]=useState(''),[reps,setReps]=useState('');
+  const [weight,setWeight]=useState(''),[reps,setReps]=useState('');
   const [busy,setBusy]=useState(false);
   const lock=useRef(false);
   const current=props.exercise.sets.find(set=>!set.done);
-  const rest=props.restDeadline===null?0:remainingSeconds(props.restDeadline,now);
+  const rest=props.restDeadline===null?0:remainingSeconds(props.restDeadline,props.now);
 
-  useEffect(()=>{const timer=setInterval(()=>setNow(Date.now()),500);return()=>clearInterval(timer);},[]);
   useEffect(()=>{setWeight(current ? String(displayMass(current.weight,props.units)) : '');setReps(current ? String(current.reps) : '');},[current?.id,current?.weight,current?.reps,props.units]);
 
   async function complete(){
-    if(!current || lock.current)return;
+    if(!current || props.paused || lock.current)return;
     try {
       const values=parseSetInput(String(parseMass(weight,props.units)),reps);
       lock.current=true;setBusy(true);
@@ -53,7 +54,7 @@ export function FocusedWorkout(props:Props){
   return <View style={[styles.root,{backgroundColor:palette.canvas}]}>
     <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.content}>
       <View style={styles.header}>
-        <FormText variant="label" accessibilityLabel="운동 경과 시간">{time(Math.max(0,Math.floor((now-props.startedAt)/1000)))}</FormText>
+        <FormText variant="label" accessibilityLabel="운동 경과 시간">{time(props.elapsedSeconds)}</FormText>
         <FormText variant="caption" secondary>{props.exercise.position} / {props.exercise.total} 운동</FormText>
       </View>
       <FormText variant="title">{props.exercise.name}</FormText>
@@ -71,7 +72,7 @@ export function FocusedWorkout(props:Props){
     </ScrollView>
     <Surface role="control" style={styles.controls}>
       {rest>0 && <View style={styles.header}><FormText variant="label">휴식 {time(rest)}</FormText><Action secondary title="건너뛰기" onPress={props.onSkipRest}/></View>}
-      <Action title={busy?'저장 중…':current?'세트 완료':props.exercise.position===props.exercise.total?'운동 결과 확인':'다음 운동'} disabled={busy} onPress={current?complete:props.onNext}/>
+      <Action title={busy?'저장 중…':current?'세트 완료':props.exercise.position===props.exercise.total?'운동 결과 확인':'다음 운동'} disabled={busy || props.paused} onPress={current?complete:props.onNext}/>
       <Action secondary title="전체 운동 목록" onPress={props.onOpenList}/>
     </Surface>
   </View>;
@@ -83,4 +84,5 @@ const styles=StyleSheet.create({
   history:{flexDirection:'row',justifyContent:'space-between',alignItems:'center',gap:12,paddingVertical:8},
   controls:{marginHorizontal:12,marginBottom:12,gap:10},
 });
+
 

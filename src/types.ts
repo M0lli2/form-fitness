@@ -24,6 +24,9 @@ export type Session = {
     startedAt: string;
     endedAt?: string;
     restEndsAt: number | null;
+    pausedAt?: number;
+    pausedMs?: number;
+    pausedRestMs?: number;
     exercises: {
         id: string;
         name: string;
@@ -75,3 +78,4 @@ export type State = {
         glass: boolean;
     };
 };
+
