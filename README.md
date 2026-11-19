@@ -30,9 +30,9 @@ WWIT의 Planfit 화면에서 운동을 고르고 세트를 입력하는 흐름�
 
 아래 화면은 피드백 기능이 처음 적용된 0.1.0 Android 에뮬레이터에서 캡처했습니다. [실행 기록과 원본 이미지](https://github.com/M0lli2/form-fitness/actions/runs/44474655697)
 
-| 운동도감 근육 필터 | 3D 근육 해부 | 회전한 자세 |
+| 운동도감 근육 필터 | 3D 근육 해부 | 근육 범례와 회전 조작 |
 |---|---|---|
-| <img src="docs/screenshots/feedback-android-muscle-filter.png" width="235" alt="운동도감 타깃 근육 필터"> | <img src="docs/screenshots/feedback-android-anatomy.png" width="235" alt="운동 자세 가이드의 근육 레이어"> | <img src="docs/screenshots/feedback-android-anatomy-turned.png" width="235" alt="회전한 운동 자세와 근육 레이어"> |
+| <img src="docs/screenshots/feedback-android-muscle-filter.png" width="235" alt="운동도감 타깃 근육 필터"> | <img src="docs/screenshots/feedback-android-anatomy.png" width="235" alt="운동 자세 가이드의 근육 레이어"> | <img src="docs/screenshots/feedback-android-anatomy-turned.png" width="235" alt="근육 범례와 회전·확대 조작 버튼"> |
 
 ## 설치
 

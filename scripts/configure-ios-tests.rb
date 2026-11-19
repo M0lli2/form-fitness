@@ -17,7 +17,7 @@ tests.build_configurations.each do |configuration|
     # Xcode names both the runner and the plug-in from PRODUCT_NAME.
     'PRODUCT_NAME' => 'FORMUITests',
     'SWIFT_VERSION' => '5.0', 'GENERATE_INFOPLIST_FILE' => 'YES',
-    'TEST_TARGET_NAME' => 'FORM', 'TARGETED_DEVICE_FAMILY' => '1,2',
+    'TEST_TARGET_NAME' => phone.name, 'TARGETED_DEVICE_FAMILY' => '1,2',
     'CODE_SIGN_STYLE' => 'Automatic'
   })
 end
