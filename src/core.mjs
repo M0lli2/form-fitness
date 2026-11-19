@@ -84,6 +84,29 @@ catch {
     return { session, accepted: false };
 } return { session: clone, accepted: true }; }
 export function weekStart(date = new Date()) { const d = new Date(date); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() - ((d.getDay() + 6) % 7)); return d; }
+/** Group completed sessions by local calendar day, including weeks containing a DST change. */
+export function calendarWeekVolume(sessions, reference = new Date()) {
+    const start = weekStart(reference);
+    const end = new Date(start);
+    end.setDate(end.getDate() + 7);
+    const today = localDateInput(reference);
+    const days = Array.from({length:7},(_,index)=>{
+        const date = new Date(start);
+        date.setDate(date.getDate() + index);
+        const key = localDateInput(date);
+        return {date,key,isToday:key===today,count:0,volume:0};
+    });
+    const byDate = new Map(days.map(day=>[day.key,day]));
+    for (const session of sessions) {
+        const date = new Date(session.startedAt);
+        if (!Number.isFinite(+date) || date < start || date >= end) continue;
+        const day = byDate.get(localDateInput(date));
+        if (!day) continue;
+        day.count++;
+        day.volume += volume(session);
+    }
+    return {days,count:days.reduce((n,day)=>n+day.count,0),volume:days.reduce((n,day)=>n+day.volume,0)};
+}
 export function bmi(weight, height) { return height ? weight / (height / 100) ** 2 : null; }
 export function validateBackup(value) { if (value?.schema !== 1 || !Array.isArray(value.history) || !Array.isArray(value.body) || !Array.isArray(value.routines))
     throw Error('지원하지 않는 백업 파일입니다.'); if (value.customExercises !== undefined) {

@@ -2,6 +2,9 @@
 # Uses no certificates, provisioning profiles, or paid Apple Developer account.
 name: iOS unsigned IPA
 on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/ios-unsigned-ipa.yml']
   workflow_dispatch:
     inputs:
       include_watch:
@@ -131,7 +134,7 @@ jobs:
           path: Form-*-iOS-unsigned-watch.ipa
           if-no-files-found: warn
       - name: Attach to release
-        if: ${{ inputs.release_tag != '' }}
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.release_tag != '' }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAG: ${{ inputs.release_tag }}

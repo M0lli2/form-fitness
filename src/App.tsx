@@ -15,7 +15,7 @@ import * as Sharing from 'expo-sharing';
 import * as FS from 'expo-file-system/legacy';
 import { ThemeProvider, useTheme, Glass, Label, Button } from './theme';
 import { freshState, loadState, persist } from './storage';
-import { uid, makeSession, validateSession, volume, estimated1RM, validateBody, weekStart, bmi, applyWatchCommand, validateBackup } from './core.mjs';
+import { uid, makeSession, validateSession, volume, estimated1RM, validateBody, weekStart, calendarWeekVolume, bmi, applyWatchCommand, validateBackup } from './core.mjs';
 import { connectHealth, readHealth, exportBody, exportWorkout } from './health';
 import Device from '../modules/form-device';
 import catalog from './exercises.json';
@@ -52,6 +52,7 @@ function Main({ state, setState }: {
 }) {
     const { colors, dark } = useTheme();
     const exercises = [...catalogExercises, ...(state.customExercises ?? [])];
+    const [selectedWorkoutDay,setSelectedWorkoutDay] = useState<string | null>(null);
     const [focused, setFocused] = useState(false);
     const [page, setPage] = useState('home'), [modal, setModal] = useState<{
         type: string;
@@ -219,16 +220,18 @@ function Main({ state, setState }: {
             })},
         ]);
     }
-    const recent = state.history.filter(x => new Date(x.startedAt) >= weekStart()), totalVolume = recent.reduce((n, x) => n + volume(x), 0);
     const title = ({ home: '오늘도, 나의 페이스로.', workout: '루틴', library: '운동도감', progress: '운동 기록', body: '인바디·체성분', settings: '내 정보' } as any)[page];
     const unit = state.settings.units;
     const displayWeight = (v: number) => unit === 'lb' ? Math.round(v * 2.2046226218 * 10) / 10 : v;
     // 홈: 비어 있는 새 계정에 가짜 성과 대신 바로 시작할 수 있는 루틴을 제시합니다.
     function home() {
-        const days = ['월', '화', '수', '목', '금', '토', '일'];
-        const today = new Date().toDateString();
-        const weekGoal = Math.max(1, state.settings.goal);
-        const progress = Math.min(100, Math.round(recent.length / weekGoal * 100));
+        const weekdays = ['월', '화', '수', '목', '금', '토', '일'];
+        const week = calendarWeekVolume(state.history);
+        const today = week.days.find(day=>day.isToday)!;
+        const selected = selectedWorkoutDay === null ? undefined : week.days.find(day=>day.key===selectedWorkoutDay) ?? today;
+        const totals = selected ?? week;
+        const weekGoal = Math.max(1,state.settings.goal);
+        const progress = Math.min(100,Math.round(week.count / weekGoal * 100));
         const nextRoutine = state.routines[0];
         return <>
             <LinearGradient colors={dark ? ['#282D3F', '#1D2030'] : ['#262D46', '#383E57']} style={s.hero}>
@@ -240,28 +243,47 @@ function Main({ state, setState }: {
                 <Button title={state.active?.preparing ? '준비한 운동 열기' : state.active ? '운동 이어하기' : '운동 시작하기'} onPress={() => state.active ? setPage('workout') : setModal({type:'start'})}/>
             </LinearGradient>
             <Glass>
-                <Section title="이번 주 운동" right={`목표 ${recent.length}/${weekGoal}회`}/>
+                <Section title="이번 주 운동" right={`목표 ${week.count}/${weekGoal}회`}/>
                 <View accessible accessibilityRole="progressbar" accessibilityLabel="주간 운동 목표"
                     accessibilityValue={{min:0,max:100,now:progress}} style={[s.track,{backgroundColor:colors.soft}]}>
-                    <View style={{width:`${progress}%`,height:7,backgroundColor:dark?'#ABC2FF':'#3854AC',borderRadius:8}}/>
+                    <View style={{width:`${progress}%`,height:7,backgroundColor:colors.accent,borderRadius:8}}/>
+                </View>
+                <View accessibilityRole="tablist" style={[s.row,s.periodSwitch]}>
+                    <Pressable accessibilityRole="tab" accessibilityState={{selected:!selected}}
+                        onPress={()=>setSelectedWorkoutDay(null)}
+                        style={[s.periodButton,{backgroundColor:selected?colors.soft:colors.accentBase}]}>
+                        <Label bold size={13}>주간</Label>
+                    </Pressable>
+                    <Pressable accessibilityRole="tab" accessibilityState={{selected:!!selected}}
+                        onPress={()=>setSelectedWorkoutDay((selected ?? today).key)}
+                        style={[s.periodButton,{backgroundColor:selected?colors.accentBase:colors.soft}]}>
+                        <Label bold size={13}>일간</Label>
+                    </Pressable>
                 </View>
                 <View style={s.weekDays}>
-                    {days.map((day,i) => {
-                        const date = weekStart();
-                        date.setDate(date.getDate()+i);
-                        const dateKey = date.toDateString();
-                        const isToday = dateKey===today;
-                        const done = recent.some(workout=>new Date(workout.startedAt).toDateString()===dateKey);
-                        return <View key={day} accessible accessibilityLabel={`${day}요일 ${date.getDate()}일${isToday?', 오늘':''}${done?', 운동 완료':''}`} style={s.day}>
-                            <Label muted size={11}>{day}</Label>
-                            <View style={[s.dayCircle,{backgroundColor:done?(dark?'#ABC2FF':'#3854AC'):colors.soft,
-                                borderWidth:isToday?1:0,borderColor:dark?'#ABC2FF':'#3854AC'}]}>
-                                <Label size={13} bold={isToday||done} style={{color:done?(dark?'#182241':'#FFFFFF'):colors.ink}}>{done?'✓':date.getDate()}</Label>
+                    {week.days.map((day,i) => {
+                        const selectedDay = day.key === selected?.key;
+                        const trained = day.count > 0;
+                        return <Pressable key={day.key} accessibilityRole="button" accessibilityState={{selected:selectedDay}}
+                            accessibilityLabel={`${weekdays[i]}요일 ${day.date.getDate()}일${day.isToday?', 오늘':''}, 운동 ${day.count}회`}
+                            onPress={()=>setSelectedWorkoutDay(day.key)}
+                            style={({pressed})=>[s.day,{opacity:pressed ? .72 : 1,backgroundColor:selectedDay?colors.accentBase:'transparent'}]}>
+                            <Label muted={!selectedDay} size={11} bold={selectedDay}>{weekdays[i]}</Label>
+                            <View style={[s.dayCircle,{backgroundColor:trained?colors.accent:colors.soft,
+                                borderWidth:day.isToday?1:0,borderColor:colors.accent}]}>
+                                <Label size={13} bold={day.isToday||trained}
+                                    style={{color:trained?(dark?'#182241':'#FFFFFF'):colors.ink}}>{day.date.getDate()}</Label>
                             </View>
-                        </View>;
+                        </Pressable>;
                     })}
                 </View>
-                <Label muted size={12}>이번 주 누적 볼륨 {Math.round(totalVolume).toLocaleString('ko-KR')} kg</Label>
+                <View style={[s.volumeSummary,{borderColor:colors.line}]}>
+                    <Label muted size={13}>{selected?`${selected.date.getMonth()+1}월 ${selected.date.getDate()}일 · 운동 ${totals.count}회`:`이번 주 · 운동 ${totals.count}회`}</Label>
+                    <Label size={22} bold style={s.figure}>
+                        {displayWeight(totals.volume).toLocaleString('ko-KR',{maximumFractionDigits:1})} {unit}
+                    </Label>
+                    {selected && totals.count===0 && <Label muted size={12}>이날 저장한 운동이 없습니다.</Label>}
+                </View>
             </Glass>
             <View style={s.spread}>
                 <Section title="나의 루틴"/>
@@ -463,7 +485,7 @@ function Main({ state, setState }: {
             </View>
             <Label bold>{state.active.preparing ? '준비 중 · 0:00'
                 : (state.active.pausedAt === undefined ? '진행 중' : '일시정지됨')+' · '+clock(workoutElapsedSeconds(state.active,now))}</Label>
-        </View>}{showFocused ? <KeyboardAvoidingView style={{flex:1}} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>{workout()}</KeyboardAvoidingView> : <ScrollView key={page} contentContainerStyle={s.content} keyboardShouldPersistTaps="handled"><View style={s.pageTitle}><Label heading size={30} bold>{title}</Label><Label muted size={14}>{page === 'home' ? new Date().toLocaleDateString('ko-KR',{month:'long',day:'numeric',weekday:'long'}) : pageDescriptions[page]}</Label></View>{page === 'home' ? home() : page === 'workout' ? workout() : page === 'library' ? library() : page === 'progress' ? progress() : page === 'body' ? body() : settings()}</ScrollView>}<Surface role="navigation" style={[s.nav,{padding:6}]}>{tabs.map(([key, icon, label]) => <Pressable key={key} accessibilityRole="tab" accessibilityState={{ selected: (page === key || (page === 'body' && key === 'progress')) }} accessibilityLabel={label} onPress={() => setPage(key)} style={[s.navItem, { backgroundColor: (page === key || (page === 'body' && key === 'progress')) ? colors.soft : 'transparent' }]}><Label size={19}>{icon}</Label><Label size={11} bold={(page === key || (page === 'body' && key === 'progress'))}>{label}</Label></Pressable>)}</Surface><Modal visible={!!modal} transparent animationType="slide" onRequestClose={() => setModal(null)}><KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={s.modalOverlay}><SafeAreaView edges={['bottom']} accessibilityViewIsModal style={[s.modal,{backgroundColor:colors.solid}]}><View style={[s.sheetGrip,{backgroundColor:colors.line}]}/><View style={s.spread}><Label heading bold size={20} style={s.flex}>{({ start: '어떤 운동을 할까요?', routine: '나의 루틴', exercise: '운동 자세 가이드', body: '인바디 기록', history: '운동 상세', add: '운동 추가', 'custom-exercise': '사용자 운동 등록' } as any)[modal?.type ?? '']}</Label><Pressable accessibilityRole="button" accessibilityLabel="닫기" onPress={() => setModal(null)} style={s.close}><Label size={24}>×</Label></Pressable></View><ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ gap: 17, paddingBottom: 22 }}>{modal?.type === 'custom-exercise' && <CustomExerciseForm onSave={entry => run(async () => {
+        </View>}{showFocused ? <KeyboardAvoidingView style={{flex:1}} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>{workout()}</KeyboardAvoidingView> : <ScrollView key={page} style={s.flex} contentContainerStyle={s.content} keyboardShouldPersistTaps="handled"><View style={s.pageTitle}><Label heading size={30} bold>{title}</Label><Label muted size={14}>{page === 'home' ? new Date().toLocaleDateString('ko-KR',{month:'long',day:'numeric',weekday:'long'}) : pageDescriptions[page]}</Label></View>{page === 'home' ? home() : page === 'workout' ? workout() : page === 'library' ? library() : page === 'progress' ? progress() : page === 'body' ? body() : settings()}</ScrollView>}<View pointerEvents="box-none" style={s.navFrame}><Surface role="navigation" pointerEvents="box-none" style={s.nav}>{tabs.map(([key, icon, label]) => <Pressable key={key} accessibilityRole="tab" accessibilityState={{ selected: (page === key || (page === 'body' && key === 'progress')) }} accessibilityLabel={label} onPress={() => setPage(key)} pressRetentionOffset={tabPressBounds} style={[s.navItem, { backgroundColor: (page === key || (page === 'body' && key === 'progress')) ? colors.soft : 'transparent' }]}><Label size={19}>{icon}</Label><Label size={11} bold={(page === key || (page === 'body' && key === 'progress'))}>{label}</Label></Pressable>)}</Surface></View><Modal visible={!!modal} transparent animationType="slide" onRequestClose={() => setModal(null)}><KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={s.modalOverlay}><SafeAreaView edges={['bottom']} accessibilityViewIsModal style={[s.modal,{backgroundColor:colors.solid}]}><View style={[s.sheetGrip,{backgroundColor:colors.line}]}/><View style={s.spread}><Label heading bold size={20} style={s.flex}>{({ start: '어떤 운동을 할까요?', routine: '나의 루틴', exercise: '운동 자세 가이드', body: '인바디 기록', history: '운동 상세', add: '운동 추가', 'custom-exercise': '사용자 운동 등록' } as any)[modal?.type ?? '']}</Label><Pressable accessibilityRole="button" accessibilityLabel="닫기" onPress={() => setModal(null)} style={s.close}><Label size={24}>×</Label></Pressable></View><ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ gap: 17, paddingBottom: 22 }}>{modal?.type === 'custom-exercise' && <CustomExerciseForm onSave={entry => run(async () => {
     await change(x => ({...x, customExercises: [...(x.customExercises ?? []), entry]}));
     setModal(null);
 })}/>} {modal?.type === 'start' && state.routines.map(r => <Button key={r.id} secondary title={r.name} onPress={() => run(async () => { await start(r.name, r.ids); setModal(null); })}/>)}{modal?.type === 'exercise' && modal.item && <><Label size={24} bold>{modal.item.name}</Label><Label muted>{modal.item.muscle} · {modal.item.equipment} · {modal.item.level}</Label><MotionGuide key={modal.item.id} exerciseId={modal.item.id}/><Section title="운동 방법"/>{modal.item.steps.map((step: string, i: number) => <View key={i} style={[s.exerciseRow,{borderColor:colors.line}]}><Label bold style={{color:colors.accent}}>{i+1}</Label><Label style={s.flex}>{step}</Label></View>)}<Glass><Label bold>자세 체크</Label><Label>{modal.item.caution}</Label><Label muted size={12}>통증이 나면 중단하고 전문가에게 자세를 확인하세요.</Label></Glass>{modal.fromPicker && <Button secondary title="운동 목록으로 돌아가기" onPress={()=>setModal({type:'add'})}/>}<Button title={modal.fromPicker ? '이 운동 추가' : '이 운동 기록하기'} onPress={() => run(async () => { if (!state.active)
@@ -605,6 +627,7 @@ catch (e) {
 catch (e) {
     Alert.alert('입력 확인', errorText(e));
 } }}/>{item && <Button secondary title="저장된 체중·체지방을 건강 앱에 내보내기" onPress={() => onExport(item)}/>}</>; }
+const tabPressBounds = {top:0,right:0,bottom:0,left:0};
 const s = StyleSheet.create({
     pageTitle:{gap:5,marginBottom:4},
     group:{gap:7},
@@ -618,4 +641,8 @@ const s = StyleSheet.create({
     bodyPhoto:{height:150,borderRadius:12},
     editRoutine:{alignSelf:'flex-end'},
     sheetGrip:{width:34,height:4,borderRadius:2,alignSelf:'center'},
-    screen: { flex: 1 }, loading: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 20, padding: 30, backgroundColor: '#F4F4F5' }, header: { minHeight: 49, paddingHorizontal: 20, paddingVertical: 4, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }, content: { padding: 20, paddingTop: 9, gap: 16, paddingBottom: 28, maxWidth: 740, width: '100%', alignSelf: 'center' }, row: { flexDirection: 'row', gap: 10, alignItems: 'center' }, spread: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 12 }, flex: { flex: 1 }, hero: { borderRadius: 22, padding: 18, gap: 9 }, track: { height: 7, borderRadius: 8, overflow: 'hidden' }, weekDays: { flexDirection: 'row', justifyContent: 'space-between', gap: 2 }, inlineLink: { minHeight: 44, justifyContent: 'center', paddingHorizontal: 8 }, day: { flex: 1, minWidth: 0, gap: 6, alignItems: 'center' }, dayCircle: { width: '94%', maxWidth: 34, aspectRatio: 1, borderRadius: 17, alignItems: 'center', justifyContent: 'center' }, play: { width: 48, height: 48, borderRadius: 18, alignItems: 'center', justifyContent: 'center' }, nav: { marginHorizontal: 12, marginBottom: 6, borderWidth: 1, borderRadius: 24, padding: 6, flexDirection: 'row', justifyContent: 'space-around' }, navItem: { alignItems: 'center', justifyContent: 'center', gap: 2, minHeight: 52, flex: 1, borderRadius: 18 }, setRow: { flexDirection: 'row', alignItems: 'center', gap: 9 }, input: { minHeight: 48, borderWidth: 1, borderRadius: 13, padding: 12, fontSize: 15 }, check: { width: 48, height: 48, borderRadius: 13, alignItems: 'center', justifyContent: 'center' }, rest: { padding: 11, borderRadius: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }, chip: { paddingHorizontal: 16, paddingVertical: 12, borderRadius: 20, minHeight: 44, justifyContent: 'center' }, modalOverlay: { flex: 1, backgroundColor: '#00000080', justifyContent: 'flex-end' }, modal: { maxHeight: '92%', padding: 24, paddingBottom: 18, borderTopLeftRadius: 30, borderTopRightRadius: 30, gap: 20 }, close: { minWidth: 48, minHeight: 48, alignItems: 'center', justifyContent: 'center' } });
+    periodSwitch:{gap:6},
+    periodButton:{flex:1,minHeight:44,borderRadius:12,alignItems:'center',justifyContent:'center'},
+    volumeSummary:{borderTopWidth:StyleSheet.hairlineWidth,paddingTop:10,gap:4},
+    navFrame:{paddingHorizontal:12,paddingBottom:6,alignItems:'center',flexShrink:0},
+    screen: { flex: 1 }, loading: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 20, padding: 30, backgroundColor: '#F4F4F5' }, header: { minHeight: 49, paddingHorizontal: 20, paddingVertical: 4, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }, content: { padding: 20, paddingTop: 9, gap: 16, paddingBottom: 28, maxWidth: 740, width: '100%', alignSelf: 'center' }, row: { flexDirection: 'row', gap: 10, alignItems: 'center' }, spread: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 12 }, flex: { flex: 1 }, hero: { borderRadius: 22, padding: 18, gap: 9 }, track: { height: 7, borderRadius: 8, overflow: 'hidden' }, weekDays: { flexDirection: 'row', justifyContent: 'space-between', gap: 2 }, inlineLink: { minHeight: 44, justifyContent: 'center', paddingHorizontal: 8 }, day: { flex:1,minWidth:0,minHeight:58,paddingVertical:4,borderRadius:12,gap:4,alignItems:'center',justifyContent:'center' }, dayCircle: { width: '94%', maxWidth: 34, aspectRatio: 1, borderRadius: 17, alignItems: 'center', justifyContent: 'center' }, play: { width: 48, height: 48, borderRadius: 18, alignItems: 'center', justifyContent: 'center' }, nav: { width:'100%',maxWidth:740,borderWidth:1,borderRadius:24,padding:6,gap:0,flexDirection:'row' }, navItem: { alignItems: 'center', justifyContent: 'center', gap: 2, minHeight: 52, flex: 1, borderRadius: 18 }, setRow: { flexDirection: 'row', alignItems: 'center', gap: 9 }, input: { minHeight: 48, borderWidth: 1, borderRadius: 13, padding: 12, fontSize: 15 }, check: { width: 48, height: 48, borderRadius: 13, alignItems: 'center', justifyContent: 'center' }, rest: { padding: 11, borderRadius: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }, chip: { paddingHorizontal: 16, paddingVertical: 12, borderRadius: 20, minHeight: 44, justifyContent: 'center' }, modalOverlay: { flex: 1, backgroundColor: '#00000080', justifyContent: 'flex-end' }, modal: { maxHeight: '92%', padding: 24, paddingBottom: 18, borderTopLeftRadius: 30, borderTopRightRadius: 30, gap: 20 }, close: { minWidth: 48, minHeight: 48, alignItems: 'center', justifyContent: 'center' } });

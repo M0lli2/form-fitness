@@ -22,11 +22,14 @@ export function Surface({role='content', style, children, ...props}:Omit<ViewPro
   const material = resolveMaterial({enabled:glass, reduceTransparency:false, role, platform:Platform.OS, nativeAvailable:isLiquidGlassAvailable()});
   const shape = {borderRadius:role === 'content' ? geometry.cardRadius : geometry.controlRadius};
   return <View {...props} style={[styles.surface, shape, {borderColor:palette.line}, style]}>
+    {/* Keep the decorative native view within the surface and outside hit testing. */}
+    <View pointerEvents="none" accessibilityElementsHidden importantForAccessibility="no-hide-descendants" style={[styles.material,shape]}>
     {material === 'native-glass'
       ? <GlassView pointerEvents="none" glassEffectStyle="regular" style={[StyleSheet.absoluteFill,shape]}/>
       : material === 'frosted'
         ? <><BlurView pointerEvents="none" tint={mode === 'dark' ? 'dark' : 'light'} intensity={48} style={StyleSheet.absoluteFill}/><View pointerEvents="none" style={[StyleSheet.absoluteFill,{backgroundColor:palette.glassFill,borderWidth:1,borderColor:palette.glassRim},shape]}/></>
         : <View pointerEvents="none" style={[StyleSheet.absoluteFill,{backgroundColor:palette.surface}]}/>}
+    </View>
     {children}
   </View>;
 }
@@ -40,6 +43,7 @@ export function Action({title,onPress,disabled=false,secondary=false}:{title:str
   </Pressable>;
 }
 const styles=StyleSheet.create({
+  material:{...StyleSheet.absoluteFillObject,overflow:'hidden'},
   surface:{overflow:'hidden',borderWidth:1,padding:20,gap:12},
   action:{minHeight:52,borderRadius:16,paddingHorizontal:20,paddingVertical:14,alignItems:'center',justifyContent:'center'},
 });
