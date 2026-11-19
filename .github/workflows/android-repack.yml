@@ -3,7 +3,7 @@ name: Android UI repack regression
 on:
   workflow_dispatch:
   push:
-    paths: ['.github/workflows/android-repack.yml', 'src/**']
+    paths: ['.github/workflows/android-repack.yml', 'scripts/runtime-journeys.py', 'src/**']
 permissions:
   contents: read
   actions: read

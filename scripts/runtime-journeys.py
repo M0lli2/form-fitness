@@ -62,6 +62,16 @@ def selected(label, name, attribute="selected"):
 
 try:
     root = wait_for("오늘", "10-home")
+    root = seek("이번 주 · 운동 0회", "10-home-week-volume")
+    # Select a visible weekday by its accessible name without relying on a fixed date.
+    weekday = next((node.get("content-desc") for node in root.iter("node")
+                    if re.match(r"^[월화수목금토일]요일 ", node.get("content-desc", ""))
+                    and find(root, node.get("content-desc")) is not None), None)
+    if weekday is None:
+        raise AssertionError("No visible weekday to open daily volume")
+    tap_exact(weekday, root)
+    root = seek("이날 저장한 운동이 없습니다.", "10-home-day-volume")
+    results.append("tapping a weekday switches weekly volume to that day's result")
     tap_exact("내 정보", root)
     root = wait_for("화면 스타일", "11-settings")
     tap_exact("라이트", root)
