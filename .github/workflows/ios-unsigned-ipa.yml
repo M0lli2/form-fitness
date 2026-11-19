@@ -5,6 +5,11 @@ on:
   push:
     branches: [main]
     paths: ['.github/workflows/ios-unsigned-ipa.yml']
+  workflow_call:
+    inputs:
+      include_watch:
+        type: boolean
+        default: false
   workflow_dispatch:
     inputs:
       include_watch:
@@ -21,9 +26,6 @@ jobs:
   ipa:
     runs-on: macos-15
     timeout-minutes: 90
-    env:
-      APP_NAME: Form
-      VERSION: 0.2.0
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -35,6 +37,8 @@ jobs:
           xcode-select -p
           node -v
           (pod --version || true)
+      - name: Read app version
+        run: echo "VERSION=$(node -p 'require(\"./app.json\").expo.version')" >> "$GITHUB_ENV"
       - run: npm ci
       - name: Expo prebuild (iOS)
         run: npx expo prebuild --platform ios --non-interactive
@@ -72,15 +76,18 @@ jobs:
           file stage/Payload/Form.app/Form
           lipo -info stage/Payload/Form.app/Form
           echo "=== identity ==="
-          plutil -extract CFBundleIdentifier raw stage/Payload/Form.app/Info.plist
-          plutil -extract CFBundleVersion raw stage/Payload/Form.app/Info.plist
+          INFO=stage/Payload/Form.app/Info.plist
+          test "$(plutil -extract CFBundleIdentifier raw "$INFO")" = com.mori.form
+          test "$(plutil -extract CFBundleShortVersionString raw "$INFO")" = "$VERSION"
+          test "$(plutil -extract CFBundleVersion raw "$INFO")" = "$(node -p 'require("./app.json").expo.ios.buildNumber')"
           plutil -extract MinimumOSVersion raw stage/Payload/Form.app/Info.plist
           echo "=== signing state (expected: not signed) ==="
           codesign -dv stage/Payload/Form.app 2>&1 || true
           echo "=== bundle layout ==="
-          ls stage/Payload/Form.app | head -n 20
+          ls stage/Payload/Form.app | sed -n '1,20p'
           echo "=== ipa contents (top) ==="
-          unzip -l "Form-${VERSION}-iOS-unsigned.ipa" | head -n 12
+          unzip -tq "Form-${VERSION}-iOS-unsigned.ipa"
+          unzip -l "Form-${VERSION}-iOS-unsigned.ipa" | sed -n '1,12p'
           sha256sum "Form-${VERSION}-iOS-unsigned.ipa" | tee SHA256SUMS
           {
             echo "### Unsigned IPA"
@@ -118,6 +125,10 @@ jobs:
           build | tee xcodebuild-watch.log | tail -n 40
           APP=build-ipa-watch/Build/Products/Release-iphoneos/Form.app
           test -d "$APP/Watch/FORMWatch.app"
+          WATCH="$APP/Watch/FORMWatch.app/Info.plist"
+          for key in CFBundleShortVersionString CFBundleVersion; do
+            test "$(plutil -extract "$key" raw "$WATCH")" = "$(plutil -extract "$key" raw "$APP/Info.plist")"
+          done
           rm -rf stage-watch && mkdir -p stage-watch/Payload
           cp -R "$APP" stage-watch/Payload/
           find stage-watch/Payload -name _CodeSignature -type d -prune -exec rm -rf {} +

@@ -1,0 +1,59 @@
+# Build Android test APKs and unsigned Apple device packages from the same commit.
+name: Form native test release
+on:
+  push:
+    branches: ['release/v*']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: form-test-release-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  android:
+    uses: ./.github/workflows/runtime-smoke.yml
+    with:
+      package_wear: true
+  ios-simulator:
+    uses: ./.github/workflows/ios-runtime.yml
+  ios-device:
+    permissions:
+      contents: write
+    uses: ./.github/workflows/ios-unsigned-ipa.yml
+    with:
+      include_watch: true
+  release:
+    needs: [android, ios-simulator, ios-device]
+    permissions:
+      contents: write
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          path: packages
+          pattern: form-*
+      - name: Publish the verified GitHub test release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          VERSION=$(node -p 'require("./app.json").expo.version')
+          TAG="v$VERSION"
+          if [[ "$GITHUB_REF_NAME" == release/* ]]; then
+            test "$GITHUB_REF_NAME" = "release/$TAG"
+          fi
+          mkdir release-files
+          cp packages/form-offline-release/app-release.apk "release-files/Form-$VERSION-Android.apk"
+          cp packages/form-release-wear/app-debug.apk "release-files/Form-$VERSION-Wear-OS.apk"
+          cp packages/form-ios-unsigned-ipa/"Form-$VERSION-iOS-unsigned.ipa" release-files/
+          cp packages/form-ios-unsigned-ipa-watch/"Form-$VERSION-iOS-unsigned-watch.ipa" release-files/
+          (cd release-files && sha256sum *.apk *.ipa > "Form-$VERSION-SHA256SUMS.txt")
+          cat >release-notes.md <<EOF
+          Form $VERSION 네이티브 테스트 빌드입니다.
+
+          - Android 휴대폰 및 Wear OS APK는 같은 테스트 인증서를 사용합니다.
+          - iPhone·iPad 및 Apple Watch 동반 앱 IPA는 미서명입니다. 설치하려면 Apple 서명이 필요합니다.
+          - 버전별 변경사항과 사용 방법은 [README](https://github.com/$GITHUB_REPOSITORY/blob/$GITHUB_SHA/README.md), 검증 결과는 [빌드 기록](https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID)에서 확인할 수 있습니다.
+          EOF
+          gh release create "$TAG" release-files/* --target "$GITHUB_SHA" --title "Form $VERSION" --prerelease --notes-file release-notes.md

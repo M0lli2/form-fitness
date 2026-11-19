@@ -1,22 +1,14 @@
 # Form — 운동 기록
 
-미니멀한 iOS·Android 운동 기록 앱. React Native의 네이티브 뷰, Swift HealthKit 모듈, Kotlin Health Connect 모듈, SwiftUI Apple Watch 앱, Compose Wear OS 앱을 포함합니다. WebView나 PWA를 앱으로 포장하지 않습니다.
+iPhone·iPad와 Android에서 운동을 기록하는 네이티브 앱입니다. 루틴·세트 기록, 3D 운동 자세, 인바디, Apple 건강·Health Connect, Apple Watch·Wear OS 동반 앱을 제공합니다.
 
-> **현재 단계: 네이티브 테스트 빌드.** Android에서 운동 저장·재실행 복원과 다크·Glass 설정 유지까지 확인했습니다. iOS는 같은 저장 여정(운동 시작 → 세트 완료 → 저장 종료 → 재실행)을 시뮬레이터 UI 테스트로 확인했고, Android와의 기능 차이는 감사 후 수정했습니다. 실기기 건강 권한·워치 페어링·스토어 배포 검증이 남아 있습니다. [검증 기록](docs/VALIDATION.md) · [iOS 동기화 기록](docs/IOS-PARITY-2026-11-19.md)
-
-## 11월 19일 업데이트
-
-WWIT의 Planfit 화면에서 운동을 고르고 세트를 입력하는 흐름을 참고했습니다. 홈, 루틴·세트 기록, 운동도감·자세 안내, 기록·인바디, 설정의 타이포그래피와 조작 요소를 정리했습니다. [UI 변경 내역](docs/WWIT-UI-UPDATE.md) · [로컬 검증](docs/evidence/2026-11-19-local-tests.txt)
-
-iOS를 Android와 같은 기능으로 맞췄습니다. 화면 기능은 `src/`를 공유해 이미 같았고, 달랐던 워치 표시·네이티브 브리지 동작·검증 커버리지를 고쳤습니다. [iOS 동기화 기록](docs/IOS-PARITY-2026-11-19.md)
-
-v0.2.0 릴리스에 휴대폰 APK와 서명이 같은 Wear OS APK를 추가하고, `Android UI repack regression` 기준을 0.2.0 이후 머지 커밋으로 올렸습니다. 오늘 작업의 전체 기록: [진행 현황](docs/PROGRESS-2026-11-19.md)
+**현재 버전은 Form 0.3.0 네이티브 테스트 빌드입니다.** Android 휴대폰과 Wear OS는 테스트 APK, iPhone·iPad와 Apple Watch는 서명이 필요한 IPA로 제공됩니다. 기기에서 건강 연동과 워치 페어링을 검증하는 절차는 설치 문서에 있습니다. [v0.3.0 다운로드](https://github.com/M0lli2/form-fitness/releases/tag/v0.3.0) · [설치 및 실기기 검증](docs/INSTALL.md)
 
 ## 버전별 변경사항
 
 | 버전 | 배포·변경 내용 |
 |---|---|
-| 0.2.0 후속 테스트 | 빈 운동 준비 화면, 주간·일간 볼륨 조회, 하단 탭 바깥 배경 제거, 운동 설정 버튼 정렬을 적용했습니다. [루틴](https://github.com/M0lli2/form-fitness/commit/b54868a) · [볼륨](https://github.com/M0lli2/form-fitness/commit/e6cde5c) · [하단 탭](https://github.com/M0lli2/form-fitness/commit/3eae29b) · [운동 설정](https://github.com/M0lli2/form-fitness/commit/0b8d1bc) |
+| **0.3.0** | Android·iOS와 두 워치 빌드 번호 3. 빈 운동 준비와 수동 시작, 주간·일간 운동 볼륨, 하단 탭 바깥 배경 제거, 주간 목표·휴식 시간 버튼 정렬을 반영했습니다. iOS 건강 연동과 워치 연결 상태 전달을 보강했고, Apple Watch의 시간제 세트 및 심박 대기 표시를 개선했습니다. [변경 커밋](https://github.com/M0lli2/form-fitness/compare/v0.2.0...v0.3.0) · [릴리스](https://github.com/M0lli2/form-fitness/releases/tag/v0.3.0) |
 | 0.2.0 | 앱 표시 이름 **Form**, Android·iOS 빌드 번호 2. 근육 기능을 포함하며 일시정지→계속하기→저장 종료를 검증 경로에 추가했습니다. 휴대폰 APK와 서명이 같은 **Wear OS APK**를 함께 배포합니다. [v0.2.0 릴리스](https://github.com/M0lli2/form-fitness/releases/tag/v0.2.0) |
 | 0.1.0 피드백 프리뷰 | 3D 자세 22종, 근육 해부 그래픽과 터치, 주간 근육 볼륨, 운동도감 근육 필터. [Android 프리뷰](https://github.com/M0lli2/form-fitness/releases/tag/preview-2026-11-19-feedback) |
 | 0.1.0 초기 프리뷰 | 운동 기록, 3D 자세 8종, 라이트·다크와 Liquid Glass. [초기 프리뷰](https://github.com/M0lli2/form-fitness/releases/tag/preview-2026-11-19) |
@@ -33,9 +25,9 @@ v0.2.0 릴리스에 휴대폰 APK와 서명이 같은 Wear OS APK를 추가하�
 | 근육별 운동 검색 | 운동도감의 **타깃 근육**에서 세부 근육을 선택합니다. 보조근 포함 스위치와 장비 필터를 함께 사용할 수 있습니다. |
 | 인바디·건강·워치 | 기록에서 체성분과 결과지 사진을 저장합니다. 내 정보에서 건강 앱 연결과 워치 연결 상태를 확인합니다. |
 
-### 0.2.0 후속 업데이트 실제 화면
+### 0.3.0 변경 화면
 
-Android 에뮬레이터에서 앱을 실행해 캡처했습니다. 빈 운동이 `0:00`에서 대기하는 상태, 일시정지 후 조작 버튼, 주간·일간 전환, 하단 탭 외곽과 설정 버튼 정렬을 확인할 수 있습니다. [Android 실행·검증 기록](https://github.com/M0lli2/form-fitness/actions/runs/44522954535)
+0.3.0에 포함된 기능을 Android 에뮬레이터에서 실행해 캡처했습니다. 빈 운동이 `0:00`에서 대기하는 상태, 일시정지 후 조작 버튼, 주간·일간 전환, 하단 탭 외곽과 설정 버튼 정렬을 확인할 수 있습니다. [Android 실행·검증 기록](https://github.com/M0lli2/form-fitness/actions/runs/44522954535)
 
 | 빈 운동 준비 · 타이머 0:00 | 일시정지 · 계속하기 · 운동 종료 |
 |---|---|
@@ -59,9 +51,14 @@ Android 에뮬레이터에서 앱을 실행해 캡처했습니다. 빈 운동이
 
 ## 설치
 
-- **Android·Wear OS** — [0.2.0 다운로드](https://github.com/M0lli2/form-fitness/releases/tag/v0.2.0). 휴대폰은 `Form-0.2.0-Android.apk`(99,009,409 bytes), 워치는 `Form-0.2.0-Wear-OS.apk`(23,184,400 bytes)이며 두 APK의 서명 인증서가 같습니다. [APK 검증 기록](docs/evidence/2026-11-19-android-apk.txt) · [Wear OS 자산 검증](docs/evidence/2026-11-19-wear-os-release-asset.txt)
-- **iPhone·Apple Watch** — [TestFlight·등록 기기 설치 방법](docs/INSTALL.md#iphone--apple-watch-설치)
-- [설치 순서와 남은 실기기 검증](docs/INSTALL.md)
+| 환경 | 파일 및 설치 방법 |
+|---|---|
+| Android 휴대폰 | [Form-0.3.0-Android.apk](https://github.com/M0lli2/form-fitness/releases/download/v0.3.0/Form-0.3.0-Android.apk). 기존 v0.2.0 테스트 APK와 같은 인증서로 업데이트할 수 있습니다. |
+| Wear OS · Galaxy Watch4 이후 | [Form-0.3.0-Wear-OS.apk](https://github.com/M0lli2/form-fitness/releases/download/v0.3.0/Form-0.3.0-Wear-OS.apk). 휴대폰 APK와 같은 테스트 인증서를 사용합니다. |
+| iPhone · iPad | [Form-0.3.0-iOS-unsigned.ipa](https://github.com/M0lli2/form-fitness/releases/download/v0.3.0/Form-0.3.0-iOS-unsigned.ipa). 설치 전에 Apple 서명과 프로비저닝이 필요합니다. |
+| iPhone + Apple Watch | [Form-0.3.0-iOS-unsigned-watch.ipa](https://github.com/M0lli2/form-fitness/releases/download/v0.3.0/Form-0.3.0-iOS-unsigned-watch.ipa). 휴대폰·워치 앱 각각에 올바른 서명과 권한 구성이 필요합니다. |
+
+[SHA-256 체크섬](https://github.com/M0lli2/form-fitness/releases/download/v0.3.0/Form-0.3.0-SHA256SUMS.txt) · [설치 순서 및 TestFlight 준비](docs/INSTALL.md)
 
 ## 이전 테스트 빌드 실행 화면
 
@@ -77,17 +74,10 @@ GitHub Actions의 Android 에뮬레이터와 iPhone 시뮬레이터에서 캡처
 
 Android 캡처는 [저장·복원 테스트](https://github.com/M0lli2/form-fitness/actions/runs/44246921105), iPhone 홈 캡처는 [iOS 실행 검증](https://github.com/M0lli2/form-fitness/actions/runs/44245272504)에서 확인할 수 있습니다.
 
-## 이번 통합 변경
-
-- Planfit 공개 화면을 참고한 한 운동 집중 기록 화면을 실제 앱에 연결했습니다.
-- 무채색 테마와 시스템 글꼴, 내용 영역의 불투명 패널, 조작·탐색 영역의 선택형 유리 효과를 적용했습니다.
-- 세트 입력과 완료를 함께 저장하며 워치 독립 운동 백업 복원을 수정했습니다.
-- 99% 기능·화면 동등성은 검증되지 않았습니다. 현재 기본 63종 운동 안내, 사용자 운동 등록, 수동 인바디 입력을 제공합니다.
-
 ## 운동도감과 3D 자세
 
 - 하단 **운동도감**에서 운동을 선택하면 자세 상세가 열립니다. 운동 중 **운동 추가**에서도 자세를 확인한 뒤 추가할 수 있습니다.
-- 3D 가이드는 푸시업, 맨몸 스쿼트, 글루트 브리지, 카프 레이즈, 덤벨 컬, 레터럴 레이즈, 고블릿 스쿼트, 바벨 오버헤드 프레스에 제공됩니다.
+- 3D 가이드는 푸시업·맨몸 스쿼트·덤벨 컬 등을 포함해 총 22종입니다. 대상 운동에는 운동도감에서 3D 표시가 나타납니다.
 - 모델은 관절 좌표 기반입니다. 재생·일시 정지, 방향 전환, 확대, 주요 자세 전환을 지원합니다. 다른 운동도 단계별 텍스트 가이드를 제공합니다.
 - **근육 해부 그래픽**을 함께 표시합니다. 인체 실루엣 위에 주동근은 강조색으로, 보조근은 옅게 칠하고 근육 위 번호와 범례를 연결합니다. 8방향 입체 투영은 네이티브 View로만 그려 오프라인에서 동작하며, '근육 숨기기'로 기존 관절 가이드로 돌아갑니다. [상세](docs/MOTION-GUIDE.md)
 - 근육 그래픽과 회전 조작은 [피드백 반영판 실제 화면](#피드백-반영판-실제-화면)에서 확인할 수 있습니다.
@@ -98,7 +88,6 @@ Android 캡처는 [저장·복원 테스트](https://github.com/M0lli2/form-fitn
 - **Liquid Glass ON/OFF 독립 설정**. 기본 OFF.
 - OFF: 단색 패널. ON: 지원 iOS에서 네이티브 GlassView, 다른 환경에서 반투명 패널.
 - 투명도 줄이기, 44~48pt 이상 주요 터치 영역, 명시적인 저장 오류, 빈 상태.
-- 최신 요청: **무채색 중심 + 선명한 유리 효과 + 읽기 쉬운 타이포그래피**. 디자인 최종 승인 대기.
 - `design/preview.html`: 홈·운동·인바디 비교용 인터랙티브 시안. 네이티브 앱 실행 화면이 아니며 샘플 수치를 사용합니다.
 - `design/review-01.png`: 첫 번째 시안. 최신 수정 요청 전 버전으로 이력을 보존합니다.
 
@@ -109,7 +98,7 @@ Android 캡처는 [저장·복원 테스트](https://github.com/M0lli2/form-fitn
 | 운동 기록 | 세트, 중량, 횟수, 시간, 거리, 일반·워밍업·드롭, 메모, 이전 기록 채움 | 고급 슈퍼세트·RPE 전용 입력 개선 필요 |
 | 휴식 | 종료 시각 기준 타이머, 로컬 알림, 취소 | OS 강제 종료·절전 모드 실기기 확인 필요 |
 | 루틴 | 생성·편집·운동 선택, 기본 전신·상체·하체·맨몸 루틴 | 주간 캘린더 예약 미구현 |
-| 성장 | 히스토리, 주간 볼륨, 추정 1RM | 소셜 기능 미구현 |
+| 성장 | 히스토리, 주간·일간 운동 볼륨, 7일 근육 볼륨, 추정 1RM | 소셜 기능 미구현 |
 | 운동법 | 한국어 기본 63종, 사용자 운동 등록, 부위·장비 검색, 3단계 설명, 주의사항 | 모든 운동을 망라하지 않음. 3D 관절 가이드 22종. 나머지 3D·동작 영상·트레이너 감수는 후속 |
 | 인바디 | 측정일, 체중, 체지방률, 골격근량, 키, 허리둘레, 내장지방 레벨, BMR, 메모, 사진 | 수동 입력. 제조사 API / OCR 미구현 |
 | Apple 건강 | 걸음·심박·체중·체지방·최근 운동 읽기, 체중·체지방·운동 쓰기 | 실기기 검증 전. 피트니스 링 반영은 Apple 정책에 따름 |
@@ -214,40 +203,15 @@ cd wearos
 ## 검증
 
 ```sh
-npm test                   # 의존성 없이 도메인 테스트 80개
-npm run check              # JSON·앱 ID·iOS/Android 네이티브 계약 동등성 검사
-npm run typecheck          # npm install 필요
+npm test
+npm run check
+npm run typecheck
 ```
 
-GitHub Actions의 `Source checks`는 push와 PR마다 위 검사와 Android JS 번들 export를 실행하고, `iOS runtime smoke`는 시뮬레이터 설치·실행과 XCTest 4개(저장 여정 포함)를 확인합니다. `Android runtime smoke`는 에뮬레이터에서 릴리스 APK를 직접 구동합니다. `Native build validation`과 `Android UI repack regression`은 경로 트리거 또는 Actions에서 수동 실행합니다. **실행 설정이 존재한다는 사실은 빌드 성공을 의미하지 않습니다.**
+[릴리스](https://github.com/M0lli2/form-fitness/releases/tag/v0.3.0)의 빌드 기록에서 Android 에뮬레이터 운동 여정, iOS 시뮬레이터 XCTest, 두 Android APK의 서명과 Apple IPA 버전 검증을 확인할 수 있습니다. 실기기 건강 권한, 워치 페어링, 스토어 서명·심사는 [실기기 검증 표](docs/INSTALL.md#남은-실기기-검증)에서 관리합니다.
 
-## 다음 출시 게이트
+## 이전 구현 기록
 
-1. 의존성 설치·타입 검사·Android/iOS/Wear/watchOS 컴파일 통과.
-2. 무채색·선명한 Glass·폰트 수정 시안 승인 및 네이티브 화면 일치.
-3. 실제 4종 기기에서 권한 거부/부분 허용/취소/오프라인/재연결/강제종료 검사.
-4. 건강 데이터 원본 구분, 수정·삭제 동기화, 보안·접근성 검토.
-5. 운동 콘텐츠 전문가 감수, 자체 동작 이미지/영상 확보.
-6. App Store / Play Console 건강 권한·개인정보·심사 정보 작성 및 서명 배포.
-
-상위 앱의 모든 기능과 모든 운동을 완료했다고 주장하지 않습니다. 목표와 실제 구현·검증 상태를 구분하여 유지합니다.
-
-## 후속 구현·검증 기록 (2026-11-18)
-
-- 집중 기록 화면 kg/lb 변환 일관성과 인바디 수정 버전 처리를 보강했습니다. 건강 재전송은 저장된 revision을 유지하며 로컬 편집 저장 때만 올립니다.
-- 기본 목록에 없는 운동은 사용자 운동으로 등록해 루틴·세트 기록·백업에서 사용합니다.
-- 로컬 회귀 테스트 26개 통과. e210fcc 전체 타입 검사와 Android JS 번들 성공.
-- 8deb2e6 Android Release 홈·4개 메뉴·재실행 검증 성공. Apple Watch embed는 1462eee / 0672495 Apple job 성공.
-- npm audit 호환 업데이트 실험에서는 React Native Flow 구문 번들이 실패하여 해당 자동 수정 lock을 채택하지 않았습니다. 배포 전 의존성 보안 업데이트 검증이 남아 있습니다.
-
-## 후속 구현·검증 기록 (2026-11-19)
-
-- iOS를 Android와 같은 기능으로 맞추는 감사에서 화면 기능(운동 기록·3D 자세·근육 필터·주간 볼륨·인바디·백업·테마/Glass)은 `src/`를 그대로 공유해 이미 같았습니다. 달랐던 워치 표시·네이티브 브리지·검증 커버리지만 고쳤습니다. [기록](docs/IOS-PARITY-2026-11-19.md)
-- `modules/form-device/ios/FormDeviceModule.swift`: WatchConnectivity 활성화 전 호출에서 예외를 던져 상태를 잃던 것을 최신 상태 보관 후 전송으로 바꾸고, 심박 조회를 Android와 같은 최근 30일로 제한했습니다.
-- `watchos/Sources/FORMWatchApp.swift`: 유산소·아이소메트릭 세트를 `N초`로 표시하고, 첫 심박 표본 전에는 `0 bpm` 대신 `심박 측정 대기`를 표시합니다.
-- `scripts/ios-parity.mjs`(신규)와 `scripts/check-project.mjs` 확장: 네이티브 메서드·이벤트 계약, 건강 레코드 종류, 워치 액션, iOS 엔타이틀먼트를 소스에서 직접 비교하고 `npm run check`가 매 push마다 실행합니다. `tests/ios-parity.test.mjs`(신규)로 7개가 늘어 `npm test`가 80개가 됐습니다.
-- `tests/ios/WorkoutJourney.swift`: Android 저장 여정과 같은 경로(운동 시작 → 세트 완료 → 일시정지/계속 → 저장 종료 → 기록 → 재실행)와 설정 항목 동등성 테스트를 추가했습니다. `iOS runtime smoke`에서 XCTest 4/4 통과.
-- v0.2.0 릴리스에 Wear OS APK(`Form-0.2.0-Wear-OS.apk`)를 추가했습니다. 자체 키스토어로 서명해 휴대폰과 인증서가 다른 `wearos` 잡 아티팩트 대신, 휴대폰 디버그 키스토어로 서명한 페어링 아티팩트를 골라 두 APK 인증서 SHA-256이 `fac61745…`로 일치합니다. [자산 검증](docs/evidence/2026-11-19-wear-os-release-asset.txt)
-- `Android UI repack regression`의 기준 커밋·기준 APK run-id·provenance를 0.2.0 이후 `main` 머지 커밋으로 맞췄습니다. iOS 네이티브가 바뀌어 다음 `src/**` push에서 실패할 수 있던 가드입니다.
-- 저장소에서 **Dependabot 취약점 알림(Dependabot alerts)을 켰습니다.** 2026-11-19 기준 알림 8건이며, `npm audit`이 보고한 항목의 분류·업데이트는 후속 작업입니다. [보안 개요](https://github.com/M0lli2/form-fitness/security)
-- 남은 작업: 설정 화면의 플랫폼별 문구 2곳, iOS JS 번들 CI 검사, 실기기 건강 권한·워치 페어링 검증. 적용할 diff는 [iOS 동기화 기록](docs/IOS-PARITY-2026-11-19.md) 9.2~9.6절에 있습니다.
+- [11월 19일 통합 작업](docs/PROGRESS-2026-11-19.md)
+- [iOS·Android 동기화 감사](docs/IOS-PARITY-2026-11-19.md)
+- [검증 이력](docs/VALIDATION.md)

@@ -2,10 +2,15 @@
 name: Android runtime smoke
 on:
   workflow_dispatch:
+  workflow_call:
+    inputs:
+      package_wear:
+        type: boolean
+        default: false
   push:
     paths: ['.github/workflows/runtime-smoke.yml', 'scripts/runtime-smoke.py', 'app.json', 'modules/**', 'plugins/**', 'package*.json', 'src/**', 'src/core.mjs']
 concurrency:
-  group: android-runtime-${{ github.ref }}
+  group: android-runtime-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 permissions:
   contents: read
@@ -22,10 +27,38 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
-      - run: npm install
+      - run: npm ci
       - run: npx expo prebuild --platform android --no-install
       # Release embeds JS and bypasses the development launcher. CI signing is not store signing.
       - run: cd android && ./gradlew assembleRelease -PreactNativeArchitectures=arm64-v8a,x86_64
+      - uses: gradle/actions/setup-gradle@v4
+        if: inputs.package_wear
+        with:
+          gradle-version: '8.11.1'
+      - name: Build and verify the paired Wear OS package
+        if: inputs.package_wear
+        run: |
+          gradle -p wearos assembleDebug -PformDebugKeystore="$GITHUB_WORKSPACE/android/app/debug.keystore"
+          phone=android/app/build/outputs/apk/release/app-release.apk
+          watch=wearos/app/build/outputs/apk/debug/app-debug.apk
+          python3 scripts/check-apk-pair.py "$phone" "$watch"
+          # Preserve the certificate used by the v0.2.0 test release.
+          signer=$(find "$ANDROID_HOME/build-tools" -name apksigner | sort -V | tail -1)
+          "$signer" verify --print-certs "$phone" | grep -F 'fac61745dc0903786fb9ede62a962b399f7348f0bb6f899b8332667591033b9c'
+          aapt="$(dirname "$signer")/aapt"
+          version=$(node -p 'require("./app.json").expo.version')
+          code=$(node -p 'require("./app.json").expo.android.versionCode')
+          for apk in "$phone" "$watch"; do
+            "$aapt" dump badging "$apk" > "$apk.badging.txt"
+            grep -F "package: name='com.mori.form' versionCode='$code' versionName='$version'" "$apk.badging.txt"
+            unzip -tq "$apk"
+          done
+      - uses: actions/upload-artifact@v4
+        if: inputs.package_wear
+        with:
+          name: form-release-wear
+          path: wearos/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
       - uses: actions/upload-artifact@v4
         with:
           name: form-offline-release
@@ -53,7 +86,7 @@ jobs:
           arch: x86_64
           target: google_apis
           disable-animations: true
-          script: python3 scripts/runtime-smoke.py
+          script: python3 scripts/${{ inputs.package_wear && 'runtime-journeys.py' || 'runtime-smoke.py' }}
       - uses: actions/upload-artifact@v4
         if: always()
         with:

@@ -2,7 +2,7 @@
   "expo": {
     "name": "Form",
     "slug": "form-native",
-    "version": "0.2.0",
+    "version": "0.3.0",
     "scheme": "form",
     "orientation": "default",
     "userInterfaceStyle": "automatic",
@@ -10,7 +10,7 @@
     "ios": {
       "bundleIdentifier": "com.mori.form",
       "supportsTablet": true,
-      "buildNumber": "2",
+      "buildNumber": "3",
       "infoPlist": {
         "NSHealthShareUsageDescription": "걸음 수, 심박수, 운동, 체중 및 체지방을 내 운동 기록과 함께 보여줍니다.",
         "NSHealthUpdateUsageDescription": "동의한 운동과 체성분 기록을 건강 앱에 저장합니다.",
@@ -23,7 +23,7 @@
     "android": {
       "package": "com.mori.form",
       "allowBackup": false,
-      "versionCode": 2,
+      "versionCode": 3,
       "permissions": [
         "android.permission.health.READ_STEPS",
         "android.permission.health.READ_HEART_RATE",
