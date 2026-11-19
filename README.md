@@ -2,19 +2,21 @@
 
 미니멀한 iOS·Android 운동 기록 앱. React Native의 네이티브 뷰, Swift HealthKit 모듈, Kotlin Health Connect 모듈, SwiftUI Apple Watch 앱, Compose Wear OS 앱을 포함합니다. WebView나 PWA를 앱으로 포장하지 않습니다.
 
-> **현재 단계: 네이티브 테스트 빌드.** Android에서 운동 저장·재실행 복원과 다크·Glass 설정 유지까지 확인했습니다. iOS는 시뮬레이터 홈 실행과 재실행을 확인했습니다. 실기기 건강 권한·워치 페어링·스토어 배포 검증이 남아 있습니다. [검증 기록](docs/VALIDATION.md)
+> **현재 단계: 네이티브 테스트 빌드.** Android에서 운동 저장·재실행 복원과 다크·Glass 설정 유지까지 확인했습니다. iOS는 같은 저장 여정(운동 시작 → 세트 완료 → 저장 종료 → 재실행)을 시뮬레이터 UI 테스트로 확인했고, Android와의 기능 차이는 감사 후 수정했습니다. 실기기 건강 권한·워치 페어링·스토어 배포 검증이 남아 있습니다. [검증 기록](docs/VALIDATION.md) · [iOS 동기화 기록](docs/IOS-PARITY-2026-11-19.md)
 
 ## 11월 19일 업데이트
 
 WWIT의 Planfit 화면에서 운동을 고르고 세트를 입력하는 흐름을 참고했습니다. 홈, 루틴·세트 기록, 운동도감·자세 안내, 기록·인바디, 설정의 타이포그래피와 조작 요소를 정리했습니다. [UI 변경 내역](docs/WWIT-UI-UPDATE.md) · [로컬 검증](docs/evidence/2026-11-19-local-tests.txt)
 
-iOS를 Android와 같은 기능으로 맞춘 감사·변경 기록: [iOS 동기화 기록](docs/IOS-PARITY-2026-11-19.md)
+iOS를 Android와 같은 기능으로 맞췄습니다. 화면 기능은 `src/`를 공유해 이미 같았고, 달랐던 워치 표시·네이티브 브리지 동작·검증 커버리지를 고쳤습니다. [iOS 동기화 기록](docs/IOS-PARITY-2026-11-19.md)
+
+v0.2.0 릴리스에 휴대폰 APK와 서명이 같은 Wear OS APK를 추가하고, `Android UI repack regression` 기준을 0.2.0 이후 머지 커밋으로 올렸습니다. 오늘 작업의 전체 기록: [진행 현황](docs/PROGRESS-2026-11-19.md)
 
 ## 버전별 변경사항
 
 | 버전 | 배포·변경 내용 |
 |---|---|
-| 0.2.0 | 앱 표시 이름 **Form**, Android·iOS 빌드 번호 2. 근육 기능을 포함하며 일시정지→계속하기→저장 종료를 검증 경로에 추가했습니다. |
+| 0.2.0 | 앱 표시 이름 **Form**, Android·iOS 빌드 번호 2. 근육 기능을 포함하며 일시정지→계속하기→저장 종료를 검증 경로에 추가했습니다. 휴대폰 APK와 서명이 같은 **Wear OS APK**를 함께 배포합니다. [v0.2.0 릴리스](https://github.com/M0lli2/form-fitness/releases/tag/v0.2.0) |
 | 0.1.0 피드백 프리뷰 | 3D 자세 22종, 근육 해부 그래픽과 터치, 주간 근육 볼륨, 운동도감 근육 필터. [Android 프리뷰](https://github.com/M0lli2/form-fitness/releases/tag/preview-2026-11-19-feedback) |
 | 0.1.0 초기 프리뷰 | 운동 기록, 3D 자세 8종, 라이트·다크와 Liquid Glass. [초기 프리뷰](https://github.com/M0lli2/form-fitness/releases/tag/preview-2026-11-19) |
 
@@ -38,7 +40,7 @@ iOS를 Android와 같은 기능으로 맞춘 감사·변경 기록: [iOS 동기�
 
 ## 설치
 
-- **Android·Wear OS** — [0.1.0 초기 프리뷰 다운로드](https://github.com/M0lli2/form-fitness/releases/tag/preview-2026-11-19). 휴대폰 APK에 이번 UI와 3D 가이드를 포함했습니다. Wear OS APK는 동일 서명의 기존 동반 앱입니다. [APK 검증 기록](docs/evidence/2026-11-19-android-apk.txt)
+- **Android·Wear OS** — [0.2.0 다운로드](https://github.com/M0lli2/form-fitness/releases/tag/v0.2.0). 휴대폰은 `Form-0.2.0-Android.apk`(99,009,409 bytes), 워치는 `Form-0.2.0-Wear-OS.apk`(23,184,400 bytes)이며 두 APK의 서명 인증서가 같습니다. [APK 검증 기록](docs/evidence/2026-11-19-android-apk.txt) · [Wear OS 자산 검증](docs/evidence/2026-11-19-wear-os-release-asset.txt)
 - **iPhone·Apple Watch** — [TestFlight·등록 기기 설치 방법](docs/INSTALL.md#iphone--apple-watch-설치)
 - [설치 순서와 남은 실기기 검증](docs/INSTALL.md)
 
@@ -93,7 +95,7 @@ Android 캡처는 [저장·복원 테스트](https://github.com/M0lli2/form-fitn
 | 인바디 | 측정일, 체중, 체지방률, 골격근량, 키, 허리둘레, 내장지방 레벨, BMR, 메모, 사진 | 수동 입력. 제조사 API / OCR 미구현 |
 | Apple 건강 | 걸음·심박·체중·체지방·최근 운동 읽기, 체중·체지방·운동 쓰기 | 실기기 검증 전. 피트니스 링 반영은 Apple 정책에 따름 |
 | Android 건강 | Health Connect 읽기·쓰기, 권한 안내 Activity | Samsung Health에서 공유 설정한 호환 데이터만 사용 |
-| Apple Watch | 세트 완료 리모컨, 독립 운동, 심박·에너지, HealthKit 저장 | iPhone 앱에 포함되는 것을 CI에서 확인. 배포 서명·실기기 페어링 검증 필요 |
+| Apple Watch | 세트 완료 리모컨, 독립 운동, 심박·에너지, HealthKit 저장 | iPhone 앱에 포함되는 것을 CI에서 확인. 시뮬레이터 UI 테스트로 저장·재실행 여정까지 확인. 배포 서명·실기기 페어링 검증 필요 |
 | Galaxy Watch | Wear OS 세트 리모컨, 독립 타이머·심박, 휴대폰 전송 | Watch4 이후 Wear OS 대상. Tizen 미지원. 심박 시계열 저장 미구현 |
 | 데이터 | SQLCipher DB, 기기 보안 저장소 키, 백업 병합/내보내기 | 로그인·서버·기기 간 클라우드 동기화 미구현 |
 
@@ -105,6 +107,7 @@ modules/form-device/     Swift / Kotlin 네이티브 연동 모듈
 watchos/                 SwiftUI Apple Watch 앱과 XcodeGen 설정
 wearos/                  Kotlin Compose Wear OS 독립 빌드 프로젝트
 plugins/                 Expo prebuild 구성
+scripts/                 소스 계약 검사·CI 실행 스크립트
 tests/                   데이터 검증·중복 이벤트·계산 테스트
 design/                  승인용 UI 시안 (프로덕션 앱과 별도)
 docs/                    아키텍처, 설정, 검증, 출시 과제
@@ -192,12 +195,12 @@ cd wearos
 ## 검증
 
 ```sh
-npm test                   # 의존성 없이 도메인 테스트
-npm run check              # JSON·브리지 계약·앱 ID 검사
+npm test                   # 의존성 없이 도메인 테스트 80개
+npm run check              # JSON·앱 ID·iOS/Android 네이티브 계약 동등성 검사
 npm run typecheck          # npm install 필요
 ```
 
-GitHub Actions의 `Source checks`는 push 시 실행합니다. `Native build validation`은 Actions에서 수동 실행합니다. **실행 설정이 존재한다는 사실은 빌드 성공을 의미하지 않습니다.**
+GitHub Actions의 `Source checks`는 push와 PR마다 위 검사와 Android JS 번들 export를 실행하고, `iOS runtime smoke`는 시뮬레이터 설치·실행과 XCTest 4개(저장 여정 포함)를 확인합니다. `Android runtime smoke`는 에뮬레이터에서 릴리스 APK를 직접 구동합니다. `Native build validation`과 `Android UI repack regression`은 경로 트리거 또는 Actions에서 수동 실행합니다. **실행 설정이 존재한다는 사실은 빌드 성공을 의미하지 않습니다.**
 
 ## 다음 출시 게이트
 
@@ -217,3 +220,15 @@ GitHub Actions의 `Source checks`는 push 시 실행합니다. `Native build val
 - 로컬 회귀 테스트 26개 통과. e210fcc 전체 타입 검사와 Android JS 번들 성공.
 - 8deb2e6 Android Release 홈·4개 메뉴·재실행 검증 성공. Apple Watch embed는 1462eee / 0672495 Apple job 성공.
 - npm audit 호환 업데이트 실험에서는 React Native Flow 구문 번들이 실패하여 해당 자동 수정 lock을 채택하지 않았습니다. 배포 전 의존성 보안 업데이트 검증이 남아 있습니다.
+
+## 후속 구현·검증 기록 (2026-11-19)
+
+- iOS를 Android와 같은 기능으로 맞추는 감사에서 화면 기능(운동 기록·3D 자세·근육 필터·주간 볼륨·인바디·백업·테마/Glass)은 `src/`를 그대로 공유해 이미 같았습니다. 달랐던 워치 표시·네이티브 브리지·검증 커버리지만 고쳤습니다. [기록](docs/IOS-PARITY-2026-11-19.md)
+- `modules/form-device/ios/FormDeviceModule.swift`: WatchConnectivity 활성화 전 호출에서 예외를 던져 상태를 잃던 것을 최신 상태 보관 후 전송으로 바꾸고, 심박 조회를 Android와 같은 최근 30일로 제한했습니다.
+- `watchos/Sources/FORMWatchApp.swift`: 유산소·아이소메트릭 세트를 `N초`로 표시하고, 첫 심박 표본 전에는 `0 bpm` 대신 `심박 측정 대기`를 표시합니다.
+- `scripts/ios-parity.mjs`(신규)와 `scripts/check-project.mjs` 확장: 네이티브 메서드·이벤트 계약, 건강 레코드 종류, 워치 액션, iOS 엔타이틀먼트를 소스에서 직접 비교하고 `npm run check`가 매 push마다 실행합니다. `tests/ios-parity.test.mjs`(신규)로 7개가 늘어 `npm test`가 80개가 됐습니다.
+- `tests/ios/WorkoutJourney.swift`: Android 저장 여정과 같은 경로(운동 시작 → 세트 완료 → 일시정지/계속 → 저장 종료 → 기록 → 재실행)와 설정 항목 동등성 테스트를 추가했습니다. `iOS runtime smoke`에서 XCTest 4/4 통과.
+- v0.2.0 릴리스에 Wear OS APK(`Form-0.2.0-Wear-OS.apk`)를 추가했습니다. 자체 키스토어로 서명해 휴대폰과 인증서가 다른 `wearos` 잡 아티팩트 대신, 휴대폰 디버그 키스토어로 서명한 페어링 아티팩트를 골라 두 APK 인증서 SHA-256이 `fac61745…`로 일치합니다. [자산 검증](docs/evidence/2026-11-19-wear-os-release-asset.txt)
+- `Android UI repack regression`의 기준 커밋·기준 APK run-id·provenance를 0.2.0 이후 `main` 머지 커밋으로 맞췄습니다. iOS 네이티브가 바뀌어 다음 `src/**` push에서 실패할 수 있던 가드입니다.
+- 저장소에서 **Dependabot 취약점 알림(Dependabot alerts)을 켰습니다.** 2026-11-19 기준 알림 8건이며, `npm audit`이 보고한 항목의 분류·업데이트는 후속 작업입니다. [보안 개요](https://github.com/M0lli2/form-fitness/security)
+- 남은 작업: 설정 화면의 플랫폼별 문구 2곳, iOS JS 번들 CI 검사, 실기기 건강 권한·워치 페어링 검증. 적용할 diff는 [iOS 동기화 기록](docs/IOS-PARITY-2026-11-19.md) 9.2~9.6절에 있습니다.
