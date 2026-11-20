@@ -14,6 +14,12 @@ iPhone·iPad와 Android에서 운동을 기록하는 네이티브 앱입니다. 
 
 운동도감에서 **근육 모형으로 찾기**를 열고 부위를 누르면 타깃 근육이 바뀝니다. 기록의 **이번 주 근육 볼륨**에서는 최근 7일에 해당 근육을 사용한 정도를 색으로 표시합니다.
 
+| 운동도감 앞면 | 운동도감 배면 | 근육 볼륨 앞면 | 근육 볼륨 배면 |
+|---|---|---|---|
+| <img src="docs/screenshots/catalog-anatomy-front.png" width="195" alt="운동도감 인체 모델 앞면"> | <img src="docs/screenshots/catalog-anatomy-back.png" width="195" alt="운동도감 인체 모델 배면"> | <img src="docs/screenshots/weekly-anatomy-front.png" width="195" alt="최근 7일 근육 볼륨 앞면"> | <img src="docs/screenshots/weekly-anatomy-back.png" width="195" alt="최근 7일 근육 볼륨 배면"> |
+
+[Android 캡처 기록](https://github.com/M0lli2/form-fitness/actions/runs/44697713042)
+
 ## 버전별 변경사항
 
 | 버전 | 배포·변경 내용 |
