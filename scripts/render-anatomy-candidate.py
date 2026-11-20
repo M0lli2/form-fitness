@@ -1,6 +1,6 @@
 """Preview the CC0 source with Form's clay lighting and inspect it in a bent pose."""
 import bpy
-from mathutils import Vector
+from mathutils import Vector, Quaternion
 from math import radians
 from pathlib import Path
 
@@ -8,6 +8,11 @@ bpy.ops.wm.read_factory_settings(use_empty=True)
 bpy.ops.import_scene.gltf(filepath=str(Path("sources/rigged.glb").resolve()))
 scene = bpy.context.scene
 meshes = [obj for obj in scene.objects if obj.type == "MESH"]
+detailed = [obj for obj in meshes if "high-poly" in obj.name]
+if detailed:
+    for obj in meshes:
+        obj.hide_render = obj not in detailed
+    meshes = detailed
 rig = next((obj for obj in scene.objects if obj.type == "ARMATURE"), None)
 if not meshes or not rig:
     raise RuntimeError("Expected a rigged surface")
@@ -80,3 +85,41 @@ shot("rigged-front", (cx+1.15,cy-4,z0+height*.64))
 shot("rigged-back", (cx-1.05,cy+4,z0+height*.64))
 # Capture the named armature for the release integration pass. Keep neutral if no remap is confirmed.
 Path("evidence/blender-rig.txt").write_text("\n".join(b.name for b in rig.data.bones), encoding="utf-8")
+
+# Bend the source rig's knees and elbows to examine skin deformation.
+for side in ("L", "R"):
+    for name, angle in ((f"upperleg01.{side}", -60), (f"lowerleg01.{side}", 105), (f"lowerarm01.{side}", -40)):
+        joint = rig.pose.bones[name]
+        axis = joint.bone.matrix_local.to_3x3().inverted() @ Vector((1,0,0))
+        joint.rotation_mode = "QUATERNION"
+        joint.rotation_quaternion = Quaternion(axis.normalized(), radians(angle))
+bpy.context.view_layer.update()
+shot("rigged-flexion", (cx+2,cy-4,z0+height*.67))
+
+# Compare separately authored superficial muscles.
+old = [obj for obj in scene.objects if obj.type == "MESH"]
+for obj in old:
+    obj.hide_render = True
+bpy.ops.import_scene.gltf(filepath=str(Path("sources/ecorche.glb").resolve()))
+source = [obj for obj in scene.objects if obj.type == "MESH" and obj not in old]
+visible = [obj for obj in source if obj.get("layer") == "superficial"]
+if len(visible) < 20:
+    raise RuntimeError("Could not identify the superficial muscle layer")
+purple = material("Target muscle", (.25,.22,.43))
+for obj in source:
+    obj.hide_render = obj not in visible
+    if not obj.hide_render:
+        obj.data.materials.clear()
+        obj.data.materials.append(purple if any(word in obj.name.lower() for word in ("vastus","rectus femoris","gluteus maximus")) else ivory)
+        for face in obj.data.polygons:
+            face.use_smooth = True
+            face.material_index = 0
+bpy.context.view_layer.update()
+bounds = [obj.matrix_world @ Vector(p) for obj in visible for p in obj.bound_box]
+cx = (min(p.x for p in bounds)+max(p.x for p in bounds))/2
+cy = (min(p.y for p in bounds)+max(p.y for p in bounds))/2
+z0 = min(p.z for p in bounds)
+height = max(p.z for p in bounds)-z0
+camera.data.ortho_scale = height*1.18
+shot("ecorche-front", (cx+.75*height,cy-2.25*height,z0+height*.65))
+shot("ecorche-back", (cx-.70*height,cy+2.2*height,z0+height*.65))

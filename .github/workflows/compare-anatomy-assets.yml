@@ -34,8 +34,8 @@ jobs:
       - name: Install Blender
         run: |
           sudo apt-get update -qq
-          sudo apt-get install -y -qq blender
-      - name: Render neutral and posed previews of the rigged candidate
+          sudo apt-get install -y -qq blender python3-numpy
+      - name: Render both candidates and test the rig
         run: blender -b -t 4 --python-exit-code 1 --python scripts/render-anatomy-candidate.py
       - uses: actions/upload-artifact@v4
         if: always()
