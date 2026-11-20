@@ -61,6 +61,33 @@ final class WorkoutJourney: XCTestCase {
         XCTAssertTrue(app.buttons["축소"].exists)
         attach("exercise-library-motion-guide")
     }
+    func testPreparedWorkoutAllowsEditingBeforeStart() {
+        tap("루틴")
+        tap("빈 운동 시작")
+        tap("운동 추가")
+        tap("푸시업")
+        tap("이 운동 추가")
+        let field = app.textFields["푸시업 1세트 중량"]
+        XCTAssertTrue(field.waitForExistence(timeout: 15))
+        field.tap()
+        if let value = field.value as? String {
+            if value != "42" {
+                // Moving to the end clears either a selected value or an insertion caret.
+                field.typeText(XCUIKeyboardKey.delete.rawValue)
+                field.typeText("42")
+            }
+        }
+        XCTAssertTrue(control("준비 중 · 0:00").exists)
+        XCTAssertFalse(control("푸시업 1세트 완료").exists)
+        attach("prepared-workout-editable")
+        tap("운동 시작")
+        XCTAssertTrue(control("일시정지").waitForExistence(timeout: 15))
+        XCTAssertEqual(field.value as? String, "42")
+        tap("운동 종료")
+        tap("기록 없이 종료")
+        XCTAssertTrue(control("빈 운동 시작").waitForExistence(timeout: 15))
+    }
+
     /// Android `Android saved-data journeys`와 같은 경로를 iOS에서 확인합니다.
     /// 홈 → 루틴 시작 → 세트 완료 → 일시정지·계속 → 종료 저장 → 기록 → 강제 종료 후 재실행.
     func testSavedWorkoutJourneyAndPersistence() {

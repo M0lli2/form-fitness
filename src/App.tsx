@@ -4,7 +4,7 @@ import {WeeklyVolume} from './WeeklyVolume';
 import {motions} from './motion-guide.mjs';
 import {filterExercises, groupChips, muscleChips, searchExercise} from './muscle-filter.mjs';
 import React, { useEffect, useRef, useState } from 'react';
-import { Alert, AppState, Image, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StatusBar, StyleSheet, Switch, TextInput, useWindowDimensions, View } from 'react-native';
+import { Alert, AppState, Image, Keyboard, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StatusBar, StyleSheet, Switch, TextInput, useWindowDimensions, View } from 'react-native';
 import { SafeAreaProvider, SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
@@ -137,6 +137,7 @@ function Main({ state, setState }: {
         setPage('workout');
     }
     async function startPreparedWorkout() {
+        Keyboard.dismiss();
         await patchActive(active=>beginPreparedWorkout(active));
         setNow(Date.now());
     }
@@ -201,7 +202,7 @@ function Main({ state, setState }: {
                     ? {...current,active:null} : current);
             });
             if (!session.exercises.length) { void discard(); return; }
-            Alert.alert('운동 준비를 닫을까요?', '준비한 운동 목록을 비웁니다.', [
+            Alert.alert('운동 준비를 닫을까요?', '준비한 운동 목록과 입력한 세트를 삭제합니다.', [
                 {text:'돌아가기',style:'cancel'},
                 {text:'준비 닫기',style:'destructive',onPress:discard},
             ]);
@@ -323,21 +324,9 @@ function Main({ state, setState }: {
             {state.routines.map(r => <RoutineCard key={r.id} routine={r} onEdit={()=>setModal({type:'routine',item:r})}/>)}
             <Button secondary title="운동 종목 검색" onPress={()=>setPage('library')}/>
         </>;
-        if (active.preparing) return <Glass>
-            <Section title="자유 운동" right={`${active.exercises.length}개 운동`}/>
-            <Label muted>{active.exercises.length ? '준비되면 상단에서 운동을 시작하세요.' : '운동을 먼저 추가하거나 지금 시작하고 나중에 추가할 수 있습니다.'}</Label>
-            {active.exercises.map(e=><View key={e.id} style={s.spread}>
-                <Label bold style={s.flex}>{e.name}</Label>
-                <Pressable accessibilityRole="button" accessibilityLabel={e.name+' 빼기'} style={s.inlineLink}
-                    onPress={()=>run(()=>patchActive(current=>current.preparing
-                        ? {...current,exercises:current.exercises.filter(item=>item.id!==e.id)} : current))}>
-                    <Label muted>빼기</Label>
-                </Pressable>
-            </View>)}
-            <Button secondary={active.exercises.length>0} title="운동 추가" onPress={()=>setModal({type:'add'})}/>
-        </Glass>;
+        const preparing = active.preparing === true;
         const target = active.exercises.find(e => e.sets.some(set => !set.done));
-        if (focused && target?.type === 'strength') {
+        if (!preparing && focused && target?.type === 'strength') {
             const detail = exercises.find(e => e.id === target.id);
             const previous = state.history.flatMap(h => h.exercises).find(e => e.id === target.id)?.sets.find(s => s.done);
             return <View style={{flex:1}}><FocusedWorkout key={target.id} exercise={{...target,equipment:detail?.equipment ?? '',position:active.exercises.indexOf(target)+1,total:active.exercises.length,previous:previous ? displayWeight(previous.weight)+' '+unit+' × '+previous.reps : null}} units={unit} elapsedSeconds={workoutElapsedSeconds(active,now)} paused={active.pausedAt !== undefined} now={now} restDeadline={active.restEndsAt} guide={<Label>{detail?.steps[0] ?? '편안한 자세에서 시작하세요.'}</Label>} onComplete={async (id, values) => {
@@ -345,17 +334,22 @@ function Main({ state, setState }: {
             }} onSkipRest={()=>run(skipRest)} onOpenList={()=>setFocused(false)} onOpenGuide={()=>setModal({type:'exercise',item:detail})} onNext={()=>setFocused(false)}/></View>;
         }
         if (active.pausedAt !== undefined) return <Glass><Section title={active.name}/><Label muted>계속하기를 누르면 세트 기록을 이어갈 수 있습니다.</Label></Glass>;
-        return <>{target?.type==='strength' && <Button secondary title="한 운동에 집중하기" onPress={()=>setFocused(true)}/>}
-            {!active.exercises.length && <Glass><Label bold>첫 운동을 추가하세요</Label><Label muted>타이머가 진행 중입니다.</Label></Glass>}<Glass><View style={s.spread}><Label bold size={19}>{active.name}</Label></View><Label muted>{active.exercises.reduce((n, e) => n + e.sets.filter(x => x.done).length, 0)}세트 완료 · {volume(active).toLocaleString()} kg</Label>{active.restEndsAt && <View style={[s.rest, { backgroundColor: colors.soft }]}><Label>휴식 {clock(Math.max(0, Math.ceil((active.restEndsAt - now) / 1000)))}</Label><Button secondary title="건너뛰기" onPress={() => run(skipRest)}/></View>}</Glass>{active.exercises.map(e => <Glass key={e.id}><View style={s.spread}><Pressable accessibilityRole="button" onPress={() => setModal({ type: 'exercise', item: exercises.find(x => x.id === e.id) })}><Label bold size={17}>{e.name} ⓘ</Label></Pressable><Pressable accessibilityLabel={`${e.name} 삭제`} onPress={() => Alert.alert('운동 삭제', `${e.name}의 진행 기록도 삭제됩니다.`, [{ text: '취소' }, { text: '삭제', style: 'destructive', onPress: () => patchActive(x => ({ ...x, exercises: x.exercises.filter(a => a.id !== e.id) })) }])}><Label muted>×</Label></Pressable></View><View style={s.setRow}><Label size={10} style={{ width: 27 }}>세트</Label><Label size={10} style={s.flex}>{e.type === 'strength' ? unit : '초'}</Label><Label size={10} style={s.flex}>{e.type === 'strength' ? '횟수' : e.type === 'cardio' ? '거리 km' : 'RPE'}</Label><Label size={10} style={{ width: 48 }}>완료</Label></View>{e.sets.map((set, i) => <View key={set.id}><View style={s.setRow}><Label style={{ width: 27 }}>{i + 1}</Label><Numeric value={e.type === 'strength' ? displayWeight(set.weight) : set.seconds} label={e.type === 'strength' ? '중량' : '시간(초)'} onChange={value => patchActive(x => { const st = x.exercises.find(a => a.id === e.id)!.sets[i]; if (e.type === 'strength')
+        return <>{!preparing && target?.type==='strength' && <Button secondary title="한 운동에 집중하기" onPress={()=>setFocused(true)}/>}
+            {preparing ? <Glass>
+                <Section title="자유 운동" right={`${active.exercises.length}개 운동`}/>
+                <Label muted>{active.exercises.length
+                    ? '세트와 중량을 미리 입력할 수 있습니다. 타이머는 상단에서 시작하세요.'
+                    : '운동을 추가한 뒤 세트와 중량을 먼저 설정하세요.'}</Label>
+            </Glass> : <>{!active.exercises.length && <Glass><Label bold>첫 운동을 추가하세요</Label><Label muted>타이머가 진행 중입니다.</Label></Glass>}<Glass><View style={s.spread}><Label bold size={19}>{active.name}</Label></View><Label muted>{active.exercises.reduce((n, e) => n + e.sets.filter(x => x.done).length, 0)}세트 완료 · {volume(active).toLocaleString()} kg</Label>{active.restEndsAt && <View style={[s.rest, { backgroundColor: colors.soft }]}><Label>휴식 {clock(Math.max(0, Math.ceil((active.restEndsAt - now) / 1000)))}</Label><Button secondary title="건너뛰기" onPress={() => run(skipRest)}/></View>}</Glass></>}{active.exercises.map(e => <Glass key={e.id}><View style={s.spread}><Pressable accessibilityRole="button" onPress={() => setModal({ type: 'exercise', item: exercises.find(x => x.id === e.id) })}><Label bold size={17}>{e.name} ⓘ</Label></Pressable><Pressable accessibilityLabel={`${e.name} 삭제`} onPress={() => Alert.alert('운동 삭제', `${e.name}의 진행 기록도 삭제됩니다.`, [{ text: '취소' }, { text: '삭제', style: 'destructive', onPress: () => patchActive(x => ({ ...x, exercises: x.exercises.filter(a => a.id !== e.id) })) }])}><Label muted>×</Label></Pressable></View><View style={s.setRow}><Label size={10} style={{ width: 27 }}>세트</Label><Label size={10} style={s.flex}>{e.type === 'strength' ? unit : '초'}</Label><Label size={10} style={s.flex}>{e.type === 'strength' ? '횟수' : e.type === 'cardio' ? '거리 km' : 'RPE'}</Label>{!preparing && <Label size={10} style={{ width: 48 }}>완료</Label>}</View>{e.sets.map((set, i) => <View key={set.id}><View style={s.setRow}><Label style={{ width: 27 }}>{i + 1}</Label><Numeric value={e.type === 'strength' ? displayWeight(set.weight) : set.seconds} label={`${e.name} ${i + 1}세트 ${e.type === 'strength' ? '중량' : '시간(초)'}`} onChange={value => patchActive(x => { const st = x.exercises.find(a => a.id === e.id)?.sets.find(entry=>entry.id===set.id); if (!st) return x; if (e.type === 'strength')
             st.weight = unit === 'lb' ? value / 2.2046226218 : value;
         else
-            st.seconds = value; return x; })}/><Numeric value={e.type === 'strength' ? set.reps : e.type === 'cardio' ? set.distance : Number(set.rpe || 0)} label={e.type === 'strength' ? '횟수' : e.type === 'cardio' ? '거리 km' : 'RPE'} onChange={value => patchActive(x => { const st = x.exercises.find(a => a.id === e.id)!.sets[i]; if (e.type === 'strength')
+            st.seconds = value; return x; })}/><Numeric value={e.type === 'strength' ? set.reps : e.type === 'cardio' ? set.distance : Number(set.rpe || 0)} label={`${e.name} ${i + 1}세트 ${e.type === 'strength' ? '횟수' : e.type === 'cardio' ? '거리 km' : 'RPE'}`} onChange={value => patchActive(x => { const st = x.exercises.find(a => a.id === e.id)?.sets.find(entry=>entry.id===set.id); if (!st) return x; if (e.type === 'strength')
             st.reps = value;
         else if (e.type === 'cardio')
             st.distance = value;
         else
-            st.rpe = String(value); return x; })}/><Pressable accessibilityRole="checkbox" accessibilityState={{ checked: set.done }} accessibilityLabel={`${e.name} ${i + 1}세트 완료`} onPress={() => run(() => completeSet(e.id, set.id))} style={[s.check, { backgroundColor: set.done ? colors.lime : colors.soft }]}><Label style={{ color: set.done ? '#26422d' : colors.ink }}>{set.done ? '✓' : '○'}</Label></Pressable></View><View style={s.row}><Pressable accessibilityRole="button" style={s.inlineLink} onPress={() => patchActive(x => { const st = x.exercises.find(a => a.id === e.id)!.sets[i]; st.kind = st.kind === 'normal' ? 'warmup' : st.kind === 'warmup' ? 'drop' : 'normal'; return x; })}><Label size={13} muted>{({ normal: '일반', warmup: '워밍업', drop: '드롭' } as any)[set.kind]} ↻</Label></Pressable><Pressable accessibilityRole="button" style={s.inlineLink} onPress={() => patchActive(x => { x.exercises.find(a => a.id === e.id)!.sets.splice(i, 1); return x; })}><Label size={13} muted>세트 삭제</Label></Pressable></View></View>)}<Button secondary title="+ 세트 추가" onPress={() => patchActive(x => { const ex = x.exercises.find(a => a.id === e.id)!; ex.sets.push({ ...ex.sets.at(-1) ?? { weight: 0, reps: 10, seconds: 30, distance: 0, rpe: '', kind: 'normal' }, id: uid(), done: false }); return x; })}/><TextInput placeholder="자세, 컨디션, 다음 운동을 위한 메모" placeholderTextColor={colors.muted} value={e.note} onChangeText={note => patchActive(x => { x.exercises.find(a => a.id === e.id)!.note = note; return x; })} style={[s.input, { color: colors.ink, borderColor: colors.line }]}/></Glass>)}<Button secondary title="+ 운동 추가" onPress={() => setModal({ type: 'add' })}/><Button title="운동 마치고 저장" disabled={busy} onPress={() => run(()=>finish(active.id))}/><Button secondary danger title="운동 취소" onPress={() => Alert.alert('진행 중인 운동을 취소할까요?', '완료하지 않은 운동 기록이 삭제됩니다.', [{ text: '계속 운동' }, { text: '취소하기', style: 'destructive', onPress: () => run(async () => { await change(x => ({ ...x, active: null })); if (notification.current)
-                    await Notifications.cancelScheduledNotificationAsync(notification.current); }) }])}/></>;
+            st.rpe = String(value); return x; })}/>{!preparing && <Pressable accessibilityRole="checkbox" accessibilityState={{ checked: set.done }} accessibilityLabel={`${e.name} ${i + 1}세트 완료`} onPress={() => run(() => completeSet(e.id, set.id))} style={[s.check, { backgroundColor: set.done ? colors.lime : colors.soft }]}><Label style={{ color: set.done ? '#26422d' : colors.ink }}>{set.done ? '✓' : '○'}</Label></Pressable>}</View><View style={s.row}><Pressable accessibilityRole="button" style={s.inlineLink} onPress={() => patchActive(x => { const st = x.exercises.find(a => a.id === e.id)?.sets.find(entry=>entry.id===set.id); if (!st) return x; st.kind = st.kind === 'normal' ? 'warmup' : st.kind === 'warmup' ? 'drop' : 'normal'; return x; })}><Label size={13} muted>{({ normal: '일반', warmup: '워밍업', drop: '드롭' } as any)[set.kind]} ↻</Label></Pressable><Pressable accessibilityRole="button" style={s.inlineLink} onPress={() => patchActive(x => { const entry=x.exercises.find(a=>a.id===e.id); if(entry) entry.sets=entry.sets.filter(item=>item.id!==set.id); return x; })}><Label size={13} muted>세트 삭제</Label></Pressable></View></View>)}<Button secondary title="+ 세트 추가" onPress={() => patchActive(x => { const ex = x.exercises.find(a => a.id === e.id)!; ex.sets.push({ ...ex.sets.at(-1) ?? { weight: 0, reps: 10, seconds: 30, distance: 0, rpe: '', kind: 'normal' }, id: uid(), done: false }); return x; })}/><TextInput placeholder="자세, 컨디션, 다음 운동을 위한 메모" placeholderTextColor={colors.muted} value={e.note} onChangeText={note => patchActive(x => { x.exercises.find(a => a.id === e.id)!.note = note; return x; })} style={[s.input, { color: colors.ink, borderColor: colors.line }]}/></Glass>)}<Button secondary={active.exercises.length>0 || !preparing} title={preparing?'운동 추가':'+ 운동 추가'} onPress={() => setModal({ type: 'add' })}/>{!preparing && <><Button title="운동 마치고 저장" disabled={busy} onPress={() => run(()=>finish(active.id))}/><Button secondary danger title="운동 취소" onPress={() => Alert.alert('진행 중인 운동을 취소할까요?', '완료하지 않은 운동 기록이 삭제됩니다.', [{ text: '계속 운동' }, { text: '취소하기', style: 'destructive', onPress: () => run(async () => { await change(x => ({ ...x, active: null })); if (notification.current)
+                    await Notifications.cancelScheduledNotificationAsync(notification.current); }) }])}/></>}</>;
     }
     function library() {
         // 큰 부위 이름은 근육 그룹으로, '둔근'·'종아리'·'전신' 같은 나머지 부위명은 운동도감 부위로 걸러냅니다.
@@ -536,7 +530,7 @@ function Numeric({ value, label, onChange }: {
     value: number;
     label: string;
     onChange: (n: number) => void;
-}) { const { colors } = useTheme(); const [text, setText] = useState(String(value)); useEffect(() => setText(String(Math.round(value * 100) / 100)), [value]); return <TextInput accessibilityLabel={label} value={text} selectTextOnFocus keyboardType="decimal-pad" onChangeText={setText} onEndEditing={() => { const n = Number(text.replace(',', '.')); if (Number.isFinite(n) && n >= 0)
+}) { const { colors } = useTheme(); const [text, setText] = useState(String(value)); useEffect(() => setText(String(Math.round(value * 100) / 100)), [value]); return <TextInput accessibilityLabel={label} value={text} selectTextOnFocus keyboardType="decimal-pad" onChangeText={setText} onEndEditing={event => { const n = Number(event.nativeEvent.text.replace(',', '.')); if (Number.isFinite(n) && n >= 0)
     onChange(n);
 else
     setText(String(value)); }} style={[s.input, s.flex, { color: colors.ink, borderColor: colors.line, textAlign: 'center' }]}/>; }
