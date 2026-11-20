@@ -1,41 +1,23 @@
 import React, {useEffect, useMemo, useState} from 'react';
+import {requireNativeViewManager} from 'expo-modules-core';
+import type {ViewProps} from 'react-native';
 import {AccessibilityInfo, AppState, Pressable, StyleSheet, Text, View} from 'react-native';
 import {Button, Glass, Label, useTheme} from './theme';
 import {bones, floor, frameMotion, motions, project, propSegments, samplePose} from './motion-guide.mjs';
-import {activeMuscles, contractionState, hitTestMuscles, muscleCard, projectBody, projectMuscles} from './muscle-map.mjs';
+import {activeMuscles, contractionState, muscleCard} from './muscle-map.mjs';
+import {faceAt, projectAnatomy, visibleMuscleMarkers} from './anatomy-mesh.mjs';
+
+const MuscleMesh = requireNativeViewManager<ViewProps & {faces: number[]}>('FormDevice');
 
 const HEIGHT = 226;
 const CYCLE_MS = 3600;
 const MAX_SCALE = 112;
 const directions = ['정면', '오른쪽 앞', '오른쪽', '오른쪽 뒤', '뒤', '왼쪽 뒤', '왼쪽', '왼쪽 앞'];
 const angles = [0, Math.PI / 4, Math.PI / 2, Math.PI * 3 / 4, Math.PI, Math.PI * 5 / 4, Math.PI * 3 / 2, Math.PI * 7 / 4];
-// 역할별 기본 불투명도. facing(카메라를 향한 정도)을 곱해 앞·뒤 근육을 구분합니다.
-const roleAlpha: Record<string, number> = {primary: .92, secondary: .62};
-
-/** 두 색을 섞어 불투명한 중간색을 만듭니다. 인체 실루엣에 씁니다. */
-function mix(a: string, b: string, t: number) {
-    const part = (hex: string, i: number) => parseInt(hex.slice(1 + i * 2, 3 + i * 2), 16);
-    return '#' + [0, 1, 2].map(i => Math.round(part(a, i) * (1 - t) + part(b, i) * t)
-        .toString(16).padStart(2, '0')).join('');
-}
-
 /** 테마 색상(#RRGGBB)에 알파를 붙입니다. */
 function tint(hex: string, alpha: number) {
     const value = Math.round(Math.min(1, Math.max(0, alpha)) * 255).toString(16).padStart(2, '0');
     return `${hex}${value}`;
-}
-
-/** 몸통·사지 실루엣과 근육 타원. 정사각형을 축별로 늘려 진짜 타원으로 그립니다. */
-function Shape({shape, color, alpha, sheen = 0, ring = false}: {shape: any; color: string; alpha: number; sheen?: number; ring?: boolean}) {
-    const side = Math.max(shape.width, shape.height);
-    if (side < 1.5 || alpha < .02) return null;
-    return <View pointerEvents="none" style={{position: 'absolute', left: shape.x - side / 2, top: shape.y - side / 2,
-        width: side, height: side, borderRadius: side / 2, backgroundColor: tint(color, alpha),
-        borderWidth: ring ? 2 : 0, borderColor: tint('#FFFFFF', .9),
-        transform: [{rotate: `${shape.rotation}deg`}, {scaleX: shape.width / side}, {scaleY: shape.height / side}]}}>
-        {sheen > 0 && <View style={{position: 'absolute', left: '24%', top: '24%', width: '52%', height: '52%',
-            borderRadius: 999, backgroundColor: tint('#FFFFFF', sheen)}}/>}
-    </View>;
 }
 
 /** 동작 국면 배지. 수축이 강해질수록 막대가 차고 피크에서 색이 진해집니다. */
@@ -169,24 +151,14 @@ export function MotionGuide({exerciseId}: {exerciseId: string}) {
     // 장비는 motion-guide의 데이터로 그립니다. 바벨·덤벨은 손을 따라가고 벤치·케이블은 자리에 고정됩니다.
     const equipment = (propSegments(motion, joints) as {a:number[]; b:number[]; width:number}[])
         .map(({a,b,width}): [number[],number[],number] => [map(a), map(b), Math.max(3, width * scale)]);
-    // 근육 레이어는 뼈대와 같은 카메라로 투영해 겹쳐 그립니다. 뒤쪽 근육부터 정렬되어 옵니다.
     const centerX = width / 2 - frame.cx * scale, centerY = HEIGHT / 2 - frame.cy * scale;
-    const bodyShapes = showMuscles ? projectBody({joints, yaw, scale, centerX, centerY}) : [];
-    const muscleShapes = showMuscles ? projectMuscles({joints, yaw, scale, centerX, centerY, exerciseId, includeInactive: false}) : [];
+    const anatomy = showMuscles && width > 0
+        ? projectAnatomy({joints, yaw, scale, centerX, centerY, exerciseId, phase, selected, palette: colors})
+        : null;
+    const markers = anatomy ? visibleMuscleMarkers(anatomy.faces) : [];
     const active = activeMuscles(exerciseId);
-    // 몸 뒤쪽을 향한 근육은 인체 실루엣에 가려 그리지 않습니다. 돌려 보면 나타납니다.
-    const frontShapes = muscleShapes.filter((m: any) => m.facing >= .5);
-    const farShapes = muscleShapes.filter((m: any) => m.facing < .5);
-    const markers = frontShapes.filter((m: any) => m.role === 'primary' && m.bodySide !== 'left');
     const backView = angleIndex >= 3 && angleIndex <= 5;
     const contraction = contractionState(phase);
-    // 수축이 강할수록 주동근을 진하게, 피크에서는 테두리를 더해 색으로도 드러냅니다.
-    const muscleAlpha = (shape: any) => {
-        const base = (roleAlpha[shape.role] ?? .5) * (.6 + .4 * shape.facing);
-        const pulse = shape.role === 'primary' ? contraction.alpha : .85 + .15 * contraction.intensity;
-        const boost = shape.id === selected ? 1.15 : 1;
-        return Math.min(1, base * pulse * boost);
-    };
 
     function line(a: number[], b: number[], color: string, thickness: number, key: string) {
         const [x,y] = a, [u,v] = b;
@@ -200,18 +172,9 @@ export function MotionGuide({exerciseId}: {exerciseId: string}) {
         <Label bold size={17}>3D 자세 가이드</Label>
         <View onLayout={e => setWidth(e.nativeEvent.layout.width)} style={[styles.stage,{backgroundColor:colors.bg}]}>
             {width>0 && floor.map(([a,b],i) => line(map(a),map(b),colors.line,1,'floor-'+i))}
-            {width>0 && farShapes.map((shape: any, i: number) => <Shape key={'far-'+shape.id+shape.bodySide} shape={shape}
-                color={colors.accent} alpha={(roleAlpha[shape.role] ?? .5) * .45}/>)}
-            {width>0 && bodyShapes.map((shape: any, i: number) => <Shape key={'body-'+shape.id+i} shape={shape}
-                color={mix(colors.bg, colors.ink, .17)} alpha={1}/>)}
+            {anatomy && <MuscleMesh pointerEvents="none" faces={anatomy.coordinates} style={StyleSheet.absoluteFill}/>}
             {width>0 && !showMuscles && limbSegments.sort((l,r) => l.a[2]+l.b[2]-r.a[2]-r.b[2]).map(({a,b,head},i) =>
                 line(a,b,colors.ink,head?4:6,'bone-'+i))}
-            {width>0 && frontShapes.filter((shape: any) => shape.role === 'primary' && contraction.intensity > .45).map((shape: any) =>
-                <Shape key={'glow-'+shape.id+shape.bodySide} shape={{...shape, width: shape.width * 1.32, height: shape.height * 1.32}}
-                    color={colors.accent} alpha={.20 * contraction.intensity}/>)}
-            {width>0 && frontShapes.map((shape: any) => <Shape key={'muscle-'+shape.id+shape.bodySide} shape={shape}
-                color={colors.accent} alpha={muscleAlpha(shape)} ring={shape.id === selected}
-                sheen={shape.role === 'primary' ? .1 + .12 * contraction.intensity : .08}/>)}
             {width>0 && weightProps.map(([a,b],i) => line(a,b,colors.muted,7,'weight-'+i))}
             {width>0 && equipment.map(([a,b,thick],i) => line(a,b,colors.muted,thick,'equipment-'+i))}
             {width>0 && !showMuscles && dots.map(([x,y],i) => {
@@ -233,8 +196,8 @@ export function MotionGuide({exerciseId}: {exerciseId: string}) {
                 accessibilityLabel={`운동 관절과 장비의 3차원 자세, ${directions[angleIndex]}, 주동근 ${active.primary.map((m: any) => m.name).join(', ')}. 모델의 근육을 탭하면 자극 포인트가 열립니다.`}
                 onPress={event => {
                     const {locationX, locationY} = event.nativeEvent;
-                    const hit = hitTestMuscles(frontShapes, locationX, locationY) ?? hitTestMuscles(muscleShapes, locationX, locationY);
-                    setSelected(hit ? hit.id : null);
+                    const hit = anatomy ? faceAt(anatomy.faces, locationX, locationY) : null;
+                    setSelected(hit?.muscle ?? null);
                 }} style={StyleSheet.absoluteFill}/>}
         </View>
         <Label muted size={12}>{playing ? '동작 반복 재생 중' : phase===0 ? motion.labels[0] : phase===.5 ? motion.labels[1] : '일시 정지'}</Label>
@@ -249,7 +212,7 @@ export function MotionGuide({exerciseId}: {exerciseId: string}) {
             <Button secondary title={showMuscles?'근육 숨기기':'근육 보기'} onPress={()=>setShowMuscles(value=>!value)}/>
         </View>
         <Label muted size={11}>{showMuscles
-            ? '관절 움직임과 주요 근육을 단순화한 학습용 모델입니다. 근육이나 범례를 탭하면 자극 포인트가 열립니다. 색이 진한 근육이 주동근, 옅은 근육이 보조근입니다.'
+            ? '관절 움직임을 따라 근육 윤곽이 움직이는 학습용 모델입니다. 근육이나 범례를 탭하면 자극 포인트가 열립니다. 색이 진한 근육이 주동근, 옅은 근육이 보조근입니다.'
             : '관절 움직임을 단순화한 학습용 모델입니다.'}</Label>
     </Glass>;
 }

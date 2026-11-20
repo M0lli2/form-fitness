@@ -7,6 +7,9 @@ public final class FormDeviceModule: Module {
   private let watch = PhoneWatchBridge.shared
   public func definition() -> ModuleDefinition {
     Name("FormDevice")
+    View(FormMuscleMeshView.self) {
+      Prop("faces") { (view: FormMuscleMeshView, faces: [Double]) in view.setFaces(faces) }
+    }
     OnCreate { self.watch.activate() }
     AsyncFunction("healthAvailable") { HKHealthStore.isHealthDataAvailable() }
     AsyncFunction("authorize") { () async throws -> Bool in

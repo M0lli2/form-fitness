@@ -29,6 +29,9 @@ class FormDeviceModule : Module() {
  private val client get() = HealthConnectClient.getOrCreate(context)
  override fun definition() = ModuleDefinition {
   Name("FormDevice")
+  View(FormMuscleMeshView::class) {
+   Prop("faces") { view: FormMuscleMeshView, faces: List<Double> -> view.setFaces(faces) }
+  }
   AsyncFunction("healthAvailable") { HealthConnectClient.getSdkStatus(context) == HealthConnectClient.SDK_AVAILABLE }
   AsyncFunction("authorize") Coroutine { ->
    check(HealthConnectClient.getSdkStatus(context) == HealthConnectClient.SDK_AVAILABLE) { "Health Connect를 설치하거나 업데이트하세요." }
