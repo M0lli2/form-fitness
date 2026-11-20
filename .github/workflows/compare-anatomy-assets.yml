@@ -37,6 +37,12 @@ jobs:
           sudo apt-get install -y -qq blender python3-numpy
       - name: Render both candidates and test the rig
         run: blender -b -t 4 --python-exit-code 1 --python scripts/render-anatomy-candidate.py
+      - name: Preview Blender Studio's realistic surface
+        if: ${{ !cancelled() }}
+        run: |
+          curl -fL --retry 2 --max-time 120 'https://download.blender.org/demo/asset-bundles/human-base-meshes/human-base-meshes-bundle-v1.4.1.zip' -o sources/blender-human.zip
+          sha256sum sources/blender-human.zip >> evidence/source-sha256.txt
+          blender -b -Y -t 4 --python-exit-code 1 --python scripts/render-blender-studio-anatomy.py
       - uses: actions/upload-artifact@v4
         if: always()
         with:
