@@ -2,7 +2,7 @@
 name: Form native test release
 on:
   push:
-    branches: ['release/v*']
+    branches: ['release/v*', '!release/v0.3.2']
   workflow_dispatch:
 permissions:
   contents: read
