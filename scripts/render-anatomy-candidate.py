@@ -10,11 +10,6 @@ bpy.ops.import_scene.gltf(filepath=str(Path("sources/rigged.glb").resolve()))
 scene = bpy.context.scene
 bpy.context.view_layer.update()
 meshes = [obj for obj in scene.objects if obj.type == "MESH"]
-detailed = [obj for obj in meshes if "high-poly" in obj.name]
-if detailed:
-    for obj in meshes:
-        obj.hide_render = obj not in detailed
-    meshes = detailed
 rig = next((obj for obj in scene.objects if obj.type == "ARMATURE"), None)
 if not meshes or not rig:
     raise RuntimeError("Expected a rigged surface")
@@ -39,6 +34,16 @@ def world_bounds(objects):
         points.extend(obj.matrix_world @ Vector(p) for p in obj.bound_box)
     return points
 
+# The asset's high-poly named auxiliary surface spans only part of the face.
+span_by_object = {}
+for obj in meshes:
+    bounds = world_bounds([obj])
+    span_by_object[obj] = max(point.z for point in bounds) - min(point.z for point in bounds)
+    print("RIGGED MESH", obj.name, "world height", span_by_object[obj])
+full_body = max(meshes, key=span_by_object.get)
+for obj in meshes:
+    obj.hide_render = obj != full_body
+meshes = [full_body]
 corners = world_bounds(meshes)
 z0 = min(p.z for p in corners)
 z1 = max(p.z for p in corners)
@@ -80,7 +85,7 @@ camera.data.type = "ORTHO"
 camera.data.ortho_scale = height * 1.19
 scene.camera = camera
 scene.render.engine = "CYCLES"
-scene.cycles.samples = 12
+scene.cycles.samples = 40
 scene.cycles.use_denoising = True
 scene.render.resolution_x = 560
 scene.render.resolution_y = 730
