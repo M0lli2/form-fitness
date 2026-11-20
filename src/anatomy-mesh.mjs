@@ -201,7 +201,7 @@ export function projectAnatomy({joints,yaw,scale,centerX,centerY,exerciseId='',p
     const shifted=far.filter(([t])=>t>=.10).map(([t,w,d])=>[t+1,w,d]);
     const profile=[...near.filter(([t])=>t<.90),[.90,...radii(near,.90)],[1,...radii(far,0)],...shifted];
     const regions=[...nearMuscles,...farMuscles.map(([id,a,b,c,d])=>[id,a+1,b+1,c,d])];
-    const point=(t,angle,lift)=>{
+    const point=(t,angle,lift=0)=>{
       const x=clamp((t-.82)/.35,0,1);
       const k=x*x*(3-2*x);
       const center=add(mul(add(start,mul(upper,t)),1-k),mul(add(joint,mul(lower,t-1)),k));
