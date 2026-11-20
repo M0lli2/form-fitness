@@ -1,8 +1,17 @@
-# 검증 상태 — 2026-11-18
+# 검증 상태
 
 이 문서는 실제 결과와 아직 실행하지 않은 항목을 구분합니다.
 
-## 확인한 결과
+## v0.3.0
+
+| 범위 | 결과 |
+|---|---|
+| 소스 검사 | 도메인 테스트 82개, iOS·Android 네이티브 계약, 타입 검사와 Android JS 번들 생성 통과. [소스 검사](https://github.com/M0lli2/form-fitness/actions/runs/44655494711) |
+| Android 휴대폰 | 에뮬레이터에서 운동 준비·시작·일시정지·계속·종료, 저장과 재실행, 볼륨 전환과 설정 버튼 정렬을 확인. [릴리스 검증](https://github.com/M0lli2/form-fitness/actions/runs/44655494908) |
+| Wear OS | 버전 0.3.0과 빌드 3, 휴대폰 APK 및 v0.2.0 테스트 배포와 같은 APK 서명 인증서를 확인. [릴리스 검증](https://github.com/M0lli2/form-fitness/actions/runs/44655494908) |
+| iPhone·iPad와 Apple Watch | iPhone 시뮬레이터 XCTest를 실행하고 iPhone·iPad용 IPA와 Apple Watch 앱 포함 IPA의 버전을 확인. IPA는 미서명. [릴리스 검증](https://github.com/M0lli2/form-fitness/actions/runs/44655494908) |
+
+## 이전 검증 기록 · 2026-11-18
 
 | 범위 | 결과 및 근거 |
 |---|---|

@@ -27,7 +27,7 @@ iPhone·iPad와 Android에서 운동을 기록하는 네이티브 앱입니다. 
 
 ### 0.3.0 변경 화면
 
-0.3.0에 포함된 기능을 Android 에뮬레이터에서 실행해 캡처했습니다. 빈 운동이 `0:00`에서 대기하는 상태, 일시정지 후 조작 버튼, 주간·일간 전환, 하단 탭 외곽과 설정 버튼 정렬을 확인할 수 있습니다. [Android 실행·검증 기록](https://github.com/M0lli2/form-fitness/actions/runs/44522954535)
+0.3.0 릴리스용 APK를 Android 에뮬레이터에서 실행해 캡처했습니다. 빈 운동이 `0:00`에서 대기하는 상태, 일시정지 후 조작 버튼, 주간·일간 전환, 하단 탭 외곽과 설정 버튼 정렬을 확인할 수 있습니다. [Android 실행·검증 기록](https://github.com/M0lli2/form-fitness/actions/runs/44655494908)
 
 | 빈 운동 준비 · 타이머 0:00 | 일시정지 · 계속하기 · 운동 종료 |
 |---|---|
@@ -208,7 +208,7 @@ npm run check
 npm run typecheck
 ```
 
-[릴리스](https://github.com/M0lli2/form-fitness/releases/tag/v0.3.0)의 빌드 기록에서 Android 에뮬레이터 운동 여정, iOS 시뮬레이터 XCTest, 두 Android APK의 서명과 Apple IPA 버전 검증을 확인할 수 있습니다. 실기기 건강 권한, 워치 페어링, 스토어 서명·심사는 [실기기 검증 표](docs/INSTALL.md#남은-실기기-검증)에서 관리합니다.
+v0.3.0에서 도메인 테스트 82개, 네이티브 계약·타입 검사, Android 번들 생성을 확인했습니다. 릴리스 빌드에서는 Android 에뮬레이터 운동 여정, iOS 시뮬레이터 XCTest, APK 서명·버전과 Apple IPA 버전을 검증했습니다. [소스 검사](https://github.com/M0lli2/form-fitness/actions/runs/44655494711) · [릴리스 검증](https://github.com/M0lli2/form-fitness/actions/runs/44655494908) 실기기 건강 권한, 워치 페어링, 스토어 서명·심사는 [실기기 검증 표](docs/INSTALL.md#남은-실기기-검증)에서 관리합니다.
 
 ## 이전 구현 기록
 
