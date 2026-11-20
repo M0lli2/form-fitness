@@ -1,0 +1,25 @@
+# Free the macOS runners held by superseded builds of this release.
+name: Clear superseded v0.3.2 runs
+on:
+  push:
+    branches: ['maintenance/v032-build']
+permissions:
+  actions: write
+  contents: read
+jobs:
+  cancel-old:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Cancel only the three earlier commits' build attempts
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          for run in 44738416844 44738256548 44738256641; do
+            current=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$run")
+            test "$(jq -r .head_branch <<< "$current")" = 'release/v0.3.2'
+            case "$(jq -r .head_sha <<< "$current")" in 81b5d61*|3af81f6*) ;; *) exit 1 ;; esac
+            if [ "$(jq -r .status <<< "$current")" != completed ]; then
+              gh api -X POST "repos/$GITHUB_REPOSITORY/actions/runs/$run/cancel"
+            fi
+          done
