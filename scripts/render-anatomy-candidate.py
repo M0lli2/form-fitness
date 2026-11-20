@@ -3,10 +3,12 @@ import bpy
 from mathutils import Vector, Quaternion
 from math import radians
 from pathlib import Path
+import json
 
 bpy.ops.wm.read_factory_settings(use_empty=True)
 bpy.ops.import_scene.gltf(filepath=str(Path("sources/rigged.glb").resolve()))
 scene = bpy.context.scene
+bpy.context.view_layer.update()
 meshes = [obj for obj in scene.objects if obj.type == "MESH"]
 detailed = [obj for obj in meshes if "high-poly" in obj.name]
 if detailed:
@@ -28,7 +30,16 @@ def material(name, color):
 
 ivory = material("Warm ivory", (.69, .64, .58))
 charcoal = material("Charcoal", (.036, .036, .044))
-corners = [obj.matrix_world @ Vector(p) for obj in meshes for p in obj.bound_box]
+def world_bounds(objects):
+    bpy.context.view_layer.update()
+    graph = bpy.context.evaluated_depsgraph_get()
+    points = []
+    for original in objects:
+        obj = original.evaluated_get(graph)
+        points.extend(obj.matrix_world @ Vector(p) for p in obj.bound_box)
+    return points
+
+corners = world_bounds(meshes)
 z0 = min(p.z for p in corners)
 z1 = max(p.z for p in corners)
 height = z1 - z0
@@ -78,6 +89,9 @@ scene.render.resolution_percentage = 100
 def shot(name, position):
     camera.location = position
     aim(camera, (cx,cy,z0+height*.52))
+    bpy.context.view_layer.update()
+    print("FRAMING", name, "pivot", (cx,cy,z0+height*.52), "height", height,
+          "camera", tuple(camera.location), "resolution", scene.render.resolution_x, scene.render.resolution_y)
     scene.render.filepath = str(Path("evidence", name + ".png").resolve())
     bpy.ops.render.render(write_still=True)
 
@@ -102,7 +116,15 @@ for obj in old:
     obj.hide_render = True
 bpy.ops.import_scene.gltf(filepath=str(Path("sources/ecorche.glb").resolve()))
 source = [obj for obj in scene.objects if obj.type == "MESH" and obj not in old]
-visible = [obj for obj in source if str(obj.get("layer", "")).startswith("superficial")]
+with Path("sources/ecorche.glb").open("rb") as glb:
+    glb.seek(12)
+    json_size = int.from_bytes(glb.read(4), "little")
+    glb.read(4)
+    nodes = json.loads(glb.read(json_size))["nodes"]
+superficial_names = {n["name"] for n in nodes
+                     if "mesh" in n and n.get("extras", {}).get("layer","").startswith("superficial")}
+visible = [obj for obj in source if obj.name in superficial_names
+           or str(obj.get("layer", "")).startswith("superficial")]
 if len(visible) < 20:
     raise RuntimeError("Could not identify the superficial muscle layer")
 purple = material("Target muscle", (.25,.22,.43))
@@ -115,7 +137,7 @@ for obj in source:
             face.use_smooth = True
             face.material_index = 0
 bpy.context.view_layer.update()
-bounds = [obj.matrix_world @ Vector(p) for obj in visible for p in obj.bound_box]
+bounds = world_bounds(visible)
 cx = (min(p.x for p in bounds)+max(p.x for p in bounds))/2
 cy = (min(p.y for p in bounds)+max(p.y for p in bounds))/2
 z0 = min(p.z for p in bounds)
