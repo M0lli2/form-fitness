@@ -1,13 +1,11 @@
 import React, {useEffect, useMemo, useState} from 'react';
-import {requireNativeViewManager} from 'expo-modules-core';
-import type {ViewProps} from 'react-native';
+import {AnatomyLayer} from './AnatomyFigure';
 import {AccessibilityInfo, AppState, Pressable, StyleSheet, Text, View} from 'react-native';
 import {Button, Glass, Label, useTheme} from './theme';
 import {bones, floor, frameMotion, motions, project, propSegments, samplePose} from './motion-guide.mjs';
 import {activeMuscles, contractionState, muscleCard} from './muscle-map.mjs';
 import {faceAt, projectAnatomy, visibleMuscleMarkers} from './anatomy-mesh.mjs';
 
-const MuscleMesh = requireNativeViewManager<ViewProps & {faces: number[]}>('FormDevice');
 
 const HEIGHT = 226;
 const CYCLE_MS = 3600;
@@ -172,7 +170,7 @@ export function MotionGuide({exerciseId}: {exerciseId: string}) {
         <Label bold size={17}>3D 자세 가이드</Label>
         <View onLayout={e => setWidth(e.nativeEvent.layout.width)} style={[styles.stage,{backgroundColor:colors.bg}]}>
             {width>0 && floor.map(([a,b],i) => line(map(a),map(b),colors.line,1,'floor-'+i))}
-            {anatomy && <MuscleMesh pointerEvents="none" faces={anatomy.coordinates} style={StyleSheet.absoluteFill}/>}
+            {anatomy && <AnatomyLayer faces={anatomy.coordinates}/>}
             {width>0 && !showMuscles && limbSegments.sort((l,r) => l.a[2]+l.b[2]-r.a[2]-r.b[2]).map(({a,b,head},i) =>
                 line(a,b,colors.ink,head?4:6,'bone-'+i))}
             {width>0 && weightProps.map(([a,b],i) => line(a,b,colors.muted,7,'weight-'+i))}
