@@ -102,7 +102,7 @@ for obj in old:
     obj.hide_render = True
 bpy.ops.import_scene.gltf(filepath=str(Path("sources/ecorche.glb").resolve()))
 source = [obj for obj in scene.objects if obj.type == "MESH" and obj not in old]
-visible = [obj for obj in source if obj.get("layer") == "superficial"]
+visible = [obj for obj in source if str(obj.get("layer", "")).startswith("superficial")]
 if len(visible) < 20:
     raise RuntimeError("Could not identify the superficial muscle layer")
 purple = material("Target muscle", (.25,.22,.43))
