@@ -9,7 +9,8 @@ bpy.ops.wm.read_factory_settings(use_empty=True)
 bpy.ops.import_scene.gltf(filepath=str(Path("sources/rigged.glb").resolve()))
 scene = bpy.context.scene
 bpy.context.view_layer.update()
-meshes = [obj for obj in scene.objects if obj.type == "MESH"]
+meshes = [obj for obj in scene.objects if obj.type == "MESH"
+          and any(mod.type == "ARMATURE" for mod in obj.modifiers)]
 rig = next((obj for obj in scene.objects if obj.type == "ARMATURE"), None)
 if not meshes or not rig:
     raise RuntimeError("Expected a rigged surface")
@@ -55,9 +56,11 @@ for obj in meshes:
     obj.data.materials.append(ivory)
     obj.data.materials.append(charcoal)
     for face in obj.data.polygons:
-        z = (obj.matrix_world @ face.center).z
+        point = obj.matrix_world @ face.center
+        z = point.z
         # A solid modesty material for the neutral presentation preview.
-        face.material_index = int(z0 + height * .455 <= z <= z0 + height * .608)
+        face.material_index = int(abs(point.x - cx) <= .14 * height
+                                  and z0 + height * .455 <= z <= z0 + height * .57)
         face.use_smooth = True
 
 def aim(obj, point):
