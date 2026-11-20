@@ -1,0 +1,44 @@
+# Inspect the upstream geometry before choosing a production model.
+name: Compare anatomy mesh candidates
+on:
+  push:
+    branches: ['design/anatomy-asset-review']
+permissions:
+  contents: read
+  actions: write
+jobs:
+  preview:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Stop the held release candidate
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          run=44738615993
+          info=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$run")
+          test "$(jq -r .head_sha <<< "$info")" = ac50c330f9837340c0cbcf2cf5ced308c4ce5ae8
+          if [ "$(jq -r .status <<< "$info")" != completed ]; then
+            gh api -X POST "repos/$GITHUB_REPOSITORY/actions/runs/$run/cancel"
+          fi
+      - name: Download the upstream GLB files
+        run: |
+          mkdir -p sources evidence
+          curl -fL --retry 2 --max-time 120 'https://files.innerscene.com/library/male-base-mesh-3d-person-rigged-a-pose-380e6d89/038f3a526b2fc3efd012/male-base-mesh-base_male.glb' -o sources/rigged.glb
+          curl -fL --retry 2 --max-time 120 'https://charleeh.github.io/ecorche/model/ecorche.glb' -o sources/ecorche.glb
+          sha256sum sources/*.glb | tee evidence/source-sha256.txt
+      - name: Inspect native geometry and rigs
+        run: python3 scripts/inspect-review-meshes.py
+      - name: Install Blender
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq blender
+      - name: Render neutral and posed previews of the rigged candidate
+        run: blender -b -t 4 --python-exit-code 1 --python scripts/render-anatomy-candidate.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: anatomy-candidate-evidence
+          path: evidence/
