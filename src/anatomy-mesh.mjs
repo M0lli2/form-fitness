@@ -96,55 +96,56 @@ export function projectAnatomy({joints,yaw,scale,centerX,centerY,exerciseId,phas
   const roles = muscleRoles[exerciseId] ?? {primary:[],secondary:[]};
   const {intensity} = contractionState(phase);
   const faces = [];
-  function surface(point,stops,circumference,minAngle,maxAngle,lift,muscle,capped=false) {
-    const primary = muscle ? roles.primary.indexOf(muscle) : -1;
-    const role = primary >= 0 ? 'primary' : roles.secondary.includes(muscle) ? 'secondary' : muscle ? 'inactive' : 'body';
-    const steps = stops.length - 1;
-    const rings = stops.map((t,i) => {
-      const progress = i/steps;
-      const span = muscle ? .15+.85*Math.sin(Math.PI*progress)**.63 : 1;
-      const middle = (minAngle+maxAngle)/2;
-      const amount = lift*(.15+.85*Math.sin(Math.PI*progress));
-      return Array.from({length:circumference+1},(_,j) => {
-        const angle = minAngle+(maxAngle-minAngle)*j/circumference;
-        return point(t,middle+(angle-middle)*span,amount);
-      });
-    });
-    function storeFace(vertices,outward) {
-      let normal = unit(cross(sub(vertices[1],vertices[0]),sub(vertices[3],vertices[0])));
-      if (dot(normal,outward)<0) normal=mul(normal,-1);
-      if (dot(normal,camera)<=.015) return;
-      const screen = vertices.map(v => project(v,yaw,scale,centerX,centerY).slice(0,2));
-      const depth = vertices.reduce((sum,v) => sum+dot(v,camera),0)/4;
-      faces.push({screen,depth,muscle,primary,color:shade(colors,role,intensity,muscle&&muscle===selected,normal,light)});
+  function closestMuscle(patches,t,angle) {
+    let best=null, distance=1;
+    for(const [id,from,to,center,span] of patches) {
+      if(t<=from||t>=to) continue;
+      const delta=Math.atan2(Math.sin(angle-center),Math.cos(angle-center));
+      const score=(2*(t-from)/(to-from)-1)**2+(delta/span)**2;
+      if(score<distance){ best=id; distance=score; }
     }
-    for(let i=0;i<steps;i++) {
-      const t = (stops[i]+stops[i+1])/2;
-      const center = midpoint(point(t,0),point(t,Math.PI));
-      for(let j=0;j<circumference;j++) {
-        const a=rings[i][j], b=rings[i][j+1], c=rings[i+1][j+1], d=rings[i+1][j];
-        storeFace([a,b,c,d],sub(midpoint(a,c),center));
-      }
-    }
-    if (capped) {
-      const from=stops[0], to=stops[steps];
-      const start = midpoint(point(from,0),point(from,Math.PI));
-      const end = midpoint(point(to,0),point(to,Math.PI));
-      const axis = sub(end,start);
-      for(let j=0;j<circumference;j++) {
-        storeFace([start,rings[0][j],rings[0][j],rings[0][j+1]],mul(axis,-1));
-        storeFace([end,rings[steps][j],rings[steps][j],rings[steps][j+1]],axis);
-      }
-    }
+    return {muscle:best,distance};
   }
   function body(start,end,profile,patches=[],sign=1,width=1) {
     const point=loft(start,end,profile,frame,sign,width);
-    // 단면을 나누는 위치에서 허리와 관절의 너비가 유지되도록 합니다.
-    surface(point,profile.map(([t]) => t),RING_SIDES,0,TAU,0,null,true);
-    for(const [id,a,b,angle,span] of patches) {
-      const lift = roles.primary.includes(id) ? .008+.009*intensity : .007;
-      const stops=Array.from({length:5},(_,i) => a+(b-a)*i/4);
-      surface(point,stops,4,angle-span,angle+span,lift,id);
+    // Refine the surface only where muscle boundaries and contours need extra resolution.
+    const stops=profile.flatMap(([t],i)=>patches.length&&i?[(profile[i-1][0]+t)/2,t]:[t]);
+    const sides=patches.length?20:RING_SIDES;
+    const ringPoint=(t,angle)=>{
+      const {muscle,distance}=closestMuscle(patches,t,angle);
+      const height=muscle?(1-distance)**2*(roles.primary.includes(muscle) ? .014+.006*intensity : .010):0;
+      return point(t,angle,height);
+    };
+    const rings=stops.map(t=>Array.from({length:sides},(_,j)=>ringPoint(t,j*TAU/sides)));
+    function storeFace(vertices,outward,muscle=null) {
+      let normal=unit(cross(sub(vertices[1],vertices[0]),sub(vertices[3],vertices[0])));
+      if(dot(normal,outward)<0) normal=mul(normal,-1);
+      if(dot(normal,camera)<=.015) return;
+      const screen=vertices.map(v=>project(v,yaw,scale,centerX,centerY).slice(0,2));
+      const depth=vertices.reduce((sum,v)=>sum+dot(v,camera),0)/4;
+      const primary=muscle?roles.primary.indexOf(muscle):-1;
+      const role=primary>=0?'primary':roles.secondary.includes(muscle)?'secondary':muscle?'inactive':'body';
+      faces.push({screen,depth,muscle,primary,color:shade(colors,role,intensity,muscle===selected&&muscle!==null,normal,light)});
+    }
+    for(let i=0;i<stops.length-1;i++){
+      const t=(stops[i]+stops[i+1])/2;
+      const center=midpoint(point(t,0),point(t,Math.PI));
+      for(let j=0;j<sides;j++){
+        const next=(j+1)%sides;
+        const a=rings[i][j],b=rings[i][next],c=rings[i+1][next],d=rings[i+1][j];
+        const {muscle}=closestMuscle(patches,t,(j+.5)*TAU/sides);
+        storeFace([a,b,c,d],sub(midpoint(a,c),center),muscle);
+      }
+    }
+    const from=stops[0],to=stops.at(-1);
+    const capStart=midpoint(point(from,0),point(from,Math.PI));
+    const capEnd=midpoint(point(to,0),point(to,Math.PI));
+    const axis=sub(capEnd,capStart);
+    const finalRing=rings.at(-1);
+    for(let j=0;j<sides;j++){
+      const next=(j+1)%sides;
+      storeFace([capStart,rings[0][j],rings[0][j],rings[0][next]],mul(axis,-1));
+      storeFace([capEnd,finalRing[j],finalRing[j],finalRing[next]],axis);
     }
   }
   const shoulderWidth=clamp(norm(sub(joints[3],joints[10]))/.46,.84,1.15);
