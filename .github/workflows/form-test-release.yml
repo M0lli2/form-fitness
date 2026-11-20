@@ -8,7 +8,7 @@ permissions:
   contents: read
 concurrency:
   group: form-test-release-${{ github.ref }}
-  cancel-in-progress: false
+  cancel-in-progress: true
 jobs:
   android:
     uses: ./.github/workflows/runtime-smoke.yml
@@ -42,6 +42,7 @@ jobs:
           TAG="v$VERSION"
           if [[ "$GITHUB_REF_NAME" == release/* ]]; then
             test "$GITHUB_REF_NAME" = "release/$TAG"
+            test "$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/$GITHUB_REF_NAME" --jq .object.sha)" = "$GITHUB_SHA"
           fi
           mkdir release-files
           cp packages/form-offline-release/app-release.apk "release-files/Form-$VERSION-Android.apk"

@@ -188,17 +188,28 @@ export function projectAnatomy({joints,yaw,scale,centerX,centerY,exerciseId='',p
   }
   // Carry a single surface through each flexing joint so elbows and knees do not show detached caps.
   function limb(start,joint,end,near,far,nearMuscles,farMuscles,sign) {
-    const proximal=loft(start,joint,near,frame,sign);
-    const distal=loft(joint,end,far,frame,sign);
-      const shifted=far.filter(([t])=>t>=.10).map(([t,w,d])=>[t+1,w,d]);
-    const profile=[...near.filter(([t])=>t<.90),[.90,.04,.04],[1,.04,.04],...shifted];
+    const upper=sub(joint,start),lower=sub(end,joint);
+    const u=unit(upper),v=unit(lower);
+    const turn=cross(u,v);
+    const projectedSide=sub(frame.side,mul(u,dot(frame.side,u)));
+    const fallback=norm(projectedSide)>.1?projectedSide:sub(frame.up,mul(u,dot(frame.up,u)));
+    let plane=unit(norm(turn)>.035?turn:fallback);
+    if(dot(plane,frame.side)<0) plane=mul(plane,-1);
+    const bend=Math.atan2(dot(cross(u,v),plane),clamp(dot(u,v),-1,1));
+    const forwardSign=dot(cross(plane,u),frame.forward)<0?-1:1;
+    const lateral=mul(plane,sign);
+    const shifted=far.filter(([t])=>t>=.10).map(([t,w,d])=>[t+1,w,d]);
+    const profile=[...near.filter(([t])=>t<.90),[.90,...radii(near,.90)],[1,...radii(far,0)],...shifted];
     const regions=[...nearMuscles,...farMuscles.map(([id,a,b,c,d])=>[id,a+1,b+1,c,d])];
     const point=(t,angle,lift)=>{
-      if(t<=.82) return proximal(t,angle,lift);
-      if(t>=1.17) return distal(t-1,angle,lift);
-      const x=(t-.82)/.35;
+      const x=clamp((t-.82)/.35,0,1);
       const k=x*x*(3-2*x);
-      return add(mul(proximal(t,angle,lift),1-k),mul(distal(t-1,angle,lift),k));
+      const center=add(mul(add(start,mul(upper,t)),1-k),mul(add(joint,mul(lower,t-1)),k));
+      // Transport the same cross-section around the bend instead of blending opposite ring axes.
+      const tangent=add(mul(u,Math.cos(bend*k)),mul(cross(plane,u),Math.sin(bend*k)));
+      const forward=mul(unit(cross(plane,tangent)),forwardSign);
+      const [width,depth]=radii(profile,t);
+      return add(center,add(mul(lateral,Math.sin(angle)*(width+lift)),mul(forward,Math.cos(angle)*(depth+lift))));
     };
     body(start,end,profile,regions,sign,1,'',point);
   }
