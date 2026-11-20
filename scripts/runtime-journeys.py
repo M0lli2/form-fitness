@@ -25,7 +25,7 @@ def find(root, label):
             return node
     return None
 
-def seek(label, name):
+def seek(label, name, swipe_x=.5):
     # Scroll only through the app; bound the search so a missing control fails.
     for attempt in range(12):
         try:
@@ -40,8 +40,8 @@ def seek(label, name):
         if len(bounds) != 4:
             raise AssertionError("Missing viewport bounds")
         _, _, width, height = bounds
-        adb("shell", "input", "swipe", str(width//2), str(int(height*.78)),
-            str(width//2), str(int(height*.38)), "400")
+        adb("shell", "input", "swipe", str(int(width*swipe_x)), str(int(height*.78)),
+            str(int(width*swipe_x)), str(int(height*.38)), "400")
         time.sleep(.5)
     raise AssertionError("Control not visible after bounded scroll: " + label)
 
@@ -136,10 +136,12 @@ try:
     adb("shell", "input", "text", "42")
     root = seek(repetitions, "20-blank-repetitions")
     tap_exact(repetitions, root)
+    # The compact editor places both fields above the numeric keyboard.
+    time.sleep(.5)
     adb("shell", "input", "keyevent", "4")
-    root = seek("+ 세트 추가", "20-blank-set-add")
+    root = seek("+ 세트 추가", "20-blank-set-add", swipe_x=.08)
     tap_exact("+ 세트 추가", root)
-    root = seek("푸시업 4세트 중량", "20-blank-added-set")
+    root = seek("푸시업 4세트 중량", "20-blank-added-set", swipe_x=.08)
     if find(root, "준비 중 · 0:00") is None or find(root, "푸시업 1세트 완료") is not None:
         raise AssertionError("The prepared timer or completion state changed")
     adb("shell", "am", "force-stop", PACKAGE)
