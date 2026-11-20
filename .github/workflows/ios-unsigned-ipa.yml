@@ -38,7 +38,10 @@ jobs:
           node -v
           (pod --version || true)
       - name: Read app version
-        run: echo "VERSION=$(node -p 'require(\"./app.json\").expo.version')" >> "$GITHUB_ENV"
+        run: |
+          version=$(node -p 'require("./app.json").expo.version')
+          test -n "$version"
+          echo "VERSION=$version" >> "$GITHUB_ENV"
       - run: npm ci
       - name: Expo prebuild (iOS)
         run: npx expo prebuild --platform ios --non-interactive
