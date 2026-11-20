@@ -1,0 +1,12 @@
+# Run the full Android UI journey against a build of the review commit.
+name: Verify anatomy and workout preparation
+on:
+  push:
+    branches: ['verify/anatomy-workout-prep']
+permissions:
+  contents: read
+jobs:
+  android:
+    uses: ./.github/workflows/runtime-smoke.yml
+    with:
+      package_wear: true
