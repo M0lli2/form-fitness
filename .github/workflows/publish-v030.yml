@@ -1,0 +1,61 @@
+# Publish the verified v0.3.0 artifacts from the two attempts on identical app source.
+name: Finish v0.3.0 test release
+on:
+  push:
+    branches: ['delivery/v0.3.0']
+permissions:
+  actions: read
+  contents: write
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      BUILD_SHA: 60a1e330a5a7a64e8f492e847929fae9f7c49f25
+      SIMULATOR_SHA: 80e8c3111c55ef2edcbdc7ef30f9b30abeffa68f
+      ARTIFACT_RUN: '44655494908'
+      SIMULATOR_RUN: '44640812127'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Verify the app source and tests match both attempts
+        run: |
+          set -euo pipefail
+          git diff --exit-code "$SIMULATOR_SHA" "$BUILD_SHA" -- . ':(exclude,glob).github/workflows/**'
+          test "$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$ARTIFACT_RUN" --jq .head_sha)" = "$BUILD_SHA"
+          test "$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$SIMULATOR_RUN" --jq .head_sha)" = "$SIMULATOR_SHA"
+          jobs=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$ARTIFACT_RUN/jobs")
+          for job in 'android / build' 'android / runtime' 'ios-device / ipa'; do
+            test "$(jq -r --arg job "$job" '.jobs[] | select(.name == $job) | .conclusion' <<< "$jobs")" = success
+          done
+          gh api "repos/$GITHUB_REPOSITORY/actions/runs/$SIMULATOR_RUN/jobs" --jq '.jobs[] | select(.name == "ios-simulator / simulator") | .conclusion' | grep -Fx success
+      - uses: actions/download-artifact@v4
+        with:
+          github-token: ${{ github.token }}
+          run-id: ${{ env.ARTIFACT_RUN }}
+          pattern: form-*
+          path: packages
+      - name: Upload the four packages and checksums
+        run: |
+          set -euo pipefail
+          mkdir release-files
+          cp packages/form-offline-release/app-release.apk release-files/Form-0.3.0-Android.apk
+          cp packages/form-release-wear/app-debug.apk release-files/Form-0.3.0-Wear-OS.apk
+          cp packages/form-ios-unsigned-ipa/Form-0.3.0-iOS-unsigned.ipa release-files/
+          cp packages/form-ios-unsigned-ipa-watch/Form-0.3.0-iOS-unsigned-watch.ipa release-files/
+          (cd release-files && sha256sum *.apk *.ipa > Form-0.3.0-SHA256SUMS.txt)
+          if gh release view v0.3.0 >/dev/null 2>&1; then
+            gh release view v0.3.0 --json assets,isDraft,tagName
+            exit 0
+          fi
+          cat >release-notes.md <<EOF
+          Form 0.3.0 네이티브 테스트 빌드입니다.
+
+          빈 운동의 시작·일시정지·종료, 주간·일간 볼륨, 하단 탭과 설정 버튼 배치를 개선했습니다.
+
+          - Android와 Wear OS APK는 v0.2.0과 같은 테스트 인증서로 서명했습니다.
+          - iPhone·iPad와 Apple Watch IPA는 미서명입니다. 기기에 설치하려면 Apple 서명이 필요합니다.
+          - [README](https://github.com/$GITHUB_REPOSITORY/blob/$BUILD_SHA/README.md) · [APK·IPA 빌드와 Android 실행](https://github.com/$GITHUB_REPOSITORY/actions/runs/$ARTIFACT_RUN) · [동일 앱 소스의 iOS XCTest](https://github.com/$GITHUB_REPOSITORY/actions/runs/$SIMULATOR_RUN)
+          EOF
+          gh release create v0.3.0 release-files/* --target "$BUILD_SHA" --title 'Form 0.3.0' --prerelease --notes-file release-notes.md
