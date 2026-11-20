@@ -1,5 +1,5 @@
 # Internal regression only; reject native/config changes relative to the base binary.
-name: Verify compact workout editor on the native anatomy APK
+name: Verify the catalog and weekly volume anatomy
 on:
   push:
     branches: ['verify/anatomy-workout-prep']

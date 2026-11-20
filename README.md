@@ -4,6 +4,16 @@ iPhone·iPad와 Android에서 운동을 기록하는 네이티브 앱입니다. 
 
 **현재 버전은 Form 0.3.1 네이티브 테스트 빌드입니다.** Android 휴대폰과 Wear OS는 테스트 APK, iPhone·iPad와 Apple Watch는 서명이 필요한 IPA로 제공됩니다. 기기에서 건강 연동과 워치 페어링을 검증하는 절차는 설치 문서에 있습니다. [v0.3.1 다운로드](https://github.com/M0lli2/form-fitness/releases/tag/v0.3.1) · [설치 및 실기기 검증](docs/INSTALL.md)
 
+## 검토 중인 변경
+
+루틴에서 운동 종목을 추가한 뒤 시작 전에 중량·횟수를 입력하고 세트를 추가할 수 있습니다. 기존 22종 자세 가이드, 운동도감의 근육 선택, 기록의 앞면·배면 근육 볼륨이 같은 입체 모델을 사용합니다. [모델 각도별 보기](docs/MOTION-GUIDE.md#입체-근육-모델) · [Android 실행 검증](https://github.com/M0lli2/form-fitness/actions/runs/44694312519)
+
+| 운동 시작 전 세트 입력 | 푸시업 입체 근육 모델 |
+|---|---|
+| <img src="docs/screenshots/prepared-workout-input.png" width="235" alt="타이머가 0:00일 때 입력한 42 kg과 추가한 4세트"> | <img src="docs/screenshots/anatomy-native-guide.png" width="235" alt="실행 중인 Form 앱의 푸시업 자세 가이드"> |
+
+운동도감에서 **근육 모형으로 찾기**를 열고 부위를 누르면 타깃 근육이 바뀝니다. 기록의 **이번 주 근육 볼륨**에서는 최근 7일에 해당 근육을 사용한 정도를 색으로 표시합니다.
+
 ## 버전별 변경사항
 
 | 버전 | 배포·변경 내용 |

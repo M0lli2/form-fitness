@@ -47,6 +47,11 @@ final class WorkoutJourney: XCTestCase {
     }
     func testExerciseLibraryMotionGuide() {
         tap("운동도감")
+        tap("근육 모형으로 찾기")
+        XCTAssertTrue(control("도감 근육 모형 · 앞면").waitForExistence(timeout: 15))
+        tap("배면")
+        XCTAssertTrue(control("도감 근육 모형 · 배면").waitForExistence(timeout: 15))
+        tap("근육 모형 접기")
         tap("푸시업")
         XCTAssertTrue(app.staticTexts["3D 자세 가이드"].waitForExistence(timeout: 15))
         tap("동작 재생")

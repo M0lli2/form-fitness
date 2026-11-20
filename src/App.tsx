@@ -1,6 +1,7 @@
 /** FORM 네이티브 앱 진입점. UI는 React Native 뷰이며 WebView를 사용하지 않습니다. */
 import {MotionGuide} from './MotionGuide';
 import {WeeklyVolume} from './WeeklyVolume';
+import {AnatomySides, StandingAnatomy, type AnatomySide} from './AnatomyFigure';
 import {motions} from './motion-guide.mjs';
 import {filterExercises, groupChips, muscleChips, searchExercise} from './muscle-filter.mjs';
 import React, { useEffect, useRef, useState } from 'react';
@@ -58,6 +59,8 @@ function Main({ state, setState }: {
     const contentEnd = tabBoxHeight + tabBottom;
     const [selectedWorkoutDay,setSelectedWorkoutDay] = useState<string | null>(null);
     const [focused, setFocused] = useState(false);
+    const [catalogAnatomy,setCatalogAnatomy]=useState(false);
+    const [catalogSide,setCatalogSide]=useState<AnatomySide>('front');
     const [page, setPage] = useState('home'), [modal, setModal] = useState<{
         type: string;
         item?: any;
@@ -350,6 +353,10 @@ function Main({ state, setState }: {
                     await Notifications.cancelScheduledNotificationAsync(notification.current); }) }])}/></>}</>;
     }
     function library() {
+        const toggleTarget=(id:string)=>{
+            setMuscle('전체');
+            setTargets(current=>current.includes(id)?current.filter(item=>item!==id):[...current,id]);
+        };
         // 큰 부위 이름은 근육 그룹으로, '둔근'·'종아리'·'전신' 같은 나머지 부위명은 운동도감 부위로 걸러냅니다.
         const group = groupChips().find(g => g.name === muscle);
         const detailNames = muscleChips().filter(m => targets.includes(m.id)).map(m => m.name);
@@ -382,8 +389,18 @@ function Main({ state, setState }: {
                 </View>
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} keyboardShouldPersistTaps="handled">
                     <View style={s.row}>{muscleChips().map(m => <Chip key={m.id} title={m.name} active={targets.includes(m.id)}
-                        onPress={() => { setMuscle('전체'); setTargets(value => value.includes(m.id) ? value.filter(id => id !== m.id) : [...value, m.id]); }}/>)}</View>
+                        onPress={()=>toggleTarget(m.id)}/>)}</View>
                 </ScrollView>
+                <Pressable accessibilityRole="button" accessibilityState={{expanded:catalogAnatomy}} style={s.inlineLink}
+                    onPress={()=>setCatalogAnatomy(value=>!value)}>
+                    <Label size={13} bold>{catalogAnatomy?'근육 모형 접기':'근육 모형으로 찾기'}</Label>
+                </Pressable>
+                {catalogAnatomy && <View style={{gap:8}}>
+                    <View style={s.spread}><Label muted size={12}>근육을 눌러 운동을 찾으세요.</Label>
+                        <AnatomySides side={catalogSide} onChange={setCatalogSide}/></View>
+                    <StandingAnatomy side={catalogSide} height={180} highlights={targets} onMuscle={toggleTarget}
+                        caption={`도감 근육 모형 · ${catalogSide==='front'?'앞면':'배면'}`}/>
+                </View>}
             </View>
             {(group || detailNames.length > 0) && <Label muted size={12}>
                 {group ? `${group.name} 전체` : detailNames.join(' · ')}{includeSecondary ? ' · 보조근 포함' : ' · 주동근만'}

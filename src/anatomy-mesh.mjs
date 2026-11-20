@@ -77,18 +77,22 @@ const rgb = hex => [1,3,5].map(i => Number.parseInt(hex.slice(i,i+2),16));
 const blend = (a,b,k) => a.map((v,i) => Math.round(v+(b[i]-v)*k));
 const packed = ([r,g,b]) => (r<<16)|(g<<8)|b;
 
-function shade(colors,role,amount,selected,normal,light) {
+function shade(colors,role,amount,selected,normal,light,heat) {
   const dark = colors.bg[0] < 90;
   const base = dark ? [161,168,188] : [140,147,167];
   const amountLit = clamp(dot(normal,light),0,1);
   const paint = role === 'primary' ? .74+amount*.21 : role === 'secondary' ? .36+amount*.10 : role === 'inactive' ? .08 : 0;
-  const target = role === 'inactive' ? colors.ink : blend(colors.accent,[60,87,217],dark ? .64 : .30);
-  const mix = blend(base,target,selected ? 1 : paint);
+  const accent = blend(colors.accent,[60,87,217],dark ? .64 : .30);
+  const target = role === 'inactive' && !selected && heat === undefined ? colors.ink : accent;
+  const mix = blend(base,target,heat ?? (selected ? 1 : paint));
   return packed(blend(blend(mix,[12,16,27],.49*(1-amountLit)),[255,255,255],.16*amountLit));
 }
 
 /** 뒤→앞 순서의 면과 캔버스용 숫자 버퍼를 만듭니다. 포즈와 입력 파일은 한 운동에서 공유합니다. */
-export function projectAnatomy({joints,yaw,scale,centerX,centerY,exerciseId,phase,selected,palette}) {
+/** @param {{joints:number[][], yaw:number, scale:number, centerX:number, centerY:number,
+ * exerciseId?:string, phase?:number, selected?:string|null, palette:{bg:string,ink:string,accent:string},
+ * highlights?:string[], heat?:Record<string, number>}} options */
+export function projectAnatomy({joints,yaw,scale,centerX,centerY,exerciseId='',phase=0,selected=null,palette,highlights=[],heat}) {
   const frame = bodyFrame(joints);
   const camera = [Math.sin(yaw)*.95,.31,Math.cos(yaw)*.95];
   const light = unit(add(camera,[-.45,.68,.15]));
@@ -96,6 +100,18 @@ export function projectAnatomy({joints,yaw,scale,centerX,centerY,exerciseId,phas
   const roles = muscleRoles[exerciseId] ?? {primary:[],secondary:[]};
   const {intensity} = contractionState(phase);
   const faces = [];
+  const emphasized = new Set(highlights);
+  if (selected) emphasized.add(selected);
+  // Each vertex belongs to several faces. Project it once per frame.
+  const projected = new Map();
+  const toScreen = vertex => {
+    let xy = projected.get(vertex);
+    if (!xy) {
+      xy = project(vertex,yaw,scale,centerX,centerY).slice(0,2);
+      projected.set(vertex,xy);
+    }
+    return xy;
+  };
   function closestMuscle(patches,t,angle) {
     let best=null, distance=1;
     for(const [id,from,to,center,span] of patches) {
@@ -121,11 +137,12 @@ export function projectAnatomy({joints,yaw,scale,centerX,centerY,exerciseId,phas
       let normal=unit(cross(sub(vertices[1],vertices[0]),sub(vertices[3],vertices[0])));
       if(dot(normal,outward)<0) normal=mul(normal,-1);
       if(dot(normal,camera)<=.015) return;
-      const screen=vertices.map(v=>project(v,yaw,scale,centerX,centerY).slice(0,2));
+      const screen=vertices.map(toScreen);
       const depth=vertices.reduce((sum,v)=>sum+dot(v,camera),0)/4;
       const primary=muscle?roles.primary.indexOf(muscle):-1;
       const role=primary>=0?'primary':roles.secondary.includes(muscle)?'secondary':muscle?'inactive':'body';
-      faces.push({screen,depth,muscle,primary,color:shade(colors,role,intensity,muscle===selected&&muscle!==null,normal,light)});
+      const load=heat ? clamp(muscle ? heat[muscle]??0 : 0,0,1) : undefined;
+      faces.push({screen,depth,muscle,primary,color:shade(colors,role,intensity,emphasized.has(muscle),normal,light,load)});
     }
     for(let i=0;i<stops.length-1;i++){
       const t=(stops[i]+stops[i+1])/2;

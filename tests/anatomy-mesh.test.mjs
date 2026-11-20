@@ -43,3 +43,17 @@ test('a body face in front of a muscle blocks the hit',() => {
   assert.equal(faceAt([back,front],4,5),front);
   assert.equal(faceAt([front,back],4,5),back);
 });
+
+test('catalog selection and volume bands use the same visible face labels',() => {
+  const args={joints:samplePose(motions.squat,0),yaw:0,scale:104,centerX:164,centerY:112,palette};
+  const inactive=projectAnatomy({...args,heat:{}}).faces;
+  const heat=projectAnatomy({...args,heat:{quads:.9}}).faces;
+  assert.equal(inactive.length,heat.length);
+  for(let i=0;i<heat.length;i++){
+    if(heat[i].muscle==='quads') assert.notEqual(heat[i].color,inactive[i].color);
+    else assert.equal(heat[i].color,inactive[i].color);
+  }
+  const unselected=projectAnatomy(args).faces;
+  const selection=projectAnatomy({...args,highlights:['quads']}).faces;
+  assert.ok(selection.some((face,i)=>face.muscle==='quads'&&face.color!==unselected[i].color));
+});
