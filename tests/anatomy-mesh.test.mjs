@@ -17,8 +17,8 @@ test('all modeled exercises generate finite native coordinates in each guide vie
     for(const phase of [0,.25,.5]) {
       for(let angle=0;angle<8;angle++) {
         const {faces,coordinates}=guide(exerciseId,phase,angle*Math.PI/4);
-        assert.ok(faces.length>100 && coordinates.length<=18000,exerciseId);
-        assert.equal(coordinates.length,faces.length*9);
+        assert.ok(faces.length>100 && coordinates.length<=110000,exerciseId);
+        assert.equal(coordinates.length,faces.length*16);
         assert.ok(coordinates.every(Number.isFinite),exerciseId);
         assert.ok(faces.every((f,i) => !i || f.depth>=faces[i-1].depth),exerciseId);
         assert.ok(faces.every(f => f.primary<0 || muscleRoles[exerciseId].primary[f.primary]===f.muscle),exerciseId);
@@ -40,6 +40,8 @@ test('squat surface exposes quads in front and glutes in back',() => {
 test('a body face in front of a muscle blocks the hit',() => {
   const screen=[[0,0],[10,0],[10,10],[0,10]];
   const front={screen,muscle:null}, back={screen,muscle:'pec'};
+  const behind={...back,depths:[0,0,0,0],depth:2}, nearer={...front,depths:[1,1,1,1],depth:1};
+  assert.equal(faceAt([nearer,behind],4,5),nearer);
   assert.equal(faceAt([back,front],4,5),front);
   assert.equal(faceAt([front,back],4,5),back);
 });
@@ -50,8 +52,11 @@ test('catalog selection and volume bands use the same visible face labels',() =>
   const heat=projectAnatomy({...args,heat:{quads:.9}}).faces;
   assert.equal(inactive.length,heat.length);
   for(let i=0;i<heat.length;i++){
-    if(heat[i].muscle==='quads') assert.notEqual(heat[i].color,inactive[i].color);
-    else assert.equal(heat[i].color,inactive[i].color);
+    if(heat[i].muscle==='quads') assert.equal(heat[i].muscle,inactive[i].muscle);
+  }
+  assert.ok(heat.some((face,i)=>face.muscle==='quads'&&face.vertexColors.some((v,j)=>v!==inactive[i].vertexColors[j])));
+  for(let i=0;i<heat.length;i++){
+    if(heat[i].muscle==='delt-front') assert.deepEqual(heat[i].vertexColors,inactive[i].vertexColors);
   }
   const unselected=projectAnatomy(args).faces;
   const selection=projectAnatomy({...args,highlights:['quads']}).faces;

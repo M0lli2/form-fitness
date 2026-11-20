@@ -7,7 +7,12 @@ import {frameMotion, motions, samplePose} from './motion-guide.mjs';
 import {faceAt, projectAnatomy} from './anatomy-mesh.mjs';
 
 const NativeMesh = requireNativeViewManager<ViewProps & {faces:number[]}>('FormDevice');
-const standing=samplePose(motions.squat,0);
+// A relaxed stance keeps the arm and torso contours separately visible in the atlas.
+const standing=samplePose(motions.squat,0).map(([x,y,z],index)=>{
+    if(index===4||index===11) return [x*1.14,y,z];
+    if(index===5||index===12) return [x*1.43,y+.035,z+.018];
+    return [x,y,z];
+});
 const pose={frames:[standing,standing],labels:['정면','배면']};
 const noSelection:string[]=[];
 

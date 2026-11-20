@@ -2,9 +2,9 @@
 
 iPhone·iPad와 Android에서 운동을 기록하는 네이티브 앱입니다. 루틴·세트 기록, 3D 운동 자세, 인바디, Apple 건강·Health Connect, Apple Watch·Wear OS 동반 앱을 제공합니다.
 
-**현재 버전은 Form 0.3.1 네이티브 테스트 빌드입니다.** Android 휴대폰과 Wear OS는 테스트 APK, iPhone·iPad와 Apple Watch는 서명이 필요한 IPA로 제공됩니다. 기기에서 건강 연동과 워치 페어링을 검증하는 절차는 설치 문서에 있습니다. [v0.3.1 다운로드](https://github.com/M0lli2/form-fitness/releases/tag/v0.3.1) · [설치 및 실기기 검증](docs/INSTALL.md)
+**현재 버전은 Form 0.3.2 네이티브 테스트 빌드입니다.** Android 휴대폰과 Wear OS는 테스트 APK, iPhone·iPad와 Apple Watch는 서명이 필요한 IPA로 제공됩니다. 기기에서 건강 연동과 워치 페어링을 검증하는 절차는 설치 문서에 있습니다. [v0.3.2 다운로드](https://github.com/M0lli2/form-fitness/releases/tag/v0.3.2) · [설치 및 실기기 검증](docs/INSTALL.md)
 
-## 검토 중인 변경
+## 0.3.2 변경사항
 
 루틴에서 운동 종목을 추가한 뒤 시작 전에 중량·횟수를 입력하고 세트를 추가할 수 있습니다. 기존 22종 자세 가이드, 운동도감의 근육 선택, 기록의 앞면·배면 근육 볼륨이 같은 입체 모델을 사용합니다. [모델 각도별 보기](docs/MOTION-GUIDE.md#입체-근육-모델) · [Android 실행 검증](https://github.com/M0lli2/form-fitness/actions/runs/44694312519)
 
@@ -20,11 +20,14 @@ iPhone·iPad와 Android에서 운동을 기록하는 네이티브 앱입니다. 
 
 [Android 캡처 기록](https://github.com/M0lli2/form-fitness/actions/runs/44697713042)
 
+입체 인체 모델은 참고 이미지의 밝은 무광 표면과 근육 윤곽을 목표로 기하를 재구성했습니다. 부드러운 관절 표면과 정점별 음영이 동작과 회전에 맞춰 변합니다.
+
 ## 버전별 변경사항
 
 | 버전 | 배포·변경 내용 |
 |---|---|
-| **0.3.1** | 기본 홈 화면 아이콘을 흰 배경과 굵은 검은색 대문자 F로 변경했습니다. Android 적응형·테마 아이콘과 iOS·iPadOS·watchOS용 Liquid Glass 레이어를 적용했습니다. [릴리스](https://github.com/M0lli2/form-fitness/releases/tag/v0.3.1) |
+| **0.3.2** | 상세 근육 표면과 부드러운 음영을 운동도감, 자세 가이드, 최근 7일 근육 볼륨에 적용했습니다. 운동을 시작하기 전 중량·횟수 입력과 세트 추가가 가능합니다. [릴리스](https://github.com/M0lli2/form-fitness/releases/tag/v0.3.2) |
+| 0.3.1 | 기본 홈 화면 아이콘을 흰 배경과 굵은 검은색 대문자 F로 변경했습니다. Android 적응형·테마 아이콘과 iOS·iPadOS·watchOS용 Liquid Glass 레이어를 적용했습니다. [릴리스](https://github.com/M0lli2/form-fitness/releases/tag/v0.3.1) |
 | 0.3.0 | Android·iOS와 두 워치 빌드 번호 3. 빈 운동 준비와 수동 시작, 주간·일간 운동 볼륨, 하단 탭 바깥 배경 제거, 주간 목표·휴식 시간 버튼 정렬을 반영했습니다. iOS 건강 연동과 워치 연결 상태 전달을 보강했고, Apple Watch의 시간제 세트 및 심박 대기 표시를 개선했습니다. [변경 커밋](https://github.com/M0lli2/form-fitness/compare/v0.2.0...v0.3.0) · [릴리스](https://github.com/M0lli2/form-fitness/releases/tag/v0.3.0) |
 | 0.2.0 | 앱 표시 이름 **Form**, Android·iOS 빌드 번호 2. 근육 기능을 포함하며 일시정지→계속하기→저장 종료를 검증 경로에 추가했습니다. 휴대폰 APK와 서명이 같은 **Wear OS APK**를 함께 배포합니다. [v0.2.0 릴리스](https://github.com/M0lli2/form-fitness/releases/tag/v0.2.0) |
 | 0.1.0 피드백 프리뷰 | 3D 자세 22종, 근육 해부 그래픽과 터치, 주간 근육 볼륨, 운동도감 근육 필터. [Android 프리뷰](https://github.com/M0lli2/form-fitness/releases/tag/preview-2026-11-19-feedback) |
@@ -74,12 +77,12 @@ iPhone·iPad와 Android에서 운동을 기록하는 네이티브 앱입니다. 
 
 | 환경 | 파일 및 설치 방법 |
 |---|---|
-| Android 휴대폰 | [Form-0.3.1-Android.apk](https://github.com/M0lli2/form-fitness/releases/download/v0.3.1/Form-0.3.1-Android.apk). 기존 v0.2.0·v0.3.0 테스트 APK와 같은 인증서로 업데이트할 수 있습니다. |
-| Wear OS · Galaxy Watch4 이후 | [Form-0.3.1-Wear-OS.apk](https://github.com/M0lli2/form-fitness/releases/download/v0.3.1/Form-0.3.1-Wear-OS.apk). 휴대폰 APK와 같은 테스트 인증서를 사용합니다. |
-| iPhone · iPad | [Form-0.3.1-iOS-unsigned.ipa](https://github.com/M0lli2/form-fitness/releases/download/v0.3.1/Form-0.3.1-iOS-unsigned.ipa). 설치 전에 Apple 서명과 프로비저닝이 필요합니다. |
-| iPhone + Apple Watch | [Form-0.3.1-iOS-unsigned-watch.ipa](https://github.com/M0lli2/form-fitness/releases/download/v0.3.1/Form-0.3.1-iOS-unsigned-watch.ipa). 휴대폰·워치 앱 각각에 올바른 서명과 권한 구성이 필요합니다. |
+| Android 휴대폰 | [Form-0.3.2-Android.apk](https://github.com/M0lli2/form-fitness/releases/download/v0.3.2/Form-0.3.2-Android.apk). 기존 Form 테스트 APK와 같은 인증서로 업데이트할 수 있습니다. |
+| Wear OS · Galaxy Watch4 이후 | [Form-0.3.2-Wear-OS.apk](https://github.com/M0lli2/form-fitness/releases/download/v0.3.2/Form-0.3.2-Wear-OS.apk). 휴대폰 APK와 같은 테스트 인증서를 사용합니다. |
+| iPhone · iPad | [Form-0.3.2-iOS-unsigned.ipa](https://github.com/M0lli2/form-fitness/releases/download/v0.3.2/Form-0.3.2-iOS-unsigned.ipa). 설치 전에 Apple 서명과 프로비저닝이 필요합니다. |
+| iPhone + Apple Watch | [Form-0.3.2-iOS-unsigned-watch.ipa](https://github.com/M0lli2/form-fitness/releases/download/v0.3.2/Form-0.3.2-iOS-unsigned-watch.ipa). 휴대폰·워치 앱 각각에 올바른 서명과 권한 구성이 필요합니다. |
 
-[SHA-256 체크섬](https://github.com/M0lli2/form-fitness/releases/download/v0.3.1/Form-0.3.1-SHA256SUMS.txt) · [설치 순서 및 TestFlight 준비](docs/INSTALL.md)
+[SHA-256 체크섬](https://github.com/M0lli2/form-fitness/releases/download/v0.3.2/Form-0.3.2-SHA256SUMS.txt) · [설치 순서 및 TestFlight 준비](docs/INSTALL.md)
 
 ## 이전 테스트 빌드 실행 화면
 
