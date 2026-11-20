@@ -2,6 +2,12 @@
 
 이 문서는 실제 결과와 아직 실행하지 않은 항목을 구분합니다.
 
+## v0.3.1
+
+- [소스 검사](https://github.com/M0lli2/form-fitness/actions/runs/44658112152)에서 도메인 테스트 82개와 타입·네이티브 계약 검사를 통과했습니다.
+- [릴리스 검증](https://github.com/M0lli2/form-fitness/actions/runs/44658112071)에서 Android·Wear OS 빌드, Android 운동 여정, iOS 시뮬레이터, iPhone·iPad 및 Apple Watch IPA의 아이콘 카탈로그를 확인했습니다.
+- Apple IPA 실기기 설치에는 배포 서명과 프로비저닝이 필요합니다.
+
 ## v0.3.0
 
 | 범위 | 결과 |

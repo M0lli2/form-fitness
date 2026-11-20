@@ -3,12 +3,13 @@ name: Android UI repack regression
 on:
   workflow_dispatch:
   push:
+    branches-ignore: ['release/v*']
     paths: ['.github/workflows/android-repack.yml', 'scripts/runtime-journeys.py', 'src/**']
 permissions:
   contents: read
 env:
-  BASE_ANDROID_TAG: v0.3.0
-  BASE_ANDROID_APK: Form-0.3.0-Android.apk
+  BASE_ANDROID_TAG: v0.3.1
+  BASE_ANDROID_APK: Form-0.3.1-Android.apk
 jobs:
   prepare:
     runs-on: ubuntu-latest

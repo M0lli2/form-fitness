@@ -16,6 +16,8 @@ iPhone·iPad와 Android에서 운동을 기록하는 네이티브 앱입니다. 
 
 <img src="assets/icons/icon.png" width="96" alt="흰 배경 위 검은색 볼드 대문자 F를 사용한 Form 기본 아이콘">
 
+0.3.1은 흰 배경과 검은색 **Segoe UI Bold F**를 기본으로 사용합니다. Apple의 어두운 아이콘 모드에서는 대비를 위해 밝은 F를 사용하며, Liquid Glass 효과는 운영체제가 렌더링합니다. [Apple 아이콘 형식](https://developer.apple.com/design/human-interface-guidelines/app-icons)
+
 ## 기능 사용법
 
 | 기능 | 사용 방법 |
@@ -211,7 +213,7 @@ npm run check
 npm run typecheck
 ```
 
-v0.3.0에서 도메인 테스트 82개, 네이티브 계약·타입 검사, Android 번들 생성을 확인했습니다. 릴리스 빌드에서는 Android 에뮬레이터 운동 여정, iOS 시뮬레이터 XCTest, APK 서명·버전과 Apple IPA 버전을 검증했습니다. [소스 검사](https://github.com/M0lli2/form-fitness/actions/runs/44655494711) · [릴리스 검증](https://github.com/M0lli2/form-fitness/actions/runs/44655494908) 실기기 건강 권한, 워치 페어링, 스토어 서명·심사는 [실기기 검증 표](docs/INSTALL.md#남은-실기기-검증)에서 관리합니다.
+v0.3.1에서 도메인 테스트 82개, 네이티브 계약·타입 검사, Android 번들 생성을 확인했습니다. 릴리스 빌드에서는 Android 에뮬레이터 운동 여정, iOS 시뮬레이터 XCTest, APK 서명·버전과 Apple IPA 버전을 검증했습니다. [소스 검사](https://github.com/M0lli2/form-fitness/actions/runs/44658112152) · [릴리스 검증](https://github.com/M0lli2/form-fitness/actions/runs/44658112071) 실기기 건강 권한, 워치 페어링, 스토어 서명·심사는 [실기기 검증 표](docs/INSTALL.md#남은-실기기-검증)에서 관리합니다.
 
 ## 이전 구현 기록
 
