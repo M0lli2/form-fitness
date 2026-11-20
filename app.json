@@ -2,7 +2,7 @@
   "expo": {
     "name": "Form",
     "slug": "form-native",
-    "version": "0.3.0",
+    "version": "0.3.1",
     "scheme": "form",
     "orientation": "default",
     "userInterfaceStyle": "automatic",
@@ -10,7 +10,7 @@
     "ios": {
       "bundleIdentifier": "com.mori.form",
       "supportsTablet": true,
-      "buildNumber": "3",
+      "buildNumber": "4",
       "infoPlist": {
         "NSHealthShareUsageDescription": "걸음 수, 심박수, 운동, 체중 및 체지방을 내 운동 기록과 함께 보여줍니다.",
         "NSHealthUpdateUsageDescription": "동의한 운동과 체성분 기록을 건강 앱에 저장합니다.",
@@ -18,12 +18,13 @@
       },
       "entitlements": {
         "com.apple.developer.healthkit": true
-      }
+      },
+      "icon": "./assets/icons/FormAppIcon.icon"
     },
     "android": {
       "package": "com.mori.form",
       "allowBackup": false,
-      "versionCode": 3,
+      "versionCode": 4,
       "permissions": [
         "android.permission.health.READ_STEPS",
         "android.permission.health.READ_HEART_RATE",
@@ -34,7 +35,12 @@
         "android.permission.health.WRITE_BODY_FAT",
         "android.permission.health.WRITE_EXERCISE",
         "android.permission.POST_NOTIFICATIONS"
-      ]
+      ],
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/icons/adaptive-foreground.png",
+        "backgroundColor": "#FFFFFF",
+        "monochromeImage": "./assets/icons/adaptive-monochrome.png"
+      }
     },
     "plugins": [
       [
@@ -47,6 +53,7 @@
       "expo-notifications",
       "expo-image-picker",
       "./plugins/withFormNative.cjs"
-    ]
+    ],
+    "icon": "./assets/icons/icon.png"
   }
 }

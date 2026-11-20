@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The round Wear OS mark uses the same bold F outline as the phone icon. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="64dp" android:height="64dp"
+    android:viewportWidth="1024" android:viewportHeight="1024">
+    <path android:fillColor="#FFFFFF" android:pathData="M512,0 A512,512 0,1 1,512 1024 A512,512 0,1 1,512 0 Z" />
+    <path android:fillColor="#000000" android:pathData="M 662.635 356.868 L 489.734 356.868 L 489.734 477.147 L 648.626 477.147 L 648.626 566.672 L 489.734 566.672 L 489.734 757 L 379.365 757 L 379.365 267 L 662.635 267 Z" />
+</vector>

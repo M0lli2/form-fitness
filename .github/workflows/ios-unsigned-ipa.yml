@@ -25,6 +25,8 @@ permissions:
 jobs:
   ipa:
     runs-on: macos-15
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_26.2.app/Contents/Developer
     timeout-minutes: 90
     steps:
       - uses: actions/checkout@v4
@@ -82,6 +84,8 @@ jobs:
           INFO=stage/Payload/Form.app/Info.plist
           test "$(plutil -extract CFBundleIdentifier raw "$INFO")" = com.mori.form
           test "$(plutil -extract CFBundleShortVersionString raw "$INFO")" = "$VERSION"
+          test "$(plutil -extract CFBundleIcons.CFBundlePrimaryIcon.CFBundleIconName raw "$INFO")" = FormAppIcon
+          test -s "$APP/Assets.car"
           test "$(plutil -extract CFBundleVersion raw "$INFO")" = "$(node -p 'require("./app.json").expo.ios.buildNumber')"
           plutil -extract MinimumOSVersion raw stage/Payload/Form.app/Info.plist
           echo "=== signing state (expected: not signed) ==="
@@ -129,6 +133,7 @@ jobs:
           APP=build-ipa-watch/Build/Products/Release-iphoneos/Form.app
           test -d "$APP/Watch/FORMWatch.app"
           WATCH="$APP/Watch/FORMWatch.app/Info.plist"
+          test -s "$APP/Watch/FORMWatch.app/Assets.car"
           for key in CFBundleShortVersionString CFBundleVersion; do
             test "$(plutil -extract "$key" raw "$WATCH")" = "$(plutil -extract "$key" raw "$APP/Info.plist")"
           done

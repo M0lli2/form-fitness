@@ -1,6 +1,7 @@
 # XcodeGen으로 생성하는 독립 watchOS 앱. 배포 시 휴대폰 Xcode 프로젝트에 embed합니다.
 name: FORMWatch
 options:
+  minimumXcodeGenVersion: '2.45.1'
   bundleIdPrefix: com.mori.form
   deploymentTarget:
     watchOS: '10.0'
@@ -8,13 +9,17 @@ targets:
   FORMWatch:
     type: application
     platform: watchOS
-    sources: [Sources]
+    sources:
+      - Sources
+      - path: ../assets/icons/FormAppIcon.icon
+        buildPhase: resources
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.mori.form.watchkitapp
         INFOPLIST_KEY_CFBundleDisplayName: Form
-        MARKETING_VERSION: '0.3.0'
-        CURRENT_PROJECT_VERSION: '3'
+        ASSETCATALOG_COMPILER_APPICON_NAME: FormAppIcon
+        MARKETING_VERSION: '0.3.1'
+        CURRENT_PROJECT_VERSION: '4'
         SWIFT_VERSION: '5.0'
         GENERATE_INFOPLIST_FILE: YES
         INFOPLIST_KEY_WKCompanionAppBundleIdentifier: com.mori.form

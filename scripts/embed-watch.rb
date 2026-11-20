@@ -18,10 +18,20 @@ unless watch
     watch.source_build_phase.add_file_reference(reference)
   end
 end
+# Reuse the editable Icon Composer package for the watch target.
+icon_path = app.fetch('ios').fetch('icon').delete_prefix('./')
+icon_name = File.basename(icon_path, '.icon')
+icon_reference = project.files.find { |file| file.path == "../#{icon_path}" }
+icon_reference ||= project.main_group.new_file("../#{icon_path}")
+icon_reference.last_known_file_type = 'folder.iconcomposer.icon'
+unless watch.resources_build_phase.files.any? { |file| file.file_ref == icon_reference }
+  watch.resources_build_phase.add_file_reference(icon_reference)
+end
 watch.build_configurations.each do |configuration|
   configuration.build_settings.merge!({
     'PRODUCT_BUNDLE_IDENTIFIER' => 'com.mori.form.watchkitapp',
     'PRODUCT_NAME' => 'FORMWatch',
+    'ASSETCATALOG_COMPILER_APPICON_NAME' => icon_name,
     'SWIFT_VERSION' => '5.0',
     'GENERATE_INFOPLIST_FILE' => 'YES',
     'INFOPLIST_KEY_CFBundleDisplayName' => app.fetch('name'),

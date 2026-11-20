@@ -1,27 +1,27 @@
 # Form 설치 및 배포 준비
 
-[Form v0.3.0 릴리스](https://github.com/M0lli2/form-fitness/releases/tag/v0.3.0)에서 파일을 내려받으세요. 비공개 저장소에 접근 가능한 GitHub 계정이 필요합니다.
+[Form v0.3.1 릴리스](https://github.com/M0lli2/form-fitness/releases/tag/v0.3.1)에서 파일을 내려받으세요. 비공개 저장소에 접근 가능한 GitHub 계정이 필요합니다.
 
 ## Android · Galaxy Watch 테스트 설치
 
 | 대상 | 파일 |
 |---|---|
-| Android 휴대폰 | `Form-0.3.0-Android.apk` |
-| Wear OS · Galaxy Watch4 이후 | `Form-0.3.0-Wear-OS.apk` |
+| Android 휴대폰 | `Form-0.3.1-Android.apk` |
+| Wear OS · Galaxy Watch4 이후 | `Form-0.3.1-Wear-OS.apk` |
 
 휴대폰에서 APK를 열어 설치하거나 Android Platform Tools를 사용합니다. 휴대폰 USB 디버깅과 워치 무선 디버깅을 설정한 뒤 기기 식별자를 확인하세요.
 
 ```sh
 adb devices
-adb -s PHONE_SERIAL install -r Form-0.3.0-Android.apk
-adb -s WATCH_SERIAL install -r Form-0.3.0-Wear-OS.apk
+adb -s PHONE_SERIAL install -r Form-0.3.1-Android.apk
+adb -s WATCH_SERIAL install -r Form-0.3.1-Wear-OS.apk
 ```
 
-두 APK는 같은 앱 ID와 v0.2.0 테스트 인증서를 사용합니다. 다른 서명으로 설치된 앱은 이 APK로 덮어쓸 수 없습니다. 삭제가 필요한 경우 기존 운동 기록을 먼저 백업하세요. JSON 백업에는 인바디 결과지 사진이 포함되지 않습니다.
+두 APK는 같은 앱 ID와 v0.2.0부터 사용한 테스트 인증서를 사용합니다. 다른 서명으로 설치된 앱은 이 APK로 덮어쓸 수 없습니다. 삭제가 필요한 경우 기존 운동 기록을 먼저 백업하세요. JSON 백업에는 인바디 결과지 사진이 포함되지 않습니다.
 
 ## iPhone · Apple Watch 설치
 
-**일반 테스터에게 배포할 때는 TestFlight를 권장합니다.** Mac과 Xcode에서 iPhone과 Apple Watch를 바로 설치하려면 등록 기기 방식도 사용할 수 있습니다. 두 방법 모두 Form의 HealthKit 권한을 포함한 Apple 팀의 서명 구성이 필요합니다. 릴리스에는 iPhone·iPad용 `Form-0.3.0-iOS-unsigned.ipa`와 Apple Watch 동반 앱을 포함한 `Form-0.3.0-iOS-unsigned-watch.ipa`가 있습니다. 두 파일은 미서명이며 바로 설치하거나 TestFlight에 업로드할 수 없습니다.
+**일반 테스터에게 배포할 때는 TestFlight를 권장합니다.** Mac과 Xcode에서 iPhone과 Apple Watch를 바로 설치하려면 등록 기기 방식도 사용할 수 있습니다. 두 방법 모두 Form의 HealthKit 권한을 포함한 Apple 팀의 서명 구성이 필요합니다. 릴리스에는 iPhone·iPad용 `Form-0.3.1-iOS-unsigned.ipa`와 Apple Watch 동반 앱을 포함한 `Form-0.3.1-iOS-unsigned-watch.ipa`가 있습니다. 두 파일은 미서명이며 바로 설치하거나 TestFlight에 업로드할 수 없습니다. 이 버전의 Liquid Glass 아이콘을 직접 빌드하려면 Xcode 26 이상이 필요합니다.
 
 ### TestFlight
 

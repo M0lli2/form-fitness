@@ -5,7 +5,7 @@
  <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
  <uses-permission android:name="android.permission.FOREGROUND_SERVICE_HEALTH" />
  <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
- <application android:label="Form" android:allowBackup="false" android:theme="@android:style/Theme.DeviceDefault">
+ <application android:label="Form" android:icon="@drawable/form_launcher" android:allowBackup="false" android:theme="@android:style/Theme.DeviceDefault">
   <meta-data android:name="com.google.android.wearable.standalone" android:value="true" />
   <activity android:name=".MainActivity" android:exported="true"><intent-filter><action android:name="android.intent.action.MAIN"/><category android:name="android.intent.category.LAUNCHER"/></intent-filter></activity>
   <service android:name=".WorkoutService" android:foregroundServiceType="health" android:exported="false" />
