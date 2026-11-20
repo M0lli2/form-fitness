@@ -45,6 +45,13 @@ def seek(label, name, swipe_x=.5):
         time.sleep(.5)
     raise AssertionError("Control not visible after bounded scroll: " + label)
 
+def reveal_model(root):
+    # Move the whole figure above the floating tabs before taking its screenshot.
+    _, _, width, height = map(int, re.findall(r"\d+", next(root.iter("node")).get("bounds", "")))
+    x = str(int(width*.08))
+    adb("shell", "input", "swipe", x, str(int(height*.78)), x, str(int(height*.37)), "460")
+    time.sleep(.6)
+
 def selected(label, name, attribute="selected"):
     deadline = time.monotonic() + 45
     while time.monotonic() < deadline:
@@ -171,8 +178,11 @@ try:
     root = wait_for("타깃 근육", "21-muscle-filter")
     root = seek("근육 모형으로 찾기", "21-anatomy-open", swipe_x=.08)
     tap_exact("근육 모형으로 찾기", root)
+    time.sleep(.5)
+    reveal_model(root)
     root = seek("도감 근육 모형 · 앞면", "21-anatomy-front", swipe_x=.08)
     tap_exact("배면", root)
+    time.sleep(.5)
     root = seek("도감 근육 모형 · 배면", "21-anatomy-back", swipe_x=.08)
     tap_exact("근육 모형 접기", root)
     root = wait_for("운동 목록", "21-anatomy-closed")
@@ -216,9 +226,11 @@ try:
     else:
         raise AssertionError("Saved-workout confirmation button missing")
     root = wait_for("최근 6주 운동 볼륨", "30-history")
-    root = seek("이번 주 근육 볼륨", "30-muscle-heatmap")
-    root = seek("배면", "30-muscle-switch", swipe_x=.08)
+    root = seek("이번 주 근육 볼륨", "30-muscle-title")
+    reveal_model(root)
+    root = seek("배면", "30-muscle-heatmap", swipe_x=.08)
     tap_exact("배면", root)
+    time.sleep(.5)
     root = selected("배면", "30-muscle-heatmap-back")
     results.append("catalog and weekly muscle volume display the front and back anatomy")
     root = seek(exercise, "31-history-entry")
