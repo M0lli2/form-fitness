@@ -48,11 +48,9 @@ export function WeeklyVolume({history, unit}: {history: Session[]; unit: 'kg' | 
         </View>
         <StandingAnatomy side={side} heat={heat} caption={`최근 7일 근육 볼륨, ${side === 'front' ? '앞면' : '배면'}. `+
             (top.length ? `많이 쓴 근육 ${top.map(row=>row.name).join(', ')}. ` : '아직 완료한 세트가 없습니다. ')+
-            `미사용 근육 ${untrained}개.`}>
-            {!load.hasData && <View pointerEvents="none" style={styles.empty}>
-                <Text style={{fontSize:12,color:colors.muted}}>이번 주 완료한 세트가 아직 없습니다.</Text>
-            </View>}
-        </StandingAnatomy>
+            `미사용 근육 ${untrained}개.`}/>
+        {/* 안내 문구는 모델 발목과 겹치지 않게 인체 모형 아래에 둡니다. */}
+        {!load.hasData && <Text style={[styles.empty,{color:colors.muted}]}>이번 주 완료한 세트가 아직 없습니다.</Text>}
         <View style={styles.spread}>
             <Label muted size={12}>{load.sessions}회 운동 · {load.totalSets}세트 · {weightText(load.totalVolume)}</Label>
             <HeatLegend/>
@@ -76,5 +74,5 @@ const styles = StyleSheet.create({
     swatch: {width: 12, height: 12, borderRadius: 3},
     row: {flexDirection: 'row', alignItems: 'center', gap: 8},
     bar: {flex: 1, height: 6, borderRadius: 3, overflow: 'hidden'},
-    empty: {position: 'absolute', left: 0, right: 0, bottom: 12, alignItems: 'center'},
+    empty: {fontSize: 12, textAlign: 'center', marginTop: -4},
 });

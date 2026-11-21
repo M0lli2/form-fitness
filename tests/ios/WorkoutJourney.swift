@@ -127,6 +127,9 @@ final class WorkoutJourney: XCTestCase {
         // 히스토리 카드는 세션 이름(루틴 이름)을 포함한 하나의 접근성 레이블로 합쳐집니다.
         XCTAssertTrue(element(containing: "기본에 충실한 전신").waitForExistence(timeout: 15))
         attach("saved-workout-history")
+        // 한 주의 세트가 반영된 근육 볼륨 카드도 함께 남깁니다.
+        app.swipeUp()
+        attach("weekly-volume-filled")
         // 프로세스를 종료해도 운동 기록이 SQLCipher DB에서 복원되는지 확인합니다.
         app.terminate()
         app.launch()
@@ -144,5 +147,14 @@ final class WorkoutJourney: XCTestCase {
         }
         XCTAssertTrue(app.buttons["백업 파일 내보내기"].waitForExistence(timeout: 10), "Missing backup action")
         attach("ios-settings-parity")
+    }
+    /// 기록 탭의 주간 근육 볼륨 카드. 모델과 안내 문구가 겹치지 않는지 눈으로 확인할 캡처를 남깁니다.
+    func testWeeklyVolumeCardCapture() {
+        tap("기록")
+        XCTAssertTrue(app.staticTexts["최근 6주 운동 볼륨"].waitForExistence(timeout: 20))
+        app.swipeUp()
+        let card = element(containing: "이번 주 근육 볼륨")
+        XCTAssertTrue(card.waitForExistence(timeout: 15), "Missing weekly volume card")
+        attach("weekly-volume-card")
     }
 }
