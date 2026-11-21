@@ -2,7 +2,7 @@
 name: Form native test release
 on:
   push:
-    branches: ['release/v*']
+    branches: ['release/v*', '!release/v0.3.2']
   workflow_dispatch:
 permissions:
   contents: read
@@ -46,6 +46,7 @@ jobs:
             test "$GITHUB_REF_NAME" = "release/$TAG"
             test "$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/$GITHUB_REF_NAME" --jq .object.sha)" = "$GITHUB_SHA"
           fi
+          test "$(gh api "repos/$GITHUB_REPOSITORY" --jq .private)" = true
           mkdir release-files
           cp packages/form-offline-release/app-release.apk "release-files/Form-$VERSION-Android.apk"
           cp packages/form-release-wear/app-debug.apk "release-files/Form-$VERSION-Wear-OS.apk"
