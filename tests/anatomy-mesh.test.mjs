@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {projectAnatomy,faceAt,visibleMuscleMarkers} from '../src/anatomy-mesh.mjs';
+import {projectAnatomy,faceAt,visibleMuscleMarkers,sculptRestPose} from '../src/anatomy-mesh.mjs';
 import {frameMotion,motions,samplePose} from '../src/motion-guide.mjs';
 import {muscleRoles} from '../src/muscle-map.mjs';
 
@@ -61,4 +61,15 @@ test('catalog selection and volume bands use the same visible face labels',() =>
   const unselected=projectAnatomy(args).faces;
   const selection=projectAnatomy({...args,highlights:['quads']}).faces;
   assert.ok(selection.some((face,i)=>face.muscle==='quads'&&face.color!==unselected[i].color));
+});
+
+test('the original standing sculpture exposes all 16 tagged muscles across its views',() => {
+  const labels=new Set();
+  for(let angle=0;angle<8;angle++) {
+    const {faces,coordinates}=projectAnatomy({joints:sculptRestPose,yaw:angle*Math.PI/4,
+      scale:104,centerX:164,centerY:198,palette});
+    assert.ok(coordinates.length>0 && coordinates.length<=110000);
+    for(const face of faces) if(face.muscle) labels.add(face.muscle);
+  }
+  assert.equal(labels.size,16);
 });

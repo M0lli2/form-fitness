@@ -66,6 +66,15 @@ final class WorkoutJourney: XCTestCase {
         XCTAssertTrue(app.buttons["축소"].exists)
         attach("exercise-library-motion-guide")
     }
+    func testExerciseWithoutKeyframesShowsAnatomy() {
+        tap("운동도감")
+        tap("니 푸시업")
+        XCTAssertTrue(control("니 푸시업 근육 모형 · 앞면").waitForExistence(timeout: 15))
+        attach("catalog-static-anatomy-front")
+        tap("배면")
+        XCTAssertTrue(control("니 푸시업 근육 모형 · 배면").waitForExistence(timeout: 15))
+        attach("catalog-static-anatomy-back")
+    }
     func testPreparedWorkoutAllowsEditingBeforeStart() {
         tap("루틴")
         tap("빈 운동 시작")

@@ -1,233 +1,182 @@
-// 운동 자세의 관절 사이에 몸통과 팔다리의 단면을 연결하고, 근육 면을 표면에 붙입니다.
+/** Pose, shade and project the compact Diego Luján García anatomy sculpture. */
+import {sculptureData} from './anatomy-sculpt-data.mjs';
 import {project} from './motion-guide.mjs';
-import {bodyFrame, contractionState, muscleRoles} from './muscle-map.mjs';
+import {contractionState, muscleRoles} from './muscle-map.mjs';
 
-const TAU = 2 * Math.PI;
-const RING_SIDES = 22;
-const add = (a,b) => a.map((v,i) => v+b[i]);
-const sub = (a,b) => a.map((v,i) => v-b[i]);
-const mul = (v,k) => v.map(a => a*k);
-const dot = (a,b) => a[0]*b[0]+a[1]*b[1]+a[2]*b[2];
-const cross = (a,b) => [a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]];
-const norm = v => Math.hypot(...v);
-const unit = v => mul(v,1/(norm(v) || 1));
-const midpoint = (a,b) => mul(add(a,b),.5);
-const clamp = (x,min,max) => Math.min(max,Math.max(min,x));
+const add=(a,b)=>[a[0]+b[0],a[1]+b[1],a[2]+b[2]];
+const sub=(a,b)=>[a[0]-b[0],a[1]-b[1],a[2]-b[2]];
+const mul=(v,k)=>[v[0]*k,v[1]*k,v[2]*k];
+const dot=(a,b)=>a[0]*b[0]+a[1]*b[1]+a[2]*b[2];
+const cross=(a,b)=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]];
+const length=v=>Math.hypot(v[0],v[1],v[2]);
+const unit=v=>mul(v,1/(length(v)||1));
+const clamp=(value,min=0,max=1)=>Math.min(max,Math.max(min,value));
+const smooth=(a,b,v)=>{const t=clamp((v-a)/(b-a));return t*t*(3-2*t);};
+const size=1.8/68.16;
+const frontHalf=[
+  [0,21.4,.05],[0,14.3,-.3],[0,-5.1,-.65],
+  [7.04,10.65,-.7],[10.1,.03,-2.30],[11.83,-11.2,-.42],
+  [4.08,-7.1,-.6],[4.45,-25.45,.22],[5.95,-39.46,-1.05],[6.02,-42.4,3.3],
+].map(([x,y,z])=>[x*size,(y+43.13)*size,z*size]);
+/** Calibrated authored rest joints, mirrored with the same guide convention. */
+export const sculptRestPose=[...frontHalf,...frontHalf.slice(3).map(([x,y,z])=>[-x,y,z])];
 
-// t, 가로 반경, 앞뒤 반경. 몸통은 골반→목, 사지는 몸에 가까운 관절→먼 관절입니다.
-const torso = [[-.22,.042,.036],[-.12,.145,.090],[.02,.196,.113],[.19,.191,.119],[.36,.145,.094],[.50,.151,.099],[.68,.192,.124],[.83,.224,.139],[.93,.193,.112],[1.03,.085,.067],[1.13,.048,.041]];
-const neck = [[-.28,.047,.051],[.12,.055,.063],[.52,.048,.052],[.90,.042,.040],[1.08,.039,.037]];
-const head = [[-.84,.034,.039],[-.64,.048,.055],[-.38,.067,.075],[-.12,.083,.091],[.13,.085,.085],[.32,.070,.074],[.48,.040,.047],[.55,.003,.005]];
-const upperArm = [[-.28,.025,.032],[-.13,.069,.064],[.07,.083,.079],[.28,.069,.071],[.52,.059,.060],[.78,.044,.045],[.99,.042,.042],[1.09,.031,.033]];
-const forearm = [[-.13,.036,.034],[.12,.051,.047],[.35,.050,.045],[.64,.037,.034],[.95,.028,.024],[1.10,.026,.023]];
-const hand = [[-.28,.027,.024],[.02,.042,.030],[.35,.040,.026],[.65,.032,.022],[.86,.011,.009]];
-const thigh = [[-.22,.059,.063],[-.07,.092,.097],[.12,.109,.109],[.31,.105,.105],[.55,.086,.089],[.77,.069,.072],[.94,.056,.055],[1.10,.040,.043]];
-const shin = [[-.17,.036,.043],[.01,.051,.051],[.15,.058,.061],[.30,.064,.074],[.51,.049,.064],[.72,.036,.046],[.90,.028,.032],[1.08,.024,.027]];
-const foot = [[-.32,.027,.037],[.02,.048,.045],[.32,.051,.037],[.66,.053,.027],[.94,.043,.021],[1.05,.010,.011]];
+function segments(joints) {
+  const result=[[joints[2],joints[1]],[joints[1],joints[0]]];
+  for(const side of [0,7]){
+    const [shoulder,elbow,wrist,hip,knee,ankle,toe]=joints.slice(3+side,10+side);
+    result.push([shoulder,elbow],[elbow,wrist],[wrist,add(wrist,mul(sub(wrist,elbow),.50))],
+      [hip,knee],[knee,ankle],[ankle,toe]);
+  }
+  return result;
+}
+const rest=segments(sculptRestPose);
 
-// 이름이 같은 여러 표면을 한 근육으로 선택합니다. 각 항목은 [id, 축 시작, 축 끝, 중심각, 각 너비]입니다.
-const torsoMuscles = [
-  ['pec',.68,.95,.58,.52],['pec',.68,.95,-.58,.52],
-  ['abs',.22,.43,.22,.22],['abs',.22,.43,-.22,.22],
-  ['abs',.38,.57,.26,.25],['abs',.38,.57,-.26,.25],
-  ['abs',.53,.70,.27,.26],['abs',.53,.70,-.27,.26],
-  ['traps',.71,1.015,Math.PI-.40,.44],['traps',.71,1.015,Math.PI+.40,.44],
-  ['lats',.41,.81,Math.PI-.99,.54],['lats',.41,.81,Math.PI+.99,.54],
-  ['erectors',.22,.73,Math.PI-.21,.19],['erectors',.22,.73,Math.PI+.21,.19],
-  ['glute',-.13,.28,Math.PI-.58,.55],['glute',-.13,.28,Math.PI+.58,.55],
-];
-const upperArmMuscles = [
-  ['delt-front',-.14,.32,.48,.50],['delt-lat',-.13,.37,Math.PI/2,.48],
-  ['delt-rear',-.14,.34,Math.PI-.47,.47],
-  ['biceps',.30,.88,.05,.83],['triceps',.30,.92,Math.PI,.86],
-];
-const thighMuscles = [
-  ['quads',.08,.89,.05,.40],['quads',.08,.84,.77,.39],['quads',.22,.92,-.63,.43],
-  ['hamstrings',.11,.85,Math.PI+.42,.44],['hamstrings',.10,.85,Math.PI-.42,.44],
-];
-const shinMuscles = [
-  ['calves',.08,.65,Math.PI-.42,.45],['calves',.09,.66,Math.PI+.42,.45],
-  ['soleus',.46,.90,Math.PI,.70],
-];
-
-function radii(profile,t) {
-  const high = profile.findIndex(([at]) => at >= t);
-  if (high <= 0) return profile[high === 0 ? 0 : profile.length-1].slice(1);
-  const [a,x0,z0] = profile[high-1];
-  const [b,x1,z1] = profile[high];
-  const k = (t-a)/(b-a);
-  // Use cubic tangents along the longitudinal profile, with radii bounded by the neighboring rings.
-  const prev=profile[Math.max(0,high-2)], next=profile[Math.min(profile.length-1,high+1)];
-  const start=profile[high-1],end=profile[high];
-  const k2=k*k,k3=k2*k;
-  return [x0,z0].map((v,i)=>{
-    const w=i?z1:x1, component=i+1;
-    const m0=(end[component]-prev[component])*(b-a)/(b-prev[0]);
-    const m1=(next[component]-start[component])*(b-a)/(next[0]-a);
-    return clamp((2*k3-3*k2+1)*v+(k3-2*k2+k)*m0+(-2*k3+3*k2)*w+(k3-k2)*m1,Math.min(v,w),Math.max(v,w));
-  });
+/** Neighboring bones blend at elbows, knees, hips and shoulders. */
+function attachments(p,part) {
+  const [x,y]=p, side=x>=0?0:6;
+  const [arm,forearm,hand,thigh,shin,foot]=[2,3,4,5,6,7].map(n=>n+side);
+  const adjacent=(a,b,t)=>t<=0?[[a,1]]:t>=1?[[b,1]]:[[a,1-t],[b,t]];
+  const boundArm=(part>=5&&part<=9&&part!==6) || (part<2&&Math.abs(x)>.19&&y>.57);
+  if(boundArm){
+    if(y>1.33)return adjacent(arm,0,smooth(1.29,1.53,y)*(1-smooth(.14,.25,Math.abs(x))));
+    if(y>.96)return adjacent(forearm,arm,smooth(1.06,1.23,y));
+    return adjacent(hand,forearm,smooth(.78,.94,y));
+  }
+  if(part>=10||(part<2&&y<.98)){
+    if(y>.77)return adjacent(thigh,0,smooth(.87,1.06,y)*(part===10?.88:1));
+    if(y>.25)return adjacent(shin,thigh,smooth(.37,.57,y));
+    return adjacent(foot,shin,smooth(.055,.17,y));
+  }
+  if(part===2||part===3||y>1.58)return adjacent(0,1,smooth(1.40,1.65,y));
+  return [[0,1]];
 }
 
-/** 부위의 중심축과 앞·옆 축을 자세에서 계산한 뒤 표면 위치를 반환합니다. */
-function loft(start,end,profile,frame,sideSign=1,widthScale=1) {
-  const length = sub(end,start);
-  const axis = unit(length);
-  const flatten = v => sub(v,mul(axis,dot(v,axis)));
-  const projected = flatten(frame.forward);
-  const forward = unit(norm(projected) > .09 ? projected : flatten(frame.up));
-  const right = unit(cross(axis,forward));
-  const outward = mul(right,dot(right,frame.side) < 0 ? -sideSign : sideSign);
-  return (t,angle,lift=0) => {
-    const [w,d] = radii(profile,t);
-    const center = add(start,mul(length,t));
-    return add(center,add(mul(outward,Math.sin(angle)*(w*widthScale+lift)),mul(forward,Math.cos(angle)*(d+lift))));
+/** Runtime muscle labels stay independent of the artist's subtool names. */
+function muscleFor(part,x,y,z) {
+  switch(part){
+    case 4: return y>1.28&&Math.abs(x)<.115?'traps':Math.abs(x)<.081&&y<1.22?'erectors':'lats';
+    case 5: return z>-.028?'delt-front':z<-.073?'delt-rear':'delt-lat';
+    case 6: return y>1.31?'pec':'abs';
+    case 7: return z>-.059?'biceps':'triceps';
+    case 8: case 9: return y>.79?'forearm':null;
+    case 10: return 'glute';
+    case 11: return 'quads';
+    case 12: return 'hamstrings';
+    case 15: return y>.26?'calves':'soleus';
+    default: return null;
+  }
+}
+
+function readMeshes() {
+  const alphabet='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+  const lookup=new Uint8Array(128);
+  for(let i=0;i<alphabet.length;i++)lookup[alphabet.charCodeAt(i)]=i;
+  const padding=sculptureData.endsWith('==')?2:sculptureData.endsWith('=')?1:0;
+  const bytes=new Uint8Array(sculptureData.length*3/4-padding);
+  for(let i=0,n=0;i<sculptureData.length;i+=4){
+    const c=(lookup[sculptureData.charCodeAt(i)]<<18)|(lookup[sculptureData.charCodeAt(i+1)]<<12)|
+      (lookup[sculptureData.charCodeAt(i+2)]<<6)|lookup[sculptureData.charCodeAt(i+3)];
+    bytes[n++]=c>>16; bytes[n++]=c>>8; bytes[n++]=c;
+  }
+  let offset=0;
+  const view=new DataView(bytes.buffer);
+  function u16(){const n=view.getUint16(offset,true);offset+=2;return n;}
+  const count=u16(), groups=[];
+  for(let part=0;part<count;part++){
+    const vertexCount=u16(), faceCount=u16(), vertices=[], faces=[];
+    for(let i=0;i<vertexCount;i++){
+      const p=[view.getInt16(offset,true),view.getInt16(offset+2,true),view.getInt16(offset+4,true)].map(v=>v/10000);
+      const n=[view.getInt8(offset+6),view.getInt8(offset+7),view.getInt8(offset+8)].map(v=>v/127);
+      offset+=9;
+      vertices.push({p,n,weights:attachments(p,part),muscle:muscleFor(part,...p)});
+    }
+    for(let i=0;i<faceCount;i++){
+      const indices=[u16(),u16(),u16()];
+      const center=indices.map(index=>vertices[index].p).reduce(add,[0,0,0]).map(v=>v/3);
+      faces.push({indices,muscle:muscleFor(part,...center)});
+    }
+    groups.push({vertices,faces});
+  }
+  if(offset!==bytes.length||count!==16)throw new Error('Invalid anatomy sculpture data');
+  return groups;
+}
+let meshes;
+
+/** Shortest rotation aligns the original segment with the posed guide joint pair. */
+function skinTransform([start,end],[origin,target]) {
+  const from=sub(end,start),to=sub(target,origin),a=unit(from),b=unit(to);
+  const cosine=clamp(dot(a,b),-1,1), crossAxis=cross(a,b);
+  const axis=cosine<-.9999?unit(cross(a,Math.abs(a[0])<.9?[1,0,0]:[0,0,1])):crossAxis;
+  const stretch=clamp(length(to)/(length(from)||1),.50,1.70)-1;
+  const rotate=v=>{
+    if(cosine<-.9999)return sub(mul(axis,2*dot(axis,v)),v);
+    const w=cross(axis,v);
+    return add(v,add(w,mul(cross(axis,w),1/(1+cosine))));
+  };
+  return {
+    point:v=>{
+      const q=sub(v,start);
+      return add(origin,rotate(add(q,mul(a,dot(q,a)*stretch))));
+    },
+    normal:rotate,
   };
 }
 
-const blend = (a,b,k) => a.map((v,i) => Math.round(v+(b[i]-v)*k));
-const packed = ([r,g,b]) => (r<<16)|(g<<8)|b;
+const surface=[207,203,198], inner=[162,161,159], violet=[127,120,177];
+const scaleColor=(n,light,level,part)=>{
+  const base=part<2?inner:surface;
+  const reflect=.52+.47*Math.max(0,dot(n,light));
+  const tint=base.map((channel,k)=>Math.round(reflect*(channel+(violet[k]-channel)*level)));
+  return (tint[0]<<16)|(tint[1]<<8)|tint[2];
+};
 
-// Warm ceramic and charcoal from the sculpt reference. Only data-selected muscles take the muted violet.
-const ivory=[224,214,202], charcoal=[67,65,71], violet=[114,109,165];
-function shade(normal,light,paint,cloth) {
-  const base=cloth?charcoal:ivory;
-  const tone=blend(base,violet,paint);
-  const diffuse=clamp(dot(normal,light),0,1);
-  const value=blend(tone,[47,43,49],.52*(1-diffuse)**1.5);
-  return packed(blend(value,[255,247,236],.15*diffuse**2));
-}
-
-/** 뒤→앞 순서의 면과 캔버스용 숫자 버퍼를 만듭니다. 포즈와 입력 파일은 한 운동에서 공유합니다. */
-/** @param {{joints:number[][], yaw:number, scale:number, centerX:number, centerY:number,
- * exerciseId?:string, phase?:number, selected?:string|null, palette:{bg:string,ink:string,accent:string},
- * highlights?:string[], heat?:Record<string, number>}} options */
+/** Shared draw data for every muscle view, with sixteen values per triangle. */
+/** @param {{joints:number[][],yaw:number,scale:number,centerX:number,centerY:number,
+ * exerciseId?:string,phase?:number,selected?:string|null,palette:{bg:string,ink:string,accent:string},
+ * highlights?:string[],heat?:Record<string,number>}} options */
 export function projectAnatomy({joints,yaw,scale,centerX,centerY,exerciseId='',phase=0,selected=null,highlights=[],heat}) {
-  const frame = bodyFrame(joints);
-  const camera = [Math.sin(yaw)*.95,.31,Math.cos(yaw)*.95];
-  const light = unit(add(camera,[-.66,.87,.21]));
-  const roles = muscleRoles[exerciseId] ?? {primary:[],secondary:[]};
-  const {intensity} = contractionState(phase);
-  const faces = [];
-  const emphasized = new Set(highlights);
-  if (selected) emphasized.add(selected);
-  // Each vertex belongs to several faces. Project it once per frame.
-  const projected = new Map();
-  const toScreen = vertex => {
-    let xy = projected.get(vertex);
-    if (!xy) {
-      xy = project(vertex,yaw,scale,centerX,centerY).slice(0,2);
-      projected.set(vertex,xy);
-    }
-    return xy;
-  };
-  function closestMuscle(patches,t,angle) {
-    let best=null, distance=1;
-    for(const [id,from,to,center,span] of patches) {
-      if(t<=from||t>=to) continue;
-      const delta=Math.atan2(Math.sin(angle-center),Math.cos(angle-center));
-      const score=(2*(t-from)/(to-from)-1)**2+(delta/span)**2;
-      if(score<distance){ best=id; distance=score; }
-    }
-    return {muscle:best,distance};
+  meshes??=readMeshes();
+  const target=segments(joints);
+  const transforms=rest.map((segment,i)=>skinTransform(segment,target[i]));
+  const camera=[Math.sin(yaw)*.95,.31,Math.cos(yaw)*.95];
+  const light=unit(add(camera,[-.59,.85,.27]));
+  const roles=muscleRoles[exerciseId]??{primary:[],secondary:[]};
+  const {intensity}=contractionState(phase);
+  const emphasis=new Set(highlights);
+  if(selected)emphasis.add(selected);
+  function tint(id){
+    if(!id)return 0;
+    if(emphasis.has(id))return .94;
+    if(heat)return clamp(heat[id]??0);
+    return roles.primary.includes(id)?.80+intensity*.15:roles.secondary.includes(id)?.44:0;
   }
-  function body(start,end,profile,patches=[],sign=1,width=1,kind='',customPoint) {
-    const point=customPoint??loft(start,end,profile,frame,sign,width);
-    const steps=patches.length?3:2, sides=patches.length?26:RING_SIDES;
-    const stops=profile.flatMap(([t],i)=>i?Array.from({length:steps},(_,j)=>profile[i-1][0]+(t-profile[i-1][0])*(j+1)/steps):[t]);
-    const ringPoint=(t,angle)=>{
-      const {muscle,distance}=closestMuscle(patches,t,angle);
-      const amplitude=muscle==='pec'||muscle==='glute' ? .041 : muscle==='quads'||muscle==='calves' ? .027 : muscle==='abs' ? .023 : .019;
-      const relief=muscle?(1-distance)**1.7*(amplitude+(roles.primary.includes(muscle) ? .008*intensity : 0)):0;
-      return point(t,angle,relief);
-    };
-    const centers=stops.map(t=>midpoint(point(t,0),point(t,Math.PI)));
-    const rings=stops.map(t=>Array.from({length:sides},(_,j)=>ringPoint(t,j*TAU/sides)));
-    const markings=stops.map(t=>Array.from({length:sides},(_,j)=>closestMuscle(patches,t,j*TAU/sides)));
-    // Derivatives of the connected surface give one shared normal per vertex.
-    const normals=rings.map((row,i)=>row.map((vertex,j)=>{
-      const a=sub(rings[Math.min(i+1,rings.length-1)][j],rings[Math.max(i-1,0)][j]);
-      const b=sub(row[(j+1)%sides],row[(j+sides-1)%sides]);
-      const n=unit(cross(a,b));
-      return dot(n,sub(vertex,centers[i]))<0?mul(n,-1):n;
-    }));
-    function storeFace(vertices,vertexNormals,muscle=null,cloth=false,pointMuscles) {
-      if(vertexNormals.every(normal=>dot(normal,camera)<-.10)) return;
-      const screen=vertices.map(toScreen);
-      const depths=vertices.map(v=>dot(v,camera));
-      const depth=depths.reduce((sum,z)=>sum+z,0)/4;
-      const primary=muscle?roles.primary.indexOf(muscle):-1;
-      const vertexColors=vertexNormals.map((n,i)=>{
-        const sample=pointMuscles?.[i];
-        const id=sample?.muscle;
-        const role=id&&roles.primary.includes(id)?'primary':id&&roles.secondary.includes(id)?'secondary':'body';
-        const weight=id?clamp((1-sample.distance)*5,0,1):0;
-        const level=heat ? (heat[id]??0) : emphasized.has(id) ? .91 : role==='primary' ? .67+intensity*.20 : role==='secondary' ? .40 : 0;
-        return shade(n,light,clamp(level*weight,0,1),cloth);
-      });
-      const box=screen.reduce(([minX,minY,maxX,maxY],[x,y])=>[Math.min(minX,x),Math.min(minY,y),Math.max(maxX,x),Math.max(maxY,y)],[Infinity,Infinity,-Infinity,-Infinity]);
-      faces.push({screen,box,depths,depth,muscle,primary,color:vertexColors[0],vertexColors});
-    }
-    for(let i=0;i<stops.length-1;i++){
-      const t=(stops[i]+stops[i+1])/2;
-      for(let j=0;j<sides;j++){
-        const next=(j+1)%sides, angle=(j+.5)*TAU/sides;
-        const {muscle}=closestMuscle(patches,t,angle);
-        const rear=Math.cos(angle)<-.18;
-        const cloth=kind==='pelvis'&&t<.26&&t>-.24&&(!rear||t>.14);
-        const a=rings[i][j],b=rings[i][next],c=rings[i+1][next],d=rings[i+1][j];
-        storeFace([a,b,c,d],[normals[i][j],normals[i][next],normals[i+1][next],normals[i+1][j]],muscle,cloth,[markings[i][j],markings[i][next],markings[i+1][next],markings[i+1][j]]);
+  const faces=[];
+  for(const [part,mesh] of meshes.entries()){
+    const projected=mesh.vertices.map(({p,n,weights,muscle})=>{
+      let point=[0,0,0],normal=[0,0,0];
+      for(const [bone,weight] of weights){
+        point=add(point,mul(transforms[bone].point(p),weight));
+        normal=add(normal,mul(transforms[bone].normal(n),weight));
       }
+      normal=unit(normal);
+      return {screen:project(point,yaw,scale,centerX,centerY).slice(0,2),depth:dot(point,camera),
+        facing:dot(normal,camera),color:scaleColor(normal,light,tint(muscle),part)};
+    });
+    for(const {indices,muscle} of mesh.faces){
+      const [a,b,c]=indices.map(index=>projected[index]);
+      if(a.facing+b.facing+c.facing<-.13)continue;
+      const screen=[a.screen,b.screen,c.screen,c.screen],depths=[a.depth,b.depth,c.depth,c.depth];
+      const vertexColors=[a.color,b.color,c.color,c.color];
+      const [ax,ay]=a.screen,[bx,by]=b.screen,[cx,cy]=c.screen;
+      const box=[Math.min(ax,bx,cx),Math.min(ay,by,cy),Math.max(ax,bx,cx),Math.max(ay,by,cy)];
+      faces.push({screen,box,depths,depth:(a.depth+b.depth+c.depth)/3,muscle,
+        primary:muscle?roles.primary.indexOf(muscle):-1,color:vertexColors[0],vertexColors});
     }
-    const axis=unit(sub(centers.at(-1),centers[0]));
-    const tail=rings.at(-1);
-    for(let j=0;j<sides;j++){
-      const next=(j+1)%sides;
-      storeFace([centers[0],rings[0][j],rings[0][next],rings[0][next]],[mul(axis,-1),normals[0][j],normals[0][next],normals[0][next]]);
-      storeFace([centers.at(-1),tail[j],tail[next],tail[next]],[axis,normals.at(-1)[j],normals.at(-1)[next],normals.at(-1)[next]]);
-    }
   }
-  // Carry a single surface through each flexing joint so elbows and knees do not show detached caps.
-  function limb(start,joint,end,near,far,nearMuscles,farMuscles,sign) {
-    const upper=sub(joint,start),lower=sub(end,joint);
-    const u=unit(upper),v=unit(lower);
-    const turn=cross(u,v);
-    const projectedSide=sub(frame.side,mul(u,dot(frame.side,u)));
-    const fallback=norm(projectedSide)>.1?projectedSide:sub(frame.up,mul(u,dot(frame.up,u)));
-    let plane=unit(norm(turn)>.035?turn:fallback);
-    if(dot(plane,frame.side)<0) plane=mul(plane,-1);
-    const bend=Math.atan2(dot(cross(u,v),plane),clamp(dot(u,v),-1,1));
-    const forwardSign=dot(cross(plane,u),frame.forward)<0?-1:1;
-    const lateral=mul(plane,sign);
-    const shifted=far.filter(([t])=>t>=.10).map(([t,w,d])=>[t+1,w,d]);
-    const profile=[...near.filter(([t])=>t<.90),[.90,...radii(near,.90)],[1,...radii(far,0)],...shifted];
-    const regions=[...nearMuscles,...farMuscles.map(([id,a,b,c,d])=>[id,a+1,b+1,c,d])];
-    const point=(t,angle,lift=0)=>{
-      const x=clamp((t-.82)/.35,0,1);
-      const k=x*x*(3-2*x);
-      const center=add(mul(add(start,mul(upper,t)),1-k),mul(add(joint,mul(lower,t-1)),k));
-      // Transport the same cross-section around the bend instead of blending opposite ring axes.
-      const tangent=add(mul(u,Math.cos(bend*k)),mul(cross(plane,u),Math.sin(bend*k)));
-      const forward=mul(unit(cross(plane,tangent)),forwardSign);
-      const [width,depth]=radii(profile,t);
-      return add(center,add(mul(lateral,Math.sin(angle)*(width+lift)),mul(forward,Math.cos(angle)*(depth+lift))));
-    };
-    body(start,end,profile,regions,sign,1,'',point);
-  }
-  const shoulderWidth=clamp(norm(sub(joints[3],joints[10]))/.46,.84,1.15);
-  body(joints[2],joints[1],torso,torsoMuscles,1,shoulderWidth,'pelvis');
-  body(joints[1],midpoint(joints[1],joints[0]),neck);
-  body(joints[0],add(joints[0],mul(unit(sub(joints[0],joints[1])),.18)),head);
-  for(const [sign,offset] of [[1,0],[-1,7]]) {
-    const [shoulder,elbow,wrist,hip,knee,ankle,toe]=joints.slice(3+offset,10+offset);
-    limb(shoulder,elbow,wrist,upperArm,forearm,upperArmMuscles,[['forearm',.10,.91,.11,.93]],sign);
-    body(wrist,add(wrist,mul(unit(sub(wrist,elbow)),.104)),hand,[],sign);
-    limb(hip,knee,ankle,thigh,shin,thighMuscles,shinMuscles,sign);
-    body(ankle,toe,foot,[],sign);
-  }
-  faces.sort((a,b) => a.depth-b.depth);
-  // Four vertices per face: x, y, true camera depth, RGB.
+  faces.sort((a,b)=>a.depth-b.depth);
   const coordinates=[];
-  for(const f of faces) for(let i=0;i<4;i++) coordinates.push(
+  for(const f of faces)for(let i=0;i<4;i++)coordinates.push(
     Math.round(f.screen[i][0]*100)/100,Math.round(f.screen[i][1]*100)/100,f.depths[i],f.vertexColors[i]);
   return {faces,coordinates};
 }
@@ -265,3 +214,6 @@ export function visibleMuscleMarkers(faces) {
   }
   return [...found.values()];
 }
+
+
+

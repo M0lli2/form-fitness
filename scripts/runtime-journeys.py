@@ -186,6 +186,15 @@ try:
     root = seek("도감 근육 모형 · 배면", "21-anatomy-back", swipe_x=.08)
     tap_exact("근육 모형 접기", root)
     root = wait_for("운동 목록", "21-anatomy-closed")
+    # A catalog exercise without keyframes still shows the same anatomy in both views.
+    root = seek("니 푸시업", "22-static-exercise")
+    tap_exact("니 푸시업", root)
+    root = seek("니 푸시업 근육 모형 · 앞면", "22-static-anatomy-front", swipe_x=.08)
+    tap_exact("배면", root)
+    root = seek("니 푸시업 근육 모형 · 배면", "22-static-anatomy-back", swipe_x=.08)
+    tap_exact("닫기", root)
+    root = wait_for("운동 목록", "22-static-exercise-closed")
+    results.append("exercises without keyframes show the front and back anatomy")
     # Choose the first catalog exercise by its observed UI name.
     catalog = json.loads(open("src/exercises.json", encoding="utf-8").read())
     exercise = catalog["exercises"][0]["name"]
