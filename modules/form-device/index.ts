@@ -24,5 +24,6 @@ type DeviceModule = {
     sendWatch(payload: string): Promise<void>;
     drainWatch(): Promise<string[]>;
     ackWatch(ids: string[]): Promise<void>;
+    recognizeText(uri: string): Promise<string>;
 };
 export default requireNativeModule<DeviceModule>('FormDevice');
