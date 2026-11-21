@@ -556,7 +556,7 @@ function Main({ state, setState }: {
             </View>
             <Label bold>{state.active.preparing ? '준비 중 · 0:00'
                 : (state.active.pausedAt === undefined ? '진행 중' : '일시정지됨')+' · '+clock(workoutElapsedSeconds(state.active,now))}</Label>
-        </View>}{showFocused ? <KeyboardAvoidingView style={[s.flex,{paddingBottom:contentEnd}]} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>{workout()}</KeyboardAvoidingView> : <ScrollView key={page} style={s.flex} contentContainerStyle={[s.content,{paddingBottom:contentEnd+20}]} scrollIndicatorInsets={{bottom:contentEnd}} keyboardShouldPersistTaps="handled">{editingDraft
+        </View>}{showFocused ? <KeyboardAvoidingView style={s.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}><View style={[s.flex,{paddingBottom:contentEnd}]}>{workout()}</View></KeyboardAvoidingView> : <ScrollView key={page} style={s.flex} contentContainerStyle={[s.content,{paddingBottom:contentEnd+20}]} scrollIndicatorInsets={{bottom:contentEnd}} keyboardShouldPersistTaps="handled">{editingDraft
             ? <Label muted size={13}>시작 전에 중량과 횟수를 입력할 수 있습니다.</Label>
             : <View style={s.pageTitle}><Label heading size={30} bold>{title}</Label><Label muted size={14}>{page === 'home' ? new Date().toLocaleDateString('ko-KR',{month:'long',day:'numeric',weekday:'long'}) : pageDescriptions[page]}</Label></View>}{page === 'home' ? home() : page === 'workout' ? workout() : page === 'library' ? library() : page === 'progress' ? progress() : page === 'body' ? body() : settings()}</ScrollView>}{/* Only the tab box floats over the screen. The surrounding space remains part of the content. */}
     <View pointerEvents="box-none" style={[s.navFrame,{bottom:tabBottom}]}><Surface role="navigation"
