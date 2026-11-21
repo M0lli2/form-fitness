@@ -47,29 +47,15 @@ const diagnostic = [
   [93,163,171],[138,196,165],[194,110,179],[159,170,107],
 ];
 
-const skin=[205,201,196], bone=[163,161,157], clothing=[53,52,59], purple=[131,125,174];
+const skin=[205,201,196], bone=[163,161,157], purple=[131,125,174];
 const partNames = [
   'Skeleton', 'Deep support', 'Head', 'Neck', 'Back and side torso', 'Shoulders',
   'Chest and abdominal wall', 'Upper arms', 'Forearms', 'Hands and wrist tendons',
   'Glutes', 'Quadriceps', 'Hamstrings', 'Inner thighs', 'Anterior lower legs', 'Calves',
 ];
-const smooth = (a,b,v) => {
-  const t=Math.min(1,Math.max(0,(v-a)/(b-a)));
-  return t*t*(3-2*t);
-};
-const paint = (part,x,y,z) => {
+const paint = part => {
   const isTarget=part.id===10||part.id===11;
-  const base=isTarget?purple:part.id<2?bone:skin;
-  // The curved front and rear openings leave the main quadriceps and glute
-  // surfaces visible. Only the waist shell receives the charcoal tint.
-  if (![0,1,4,6,10,11,12,13].includes(part.id)) return base;
-  const frontOpening=-9.1+5.7*smooth(1.0,5.9,Math.abs(x));
-  const rearOpening=part.id===10?-3.7:-7.25+3.6*smooth(.8,5.9,Math.abs(x));
-  const front=smooth(-.75,.85,z);
-  const opening=front*frontOpening+(1-front)*rearOpening;
-  const top=-1.8+.30*smooth(2.5,6.0,Math.abs(x));
-  const briefs=smooth(opening-.13,opening+.13,y)*(1-smooth(top-.13,top+.13,y));
-  return base.map((value,k)=>value+(clothing[k]-value)*briefs);
+  return isTarget?purple:part.id<2?bone:skin;
 };
 
 function saveImage(filename, material, yawAngles) {
