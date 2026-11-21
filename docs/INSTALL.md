@@ -1,6 +1,6 @@
 # Form 설치 및 배포 준비
 
-[Form v0.3.2 릴리스](https://github.com/M0lli2/form-fitness/releases/tag/v0.3.2)에서 파일을 내려받으세요. 비공개 저장소에 접근 가능한 GitHub 계정이 필요합니다.
+[Form v0.3.2 릴리스](https://github.com/M0lli2/form-fitness/releases/tag/v0.3.2)에서 파일을 내려받으세요. 저장소가 공개되어 있어 GitHub 로그인 없이 누구나 내려받을 수 있습니다.
 
 ## Android · Galaxy Watch 테스트 설치
 
