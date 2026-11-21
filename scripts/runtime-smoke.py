@@ -38,12 +38,34 @@ def capture(name):
 def labels(root):
     return [n.get("text", "") + " " + n.get("content-desc", "") for n in root.iter("node")]
 
+def dismiss_unresponsive_dialog(root):
+    """에뮬레이터의 다른 앱이 응답하지 않아 뜬 대화상자를 닫습니다.
+    Form 자체가 멈춘 경우는 그대로 두어 검증이 실패하게 하고, 시스템 창만 기다리기로 넘깁니다.
+    """
+    for n in root.iter("node"):
+        text = (n.get("text", "") + " " + n.get("content-desc", "")).strip()
+        if not (("isn't responding" in text) or ("응답하지 않" in text)):
+            continue
+        if n.get("package") == PACKAGE or "Form" in text:
+            return
+        break
+    else:
+        return
+    for n in root.iter("node"):
+        if n.get("text") in ("Wait", "기다리기"):
+            bounds = list(map(int, re.findall(r"\d+", n.get("bounds", ""))))
+            if len(bounds) == 4:
+                x1, y1, x2, y2 = bounds
+                adb("shell", "input", "tap", str((x1+x2)//2), str((y1+y2)//2))
+                return
+
 def wait_for(text, name):
     deadline = time.monotonic() + 120
     last_error = None
     while time.monotonic() < deadline:
         try:
             root = capture(name)
+            dismiss_unresponsive_dialog(root)
             # Match the app package, not labels in system or launcher windows.
             nodes = [n for n in root.iter("node") if n.get("package") == PACKAGE]
             if any(text in (n.get("text", "") + " " + n.get("content-desc", "")) for n in nodes):

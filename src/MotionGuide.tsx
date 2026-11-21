@@ -9,6 +9,9 @@ import {faceAt, projectAnatomy, visibleMuscleMarkers} from './anatomy-mesh.mjs';
 
 const HEIGHT = 226;
 const CYCLE_MS = 3600;
+// 근육 표면은 네이티브 캔버스가 삼각형을 다시 채워 그리므로, 재생 중에는 표면만
+// 조금 낮은 간격으로 갱신합니다. 관절·장비 선은 계속 매 프레임 부드럽게 움직입니다.
+const SURFACE_STEPS = 12;
 const MAX_SCALE = 112;
 const directions = ['정면', '오른쪽 앞', '오른쪽', '오른쪽 뒤', '뒤', '왼쪽 뒤', '왼쪽', '왼쪽 앞'];
 const angles = [0, Math.PI / 4, Math.PI / 2, Math.PI * 3 / 4, Math.PI, Math.PI * 5 / 4, Math.PI * 3 / 2, Math.PI * 7 / 4];
@@ -105,6 +108,19 @@ export function MotionGuide({exerciseId}: {exerciseId: string}) {
     const motion = Object.prototype.hasOwnProperty.call(motions, exerciseId) ? motions[exerciseId] : undefined;
     // 8방향 어디서 봐도 화면에 들어오는 공통 배율. 회전 중 크기가 바뀌지 않습니다.
     const frame = useMemo(() => motion ? frameMotion(motion, Math.max(width, 1), HEIGHT, MAX_SCALE) : null, [motion, width]);
+    // 재생 중에는 같은 자세 구간의 투영 결과를 재사용하고, 멈춰 있을 때는 지금 자세를 그대로 그립니다.
+    // 돌려주는 좌표 배열이 바뀔 때만 네이티브 캔버스가 다시 그립니다.
+    const surfacePhase = playing ? Math.round(phase * SURFACE_STEPS) / SURFACE_STEPS : phase;
+    const surfaceYaw = angles[angleIndex];
+    const surfaceScale = frame ? frame.scale * (zoom ? 1.18 : 1) : 0;
+    const surface = useMemo(() => {
+        if (!motion || !frame || width <= 0 || !showMuscles) return null;
+        const posed = samplePose(motion, surfacePhase);
+        const anatomy = projectAnatomy({joints: posed, yaw: surfaceYaw, scale: surfaceScale,
+            centerX: width / 2 - frame.cx * surfaceScale, centerY: HEIGHT / 2 - frame.cy * surfaceScale,
+            exerciseId, phase: surfacePhase, selected, palette: colors});
+        return {anatomy, markers: visibleMuscleMarkers(anatomy.faces)};
+    }, [motion, frame, width, showMuscles, surfacePhase, surfaceYaw, surfaceScale, exerciseId, selected, colors]);
     useEffect(() => {
         const state = AppState.addEventListener('change', value => {
             if (value !== 'active') setPlaying(false);
@@ -149,11 +165,8 @@ export function MotionGuide({exerciseId}: {exerciseId: string}) {
     // 장비는 motion-guide의 데이터로 그립니다. 바벨·덤벨은 손을 따라가고 벤치·케이블은 자리에 고정됩니다.
     const equipment = (propSegments(motion, joints) as {a:number[]; b:number[]; width:number}[])
         .map(({a,b,width}): [number[],number[],number] => [map(a), map(b), Math.max(3, width * scale)]);
-    const centerX = width / 2 - frame.cx * scale, centerY = HEIGHT / 2 - frame.cy * scale;
-    const anatomy = showMuscles && width > 0
-        ? projectAnatomy({joints, yaw, scale, centerX, centerY, exerciseId, phase, selected, palette: colors})
-        : null;
-    const markers = anatomy ? visibleMuscleMarkers(anatomy.faces) : [];
+    const anatomy = surface ? surface.anatomy : null;
+    const markers = surface ? surface.markers : [];
     const active = activeMuscles(exerciseId);
     const backView = angleIndex >= 3 && angleIndex <= 5;
     const contraction = contractionState(phase);
