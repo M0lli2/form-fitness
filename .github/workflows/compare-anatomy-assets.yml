@@ -43,6 +43,12 @@ jobs:
           curl -fL --retry 2 --max-time 120 'https://download.blender.org/demo/asset-bundles/human-base-meshes/human-base-meshes-bundle-v1.4.1.zip' -o sources/blender-human.zip
           sha256sum sources/blender-human.zip >> evidence/source-sha256.txt
           blender -b -Y -t 4 --python-exit-code 1 --python scripts/render-blender-studio-anatomy.py
+      - name: Sculpt and pose the MakeHuman athletic candidate
+        if: ${{ !cancelled() }}
+        run: |
+          curl -fL --retry 2 --max-time 120 'https://codeload.github.com/makehumancommunity/mpfb2/tar.gz/refs/tags/v2.0.18' -o sources/mpfb.tar.gz
+          tar -xzf sources/mpfb.tar.gz -C sources
+          blender -b -Y -t 4 --python-exit-code 1 --python scripts/render-athletic-candidate.py
       - uses: actions/upload-artifact@v4
         if: always()
         with:
