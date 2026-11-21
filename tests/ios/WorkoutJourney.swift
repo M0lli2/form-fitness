@@ -148,13 +148,17 @@ final class WorkoutJourney: XCTestCase {
         XCTAssertTrue(app.buttons["백업 파일 내보내기"].waitForExistence(timeout: 10), "Missing backup action")
         attach("ios-settings-parity")
     }
-    /// 기록 탭의 주간 근육 볼륨 카드. 모델과 안내 문구가 겹치지 않는지 눈으로 확인할 캡처를 남깁니다.
-    func testWeeklyVolumeCardCapture() {
-        tap("기록")
+    /// 빈 상태 주간 근육 볼륨 카드 캡처입니다. 모델 발목 위에 안내 문구가 겹치지 않는지, 근육 표면이
+    /// 기기 배율에서 선명한지 눈으로 확인하는 자료입니다. 운동 기록을 저장하는 다른 검증보다 먼저
+    /// 실행되도록 이름을 정렬 순서 앞에 둡니다(이 시점의 앱 데이터는 비어 있습니다).
+    func testAnatomyCaptureEmptyWeeklyVolume() {
+        tap("기록");
         XCTAssertTrue(app.staticTexts["최근 6주 운동 볼륨"].waitForExistence(timeout: 20))
         app.swipeUp()
-        let card = element(containing: "이번 주 근육 볼륨")
-        XCTAssertTrue(card.waitForExistence(timeout: 15), "Missing weekly volume card")
-        attach("weekly-volume-card")
+        XCTAssertTrue(element(containing: "최근 7일 근육 볼륨").waitForExistence(timeout: 15), "Missing weekly volume card")
+        attach("weekly-volume-empty-front")
+        tap("배면")
+        XCTAssertTrue(element(containing: "최근 7일 근육 볼륨").waitForExistence(timeout: 15))
+        attach("weekly-volume-empty-back")
     }
 }
