@@ -17,7 +17,7 @@ import * as Sharing from 'expo-sharing';
 import * as FS from 'expo-file-system/legacy';
 import { ThemeProvider, useTheme, Glass, Label, Button } from './theme';
 import { freshState, loadState, persist } from './storage';
-import { uid, makeSession, validateSession, volume, estimated1RM, validateBody, weekStart, calendarWeekVolume, bmi, applyWatchCommand, validateBackup, recommendation, previousSets, recommendedRest, editSets, appendSet, clampRest, goalRecommendation, TRAINING_GOALS } from './core.mjs';
+import { uid, makeSession, validateSession, volume, estimated1RM, validateBody, weekStart, calendarWeekVolume, bmi, applyWatchCommand, validateBackup, recommendation, previousSets, recommendedRest, editSets, appendSet, clampRest, goalRecommendation, TRAINING_GOALS, bodyTrend, parseInbodyText } from './core.mjs';
 import { connectHealth, readHealth, exportBody, exportWorkout } from './health';
 import Device from '../modules/form-device';
 import catalog from './exercises.json';
@@ -59,6 +59,7 @@ function Main({ state, setState }: {
     const [tabBoxHeight,setTabBoxHeight] = useState(66);
     const tabBottom = bottomInset + 6;
     const contentEnd = tabBoxHeight + tabBottom;
+    const [bodyMetric,setBodyMetric] = useState<'weight' | 'muscle' | 'bodyFat'>('weight');
     const [selectedWorkoutDay,setSelectedWorkoutDay] = useState<string | null>(null);
     const [focused, setFocused] = useState(false);
     const [catalogAnatomy,setCatalogAnatomy]=useState(false);
@@ -525,6 +526,7 @@ function Main({ state, setState }: {
     }
     function body() {
         const entries = [...state.body].sort((a,b) => b.date.localeCompare(a.date));
+        const trend = bodyTrend(state.body);
         const [last, previous] = entries;
         const delta = previous && last ? last.weight - previous.weight : null;
         return <>
@@ -539,11 +541,19 @@ function Main({ state, setState }: {
                     <Metric label="골격근량" value={last.muscle ?? '—'} unit="kg"/>
                     <Metric label="체지방률" value={last.bodyFat ?? '—'} unit="%"/>
                 </View>
-                <Glass><Section title="체중 변화" right="최근 8회"/>
-                    <BarChart points={entries.slice(0,8).reverse().map(e => {
-                        const day = new Date(e.date);
-                        return {label:`${day.getMonth()+1}/${day.getDate()}`,value:e.weight};
-                    })} unit="kg"/>
+                <Glass><Section title="신체 변화 추이" right={`${trend.count}회`}/>
+                    <View style={[s.row, { flexWrap: 'wrap' }]}>
+                        {([['weight', '체중'], ['muscle', '골격근량'], ['bodyFat', '체지방률']] as const).map(([key, label]) =>
+                            <Chip key={key} title={label} active={bodyMetric === key} onPress={() => setBodyMetric(key)}/>)}
+                    </View>
+                    <BarChart points={trend.points.map(point => ({label: point.label,
+                        value: Number(point[bodyMetric] ?? 0)}))} unit={bodyMetric === 'bodyFat' ? '%' : 'kg'}/>
+                    {trend[bodyMetric] && <View style={s.spread}>
+                        <Label size={12} muted>직전 측정 대비 {trend[bodyMetric].deltaFromPrevious === null ? '—'
+                            : `${trend[bodyMetric].deltaFromPrevious > 0 ? '+' : ''}${trend[bodyMetric].deltaFromPrevious}`}</Label>
+                        <Label size={12} muted>첫 측정 대비 {trend[bodyMetric].delta > 0 ? '+' : ''}{trend[bodyMetric].delta}</Label>
+                    </View>}
+                    <Label muted size={12}>측정한 날짜 순서대로 표시합니다. 최근 {trend.points.length}회.</Label>
                 </Glass>
                 <Section title="측정 기록" right={`${entries.length}개`}/>
             </> : <Empty text="인바디 수치를 직접 입력하고 결과지 사진도 함께 보관하세요."/>}
@@ -586,7 +596,7 @@ function Main({ state, setState }: {
 })}/>} {modal?.type === 'start' && state.routines.map(r => <Button key={r.id} secondary title={r.name} onPress={() => run(async () => { await start(r.name, r.ids); setModal(null); })}/>)}{modal?.type === 'exercise' && modal.item && <><Label size={24} bold>{modal.item.name}</Label><Label muted>{modal.item.muscle} · {modal.item.equipment} · {modal.item.level}</Label>{hasMotion(modal.item.id) ? <MotionGuide key={modal.item.id} exerciseId={modal.item.id}/> : <CatalogAnatomy key={modal.item.id} exercise={modal.item}/>}<Section title="운동 방법"/>{modal.item.steps.map((step: string, i: number) => <View key={i} style={[s.exerciseRow,{borderColor:colors.line}]}><Label bold style={{color:colors.accent}}>{i+1}</Label><Label style={s.flex}>{step}</Label></View>)}<Glass><Label bold>자세 체크</Label><Label>{modal.item.caution}</Label><Label muted size={12}>통증이 나면 중단하고 전문가에게 자세를 확인하세요.</Label></Glass>{modal.fromPicker && <Button secondary title="운동 목록으로 돌아가기" onPress={()=>setModal({type:'add'})}/>}<Button title={modal.fromPicker ? '이 운동 추가' : '이 운동 기록하기'} onPress={() => run(async () => { if (!state.active)
         await start(modal.item.name, [modal.item.id]);
     else
-        await addExercise(modal.item); setModal(null); setPage('workout'); })}/></>}{modal?.type === 'add' && <ExercisePicker items={exercises} onPick={e => setModal({type:'exercise', item:e, fromPicker:true})}/>} {modal?.type === 'routine' && <RoutineForm items={exercises} item={modal.item} onSave={r => run(async () => { await change(x => ({ ...x, routines: [r, ...x.routines.filter(v => v.id !== r.id)] })); setModal(null); })}/>} {modal?.type === 'body' && <BodyForm item={modal.item} onSave={entry => run(async () => { await change(x => ({ ...x, body: [{...entry, revision: nextBodyRevision(x.body.find(v => v.id === entry.id))}, ...x.body.filter(v => v.id !== entry.id)] })); setModal(null); })} onExport={entry => run(async () => { await exportBody(entry); Alert.alert('건강 데이터로 저장했습니다'); })}/>} {modal?.type === 'history' && <><Label size={22} bold>{modal.item.name}</Label><Label muted>{dateText(modal.item.startedAt)}</Label>{modal.item.exercises.map((e: any) => <View key={e.id}><Label bold>{e.name}</Label>{e.sets.filter((x: any) => x.done).map((x: any, i: number) => <Label key={x.id} muted>{i + 1}세트 · {e.type === 'strength' ? `${x.weight} kg × ${x.reps}회` : `${x.seconds}초`} {x.kind === 'warmup' ? '워밍업' : ''}</Label>)}{e.note && <Label>{e.note}</Label>}</View>)}{(!modal.item.external || modal.item.sync === 'watch') && <Button title="건강 앱에 운동 내보내기" onPress={() => run(async () => { await exportWorkout(modal.item); Alert.alert('운동을 내보냈습니다'); })}/>}<Button secondary title="같은 구성으로 다시 운동" onPress={() => run(async () => { await start(modal.item.name, modal.item.exercises.map((x: any) => x.id)); setModal(null); })}/><Button secondary danger title="이 기록 삭제" onPress={() => Alert.alert('기록 삭제', '건강 앱으로 내보낸 기록은 별도로 남아 있습니다.', [{ text: '취소' }, { text: '삭제', style: 'destructive', onPress: () => run(async () => { await change(x => ({ ...x, history: x.history.filter(h => h.id !== modal.item.id) })); setModal(null); }) }])}/></>}</ScrollView></SafeAreaView></KeyboardAvoidingView></Modal></SafeAreaView>;
+        await addExercise(modal.item); setModal(null); setPage('workout'); })}/></>}{modal?.type === 'add' && <ExercisePicker items={exercises} onPick={e => setModal({type:'exercise', item:e, fromPicker:true})}/>} {modal?.type === 'routine' && <RoutineForm items={exercises} item={modal.item} onSave={r => run(async () => { await change(x => ({ ...x, routines: [r, ...x.routines.filter(v => v.id !== r.id)] })); setModal(null); })}/>} {modal?.type === 'body' && <BodyForm item={modal.item} lastHeight={state.body.find(entry => entry.height)?.height ?? null} onSave={entry => run(async () => { await change(x => ({ ...x, body: [{...entry, revision: nextBodyRevision(x.body.find(v => v.id === entry.id))}, ...x.body.filter(v => v.id !== entry.id)] })); setModal(null); })} onExport={entry => run(async () => { await exportBody(entry); Alert.alert('건강 데이터로 저장했습니다'); })}/>} {modal?.type === 'history' && <><Label size={22} bold>{modal.item.name}</Label><Label muted>{dateText(modal.item.startedAt)}</Label>{modal.item.exercises.map((e: any) => <View key={e.id}><Label bold>{e.name}</Label>{e.sets.filter((x: any) => x.done).map((x: any, i: number) => <Label key={x.id} muted>{i + 1}세트 · {e.type === 'strength' ? `${x.weight} kg × ${x.reps}회` : `${x.seconds}초`} {x.kind === 'warmup' ? '워밍업' : ''}</Label>)}{e.note && <Label>{e.note}</Label>}</View>)}{(!modal.item.external || modal.item.sync === 'watch') && <Button title="건강 앱에 운동 내보내기" onPress={() => run(async () => { await exportWorkout(modal.item); Alert.alert('운동을 내보냈습니다'); })}/>}<Button secondary title="같은 구성으로 다시 운동" onPress={() => run(async () => { await start(modal.item.name, modal.item.exercises.map((x: any) => x.id)); setModal(null); })}/><Button secondary danger title="이 기록 삭제" onPress={() => Alert.alert('기록 삭제', '건강 앱으로 내보낸 기록은 별도로 남아 있습니다.', [{ text: '취소' }, { text: '삭제', style: 'destructive', onPress: () => run(async () => { await change(x => ({ ...x, history: x.history.filter(h => h.id !== modal.item.id) })); setModal(null); }) }])}/></>}</ScrollView></SafeAreaView></KeyboardAvoidingView></Modal></SafeAreaView>;
     async function addExercise(e: Exercise) {
         await patchActive(active => {
             if (active.exercises.some(item=>item.id===e.id)) throw Error('이미 추가된 운동입니다.');
@@ -723,11 +733,29 @@ function CustomExerciseForm({onSave}: {onSave: (exercise: Exercise) => void}) {
 }
 
 /** 인바디는 수동 등록 및 결과지 첨부. OCR이나 제조사 계정 연동으로 오인하지 않게 합니다. */
-function BodyForm({ item, onSave, onExport }: {
+function BodyForm({ item, lastHeight, onSave, onExport }: {
     item?: BodyEntry;
+    lastHeight?: number | null;
     onSave: (e: BodyEntry) => void;
     onExport: (e: BodyEntry) => void;
-}) { const [form, setForm] = useState<any>({ ...item, date: localDateInput(item?.date ?? new Date()), weight: item?.weight?.toString() || '', photo: item?.photo || null }); function field(key: string, label: string) { return <View key={key} style={{ gap: 6 }}><Label size={12} muted>{label}</Label><Input placeholder={label} numeric={key !== 'date' && key !== 'note'} value={String(form[key] ?? '')} onChangeText={value => setForm((x: any) => ({ ...x, [key]: value }))}/></View>; } return <>{[['date', '측정일 (YYYY-MM-DD)'], ['weight', '체중 (kg) · 필수'], ['muscle', '골격근량 (kg)'], ['bodyFat', '체지방률 (%)'], ['height', '키 (cm)'], ['waist', '허리둘레 (cm)'], ['visceralFat', '내장지방 레벨'], ['bmr', '기초대사량 (kcal)'], ['note', '메모']].map(([key, label]) => field(key, label))}<Button secondary title="결과지 사진 첨부" onPress={async () => { try {
+}) { const [form, setForm] = useState<any>({ ...item, date: localDateInput(item?.date ?? new Date()), weight: item?.weight?.toString() || '', height: item?.height?.toString() || (lastHeight ? String(lastHeight) : ''), photo: item?.photo || null });
+    const [inbodyText, setInbodyText] = useState('');
+    /** 읽어 낸 항목만 채우고, 저장 전에 사용자가 확인합니다. */
+    function applyInbody(text: string, source: string) {
+        const parsed = parseInbodyText(text);
+        if (!parsed.count) { Alert.alert('수치를 찾지 못했습니다', '인바디 결과지의 신장·체중·골격근량·체지방률이 보이는지 확인하거나, 인바디 앱에서 수치를 복사해 붙여넣어 주세요.'); return; }
+        setForm((x: any) => ({ ...x,
+            height: parsed.height ? String(parsed.height) : x.height,
+            weight: parsed.weight ? String(parsed.weight) : x.weight,
+            muscle: parsed.muscle ? String(parsed.muscle) : x.muscle,
+            bodyFat: parsed.bodyFat ? String(parsed.bodyFat) : x.bodyFat }));
+        Alert.alert('인바디 정보를 채웠습니다', `${source}에서 ${parsed.count}개 항목을 입력했습니다. 저장 전에 값을 확인하세요.`);
+    } function field(key: string, label: string) { return <View key={key} style={{ gap: 6 }}><Label size={12} muted>{label}</Label><Input placeholder={label} numeric={key !== 'date' && key !== 'note'} value={String(form[key] ?? '')} onChangeText={value => setForm((x: any) => ({ ...x, [key]: value }))}/></View>; } return <>{[['date', '측정일 (YYYY-MM-DD)'], ['weight', '체중 (kg) · 필수'], ['muscle', '골격근량 (kg)'], ['bodyFat', '체지방률 (%)'], ['height', '키 (cm)'], ['waist', '허리둘레 (cm)'], ['visceralFat', '내장지방 레벨'], ['bmr', '기초대사량 (kcal)'], ['note', '메모']].map(([key, label]) => field(key, label))}<Button secondary title="인바디 스크린샷으로 자동 입력" onPress={async () => { try {
+    const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: .9 });
+    if (result.canceled) return;
+    const text = await Device.recognizeText(result.assets[0].uri).catch(() => '');
+    applyInbody(text, '스크린샷');
+} catch (e) { Alert.alert('스크린샷을 읽지 못했습니다', errorText(e)); } }}/><View style={{ gap: 6 }}><Label size={12} muted>인바디 앱에서 복사한 텍스트</Label><Input placeholder="예: 체중 72.4kg 골격근량 33.2kg 체지방률 17.7%" value={inbodyText} onChangeText={setInbodyText}/><Button secondary title="붙여넣은 텍스트로 자동 입력" onPress={() => applyInbody(inbodyText, '붙여넣은 텍스트')}/></View><Button secondary title="결과지 사진 첨부" onPress={async () => { try {
     const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: .85 });
     if (!result.canceled) {
         const directory = FS.documentDirectory + 'inbody/';
@@ -739,7 +767,7 @@ function BodyForm({ item, onSave, onExport }: {
 }
 catch (e) {
     Alert.alert('사진을 추가하지 못했습니다', errorText(e));
-} }}/>{form.photo && <Image source={{ uri: form.photo }} style={{ height: 230, borderRadius: 15 }} resizeMode="contain"/>}<Label muted size={11}>수치를 직접 입력하세요. 결과지 자동 인식·인바디 계정 자동 연동은 아직 제공하지 않습니다.</Label><Button title="기록 저장" onPress={() => { try {
+} }}/>{form.photo && <Image source={{ uri: form.photo }} style={{ height: 230, borderRadius: 15 }} resizeMode="contain"/>}<Label muted size={11}>수치는 직접 입력하거나, 인바디 스크린샷·복사한 텍스트로 채운 뒤 저장 전에 확인하세요. 키는 최근 기록에서 자동으로 채워집니다. 인바디 계정 자동 연동은 제공하지 않습니다.</Label><Button title="기록 저장" onPress={() => { try {
     onSave(validateBody({ ...form, date: measurementDate(form.date) }) as BodyEntry);
 }
 catch (e) {

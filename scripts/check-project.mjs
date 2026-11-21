@@ -14,7 +14,7 @@ const iosPath = 'modules/form-device/ios/FormDeviceModule.swift';
 const androidPath = 'modules/form-device/android/src/main/java/com/mori/form/device/FormDeviceModule.kt';
 const ios = read(iosPath), android = read(androidPath);
 // 계약 목록을 함께 고정해 두 플랫폼에서 동시에 사라지는 회귀도 잡습니다.
-const contract = ['ackWatch', 'authorize', 'drainWatch', 'healthAvailable', 'readHealth', 'saveBody', 'saveWorkout', 'sendWatch', 'watchStatus'];
+const contract = ['ackWatch', 'authorize', 'drainWatch', 'healthAvailable', 'readHealth', 'recognizeText', 'saveBody', 'saveWorkout', 'sendWatch', 'watchStatus'];
 const methods = methodParity(android, ios);
 assert.deepEqual(methods.missingOnIos, [], 'iOS missing ' + methods.missingOnIos.join(', '));
 assert.deepEqual(methods.missingOnAndroid, [], 'Android missing ' + methods.missingOnAndroid.join(', '));

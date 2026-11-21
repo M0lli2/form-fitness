@@ -49,6 +49,8 @@ class FormDeviceModule : Module() {
    val workouts = if (HealthPermission.getReadPermission(ExerciseSessionRecord::class) in granted) client.readRecords(ReadRecordsRequest(ExerciseSessionRecord::class, range, ascendingOrder = false, pageSize = 100)).records.map { mapOf("id" to it.metadata.id, "name" to (it.title ?: "Health Connect 운동"), "start" to it.startTime.toString(), "end" to it.endTime.toString()) } else emptyList()
    mapOf("steps" to steps, "heartRate" to heart, "weight" to weight, "bodyFat" to fat, "workouts" to workouts)
   }
+  // Android는 오프라인 빌드에 추가 OCR 의존성을 넣지 않습니다. 화면에서 붙여넣은 텍스트를 그대로 씁니다.
+  AsyncFunction("recognizeText") { uri: String -> "" }
   AsyncFunction("saveBody") Coroutine { id: String, date: String, weight: Double, fat: Double?, revision: Int ->
    require(revision >= 1); require(weight in 20.0..400.0); require(fat == null || fat in 0.0..75.0)
    val time = Instant.parse(date)

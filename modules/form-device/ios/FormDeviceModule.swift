@@ -1,5 +1,7 @@
 import ExpoModulesCore
 import HealthKit
+import UIKit
+import Vision
 import WatchConnectivity
 
 public final class FormDeviceModule: Module {
@@ -29,6 +31,23 @@ public final class FormDeviceModule: Module {
       async let workouts = self.workouts()
       let (s,h,w,f,x) = try await (steps,hr,weight,fat,workouts)
       return ["steps": s as Any? ?? NSNull(), "heartRate": h as Any? ?? NSNull(), "weight": w as Any? ?? NSNull(), "bodyFat": f.map { $0 * 100 } as Any? ?? NSNull(), "workouts": x]
+    }
+    /// 인바디 결과지 이미지에서 글자를 읽습니다. Vision을 쓰는 온디바이스 인식이라 외부 API가 필요 없습니다.
+    AsyncFunction("recognizeText") { (uri: String) async throws -> String in
+      guard let url = URL(string: uri) ?? URL(string: "file://" + uri), url.isFileURL else { throw FormError.invalid }
+      let data = try Data(contentsOf: url)
+      guard let image = UIImage(data: data)?.cgImage else { throw FormError.invalid }
+      return try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<String, Error>) in
+        let request = VNRecognizeTextRequest { request, error in
+          if let error = error { continuation.resume(throwing: error); return }
+          let lines = (request.results as? [VNRecognizedTextObservation] ?? []).compactMap { $0.topCandidates(1).first?.string }
+          continuation.resume(returning: lines.joined(separator: "\n"))
+        }
+        request.recognitionLevel = .accurate
+        request.recognitionLanguages = ["ko-KR", "en-US"]
+        request.usesLanguageCorrection = true
+        do { try VNImageRequestHandler(cgImage: image, options: [:]).perform([request]) } catch { continuation.resume(throwing: error) }
+      }
     }
     AsyncFunction("saveBody") { (id: String, date: String, weight: Double, fat: Double?, revision: Int) async throws in
       guard revision >= 1, revision <= 2147483647, weight >= 20, weight <= 400, let time = Self.date(date) else { throw FormError.invalid }

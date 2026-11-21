@@ -226,6 +226,53 @@ export function applyWatchCommand(session, cmd, seen) { if (!session || session.
 catch {
     return { session, accepted: false };
 } return { session: clone, accepted: true }; }
+/** 측정한 날짜 그대로(입력 시점 기준) 체성분 추이를 만듭니다. 주 단위로 묶지 않습니다. */
+export function bodyTrend(body = [], limit = 12) {
+    const points = [...(Array.isArray(body) ? body : [])]
+        .filter(entry => Number.isFinite(Date.parse(entry?.date)) && Number(entry.weight) > 0)
+        .sort((a, b) => Date.parse(a.date) - Date.parse(b.date))
+        .map(entry => {
+            const date = new Date(entry.date);
+            return { id: entry.id, date: entry.date, label: `${date.getMonth() + 1}/${date.getDate()}`,
+                weight: Number(entry.weight), muscle: entry.muscle ?? null, bodyFat: entry.bodyFat ?? null,
+                height: entry.height ?? null };
+        });
+    const recent = points.slice(-limit);
+    const series = key => {
+        const values = recent.filter(point => Number.isFinite(point[key])).map(point => point[key]);
+        if (!values.length) return null;
+        const first = values[0], last = values[values.length - 1];
+        const previous = values.length > 1 ? values[values.length - 2] : null;
+        return { first, last, previous, delta: Math.round((last - first) * 10) / 10,
+            deltaFromPrevious: previous === null ? null : Math.round((last - previous) * 10) / 10 };
+    };
+    return { points: recent, count: points.length, weight: series('weight'), muscle: series('muscle'), bodyFat: series('bodyFat') };
+}
+/** 인바디 결과지(OCR 또는 붙여넣기) 텍스트에서 신장·체중·골격근량·체지방을 읽습니다.
+ *  표준체중·표준체지방처럼 기준값이 섞여 있어도 실제 측정값만 고릅니다. */
+export function parseInbodyText(text) {
+    const source = String(text ?? '').replace(/\u00a0/g, ' ').replace(/：/g, ':');
+    const number = '([0-9]+(?:[.,][0-9]+)?)';
+    const read = patterns => {
+        for (const pattern of patterns) {
+            const match = source.match(pattern);
+            if (!match) continue;
+            const value = Number(String(match[1]).replace(',', '.'));
+            if (Number.isFinite(value) && value > 0) return value;
+        }
+        return null;
+    };
+    const height = read([new RegExp('(?<!표준)신장[^0-9]{0,6}' + number), new RegExp('(?<!표준)키[^0-9]{0,6}' + number, 'i'), new RegExp('height[^0-9]{0,6}' + number, 'i')]);
+    const weight = read([new RegExp('(?<!표준)(?<!적정)체중[^0-9]{0,6}' + number), new RegExp('(?<!표준)몸무게[^0-9]{0,6}' + number), new RegExp('weight[^0-9]{0,6}' + number, 'i')]);
+    const muscle = read([new RegExp('골격근량[^0-9]{0,6}' + number), new RegExp('skeletal muscle mass[^0-9]{0,6}' + number, 'i')]);
+    const fatMass = read([new RegExp('(?<!표준)체지방량[^0-9]{0,6}' + number), new RegExp('body fat mass[^0-9]{0,6}' + number, 'i')]);
+    const percent = read([new RegExp('(?<!표준)체지방률[^0-9]{0,6}' + number), new RegExp('body fat(?: percentage)?[^0-9]{0,6}' + number, 'i')]);
+    const bodyFat = percent ?? (fatMass && weight ? Math.round(fatMass / weight * 1000) / 10 : null);
+    const values = { height, weight, muscle, bodyFat };
+    const keys = Object.entries(values).filter(([, value]) => value !== null).map(([key]) => key);
+    return { ...values, fatMass, count: keys.length, keys };
+}
+
 export function weekStart(date = new Date()) { const d = new Date(date); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() - ((d.getDay() + 6) % 7)); return d; }
 /** Group completed sessions by local calendar day, including weeks containing a DST change. */
 export function calendarWeekVolume(sessions, reference = new Date()) {

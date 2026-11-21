@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {makeSession, editSets, appendSet, previousSets, recommendation, recommendedRest, clampRest, goalRecommendation, roundLoad, trainingGoal, bodyStart} from '../src/core.mjs';
+import {makeSession, editSets, appendSet, previousSets, recommendation, recommendedRest, clampRest, goalRecommendation, roundLoad, trainingGoal, bodyStart, bodyTrend, parseInbodyText} from '../src/core.mjs';
 
 const {exercises} = JSON.parse(readFileSync(new URL('../src/exercises.json', import.meta.url)));
 const pushup = exercises.find(e => e.id === 'pushup');
@@ -97,8 +97,9 @@ test('목적별 %1RM과 적재 단위로 무게를 계산한다', () => {
     assert.equal(hypertrophy.sets, 3);
     assert.match(hypertrophy.reason, /근비대\(75% 1RM\)/);
     // 스트렝스 85% = 68kg → 바벨 단위가 아니므로 68kg
+    // 10회는 스트렝스 목표 범위(3~5회)를 넘겼으므로 점진적 과부하로 1kg 올립니다.
     const strength = goalRecommendation(readme, pushup, 'strength');
-    assert.equal(strength.weight, 68);
+    assert.equal(strength.weight, 69);
     assert.equal(strength.reps, 4);
     assert.equal(strength.rest, 120);
     // 근지구력 60% = 48kg, 15회
@@ -151,4 +152,52 @@ test('기록이 없는 첫 운동은 최신 체성분으로 초기 무게를 제
     // 이전 기록이 생기면 기록 기반 추정이 우선합니다.
     const history = [saved('bench', [60, 60, 60])];
     assert.equal(goalRecommendation(history, bench, 'hypertrophy', body).source, 'history');
+});
+
+test('신체 변화 추이는 입력한 측정 시점 그대로 정렬한다', () => {
+    const body = [
+        {id: 'c', date: '2026-11-21T08:00:00Z', weight: 70, muscle: 34, bodyFat: 16.5},
+        {id: 'a', date: '2026-11-01T08:00:00Z', weight: 73, muscle: 33, bodyFat: 18.2},
+        {id: 'b', date: '2026-11-10T08:00:00Z', weight: 71.5, muscle: 33.5, bodyFat: 17.4},
+    ];
+    const trend = bodyTrend(body, 12);
+    assert.deepEqual(trend.points.map(point => point.id), ['a', 'b', 'c']);
+    assert.deepEqual(trend.points.map(point => point.label), ['11/1', '11/10', '11/21']);
+    assert.equal(trend.count, 3);
+    assert.equal(trend.weight.first, 73);
+    assert.equal(trend.weight.last, 70);
+    assert.equal(trend.weight.delta, -3);
+    assert.equal(trend.weight.deltaFromPrevious, -1.5);
+    assert.equal(trend.bodyFat.last, 16.5);
+    assert.equal(trend.muscle.deltaFromPrevious, 0.5);
+    // 최근 N회만 그립니다.
+    assert.deepEqual(bodyTrend(body, 2).points.map(point => point.id), ['b', 'c']);
+    assert.equal(bodyTrend([]).count, 0);
+    assert.equal(bodyTrend([]).weight, null);
+});
+
+test('인바디 텍스트에서 수치를 읽고 표준값은 건너뛴다', () => {
+    const sheet = '인바디 결과지\n신장 178.0cm\n체중 72.4kg\n골격근량 33.2kg\n체지방량 12.8kg\n체지방률 17.7%';
+    const parsed = parseInbodyText(sheet);
+    assert.equal(parsed.height, 178);
+    assert.equal(parsed.weight, 72.4);
+    assert.equal(parsed.muscle, 33.2);
+    assert.equal(parsed.bodyFat, 17.7);
+    assert.equal(parsed.count, 4);
+    // 표준체중·표준체지방 같은 기준값은 실제 측정값으로 쓰지 않습니다.
+    const withStandard = '표준체중 66.0kg\n체중 72.4kg\n표준체지방량 10.1kg\n체지방량 12.8kg';
+    assert.equal(parseInbodyText(withStandard).weight, 72.4);
+    assert.equal(parseInbodyText(withStandard).fatMass, 12.8);
+    assert.equal(parseInbodyText(withStandard).bodyFat, 17.7);
+    // 체지방량만 있으면 체중으로 비율을 계산합니다.
+    assert.equal(parseInbodyText('신장 178\n체중 72,4\n체지방량 12,8').bodyFat, 17.7);
+    // 영문 결과지도 읽습니다.
+    const english = parseInbodyText('Height 178.0\nWeight 72.4\nSkeletal Muscle Mass 33.2\nBody Fat 17.7');
+    assert.equal(english.height, 178);
+    assert.equal(english.weight, 72.4);
+    assert.equal(english.muscle, 33.2);
+    assert.equal(english.bodyFat, 17.7);
+    // 아무 수치도 없으면 채울 항목이 없습니다.
+    assert.equal(parseInbodyText('인바디').count, 0);
+    assert.equal(parseInbodyText('').count, 0);
 });
