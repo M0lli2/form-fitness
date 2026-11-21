@@ -41,6 +41,8 @@ export function FocusedWorkout(props:Props){
   const {palette}=useFormTheme();
   const {fontScale}=useWindowDimensions();
   const [weight,setWeight]=useState(''),[reps,setReps]=useState('');
+  const [restText,setRestText]=useState(String(props.restSeconds));
+  useEffect(()=>{setRestText(String(props.restSeconds));},[props.restSeconds]);
   const [busy,setBusy]=useState(false);
   const lock=useRef(false);
   const current=props.exercise.sets.find(set=>!set.done);
@@ -82,7 +84,11 @@ export function FocusedWorkout(props:Props){
     <Surface role="control" style={styles.controls}>
       {rest>0 && <View style={styles.header}><FormText variant="label">휴식 {time(rest)}</FormText><Action secondary title="건너뛰기" onPress={props.onSkipRest}/></View>}
       <View style={styles.header}>
-        <FormText variant="caption" secondary>휴식 {props.restSeconds}초{props.suggestedRest && props.suggestedRest!==props.restSeconds ? ' · 추천 '+props.suggestedRest+'초' : ''}</FormText>
+        <FormText variant="caption" secondary>휴식</FormText>
+        <TextInput accessibilityLabel="휴식 시간(초)" keyboardType="number-pad" selectTextOnFocus value={restText} onChangeText={setRestText}
+          onEndEditing={event=>{const text=event.nativeEvent.text.trim(); if(!text){setRestText(String(props.restSeconds)); return; } const value=Number(text.replace(',','.')); if(Number.isFinite(value))props.onRestChange(value); else setRestText(String(props.restSeconds));}}
+          style={[styles.restInput,{color:palette.text,backgroundColor:palette.raised}]}/>
+        <FormText variant="caption" secondary>초{props.suggestedRest && props.suggestedRest!==props.restSeconds ? ' · 추천 '+props.suggestedRest+'초' : ''}</FormText>
         <View style={styles.header}>
           <Pressable accessibilityRole="button" accessibilityLabel="휴식 15초 줄이기" onPress={()=>props.onRestNudge(-15)} style={styles.nudge}><FormText variant="caption">−15초</FormText></Pressable>
           <Pressable accessibilityRole="button" accessibilityLabel="휴식 15초 늘리기" onPress={()=>props.onRestNudge(15)} style={styles.nudge}><FormText variant="caption">+15초</FormText></Pressable>
@@ -101,6 +107,7 @@ const styles=StyleSheet.create({
   input:{minHeight:64,borderRadius:14,padding:14,fontSize:32,fontWeight:'600',fontVariant:['tabular-nums'],textAlign:'center'},
   history:{flexDirection:'row',justifyContent:'space-between',alignItems:'center',gap:12,paddingVertical:8},
   nudge:{minHeight:44,justifyContent:'center',paddingHorizontal:8},
+  restInput:{width:76,minHeight:44,borderRadius:10,padding:8,fontSize:16,fontWeight:'600',textAlign:'center'},
   controls:{marginHorizontal:12,marginBottom:12,gap:10},
 });
 

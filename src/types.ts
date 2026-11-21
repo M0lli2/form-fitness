@@ -17,6 +17,8 @@ export type SetEntry = {
     rpe: string;
     kind: string;
     done: boolean;
+    /** 사용자가 직접 고친 세트는 첫 세트 값 자동 반영에서 제외합니다. */
+    edited?: boolean;
 };
 export type Session = {
     id: string;
@@ -24,6 +26,8 @@ export type Session = {
     startedAt: string;
     endedAt?: string;
     restEndsAt: number | null;
+    /** 이 운동에서만 쓰는 휴식 시간(초). 없으면 설정의 기본값을 씁니다. */
+    restSeconds?: number;
     preparing?: true;
     pausedAt?: number;
     pausedMs?: number;

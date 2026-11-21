@@ -63,6 +63,13 @@ export function recommendation(history = [], exerciseId) {
         || (set.weight === best.weight && set.reps > best.reps) ? set : best, previous.sets[0]);
     return { weight: top.weight, reps: top.reps, sets: previous.sets.length, at: previous.startedAt };
 }
+/** 휴식 시간은 15초에서 600초 사이 정수로 맞춥니다. */
+export function clampRest(value) {
+    if (value === null || value === undefined || String(value).trim() === '') return 90;
+    const seconds = Number(value);
+    if (!Number.isFinite(seconds)) return 90;
+    return Math.max(15, Math.min(600, Math.round(seconds)));
+}
 /** 장비와 종류로 휴식 시간을 정합니다. 바벨·고중량 복합 동작 120초, 머신·덤벨·케이블 90초, 맨몸·코어 60초. */
 export function recommendedRest(exercise, previous) {
     if (!exercise) return 90;

@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {makeSession, editSets, appendSet, previousSets, recommendation, recommendedRest} from '../src/core.mjs';
+import {makeSession, editSets, appendSet, previousSets, recommendation, recommendedRest, clampRest} from '../src/core.mjs';
 
 const {exercises} = JSON.parse(readFileSync(new URL('../src/exercises.json', import.meta.url)));
 const pushup = exercises.find(e => e.id === 'pushup');
@@ -75,4 +75,13 @@ test('추천 휴식은 장비와 종류로 정하고 바벨·고중량은 120초
     assert.equal(recommendedRest(exercises.find(e => e.type === 'cardio')), 60);
     assert.equal(recommendedRest(exercises.find(e => e.muscle === '스트레칭')), 30);
     assert.equal(recommendedRest(pushup, {weight: 85}), 120);
+});
+
+test('휴식 시간은 직접 입력해도 15~600초 정수로 다듬는다', () => {
+    assert.equal(clampRest('100'), 100);
+    assert.equal(clampRest(47.6), 48);
+    assert.equal(clampRest(5), 15);
+    assert.equal(clampRest(5000), 600);
+    assert.equal(clampRest('abc'), 90);
+    assert.equal(clampRest(''), 90);
 });
