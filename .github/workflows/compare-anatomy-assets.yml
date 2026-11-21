@@ -48,6 +48,8 @@ jobs:
         run: |
           curl -fL --retry 2 --max-time 120 'https://codeload.github.com/makehumancommunity/mpfb2/tar.gz/refs/tags/v2.0.18' -o sources/mpfb.tar.gz
           tar -xzf sources/mpfb.tar.gz -C sources
+          (cd sources/mpfb2-2.0.18/src/mpfb && zip -q -r ../../../mpfb.zip .)
+          blender -b --command extension install-file --repo user_default --enable sources/mpfb.zip
           blender -b -Y -t 4 --python-exit-code 1 --python scripts/render-athletic-candidate.py
       - uses: actions/upload-artifact@v4
         if: always()

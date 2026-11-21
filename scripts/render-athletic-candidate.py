@@ -1,17 +1,16 @@
 """Render the CC0 MakeHuman athlete using the published human sculpt targets."""
 from pathlib import Path
 import math
-import sys
 import bpy
 from mathutils import Vector, Quaternion
 
-bpy.ops.wm.read_factory_settings(use_empty=True)
-sys.path.insert(0,str(Path("sources/mpfb2-2.0.18/src").resolve()))
-import mpfb
-mpfb.register()
-from mpfb.services.humanservice import HumanService
-from mpfb.services.targetservice import TargetService
-from mpfb.services.locationservice import LocationService
+from bl_ext.user_default.mpfb.services.humanservice import HumanService
+from bl_ext.user_default.mpfb.services.targetservice import TargetService
+from bl_ext.user_default.mpfb.services.locationservice import LocationService
+
+# Clear the default scene without resetting installed add-on preferences.
+bpy.ops.object.select_all(action="SELECT")
+bpy.ops.object.delete(use_global=False)
 
 macro = TargetService.get_default_macro_info_dict()
 macro.update(gender=1.0, age=.51, muscle=.97, weight=.37, proportions=.67, height=.63)
@@ -121,8 +120,10 @@ def bend(name,axis,angle):
     bone.rotation_quaternion = Quaternion(local_axis.normalized(),math.radians(angle))
 
 # Relax the arms for the anatomy screens while leaving wrist and finger weights intact.
-for side,sign in (("L",-1),("R",1)):
-    bend(f"upperarm01.{side}", (0,1,0), sign*16)
+for side in "LR":
+    upper_arm = f"upperarm01.{side}"
+    sign = 1 if rig.data.bones[upper_arm].head_local.x > 0 else -1
+    bend(upper_arm, (0,1,0), sign*16)
     bend(f"lowerarm01.{side}", (1,0,0),-6)
 bpy.context.view_layer.update()
 shot("front",(.81,-3.8,.22))
