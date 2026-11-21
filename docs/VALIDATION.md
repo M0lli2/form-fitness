@@ -2,6 +2,13 @@
 
 이 문서는 실제 결과와 아직 실행하지 않은 항목을 구분합니다.
 
+## v0.3.2
+
+- [소스 검사](https://github.com/M0lli2/form-fitness/actions/runs/44898733199)에서 도메인 테스트 87개와 타입·네이티브 계약 검사를 통과했습니다.
+- [릴리스 검증](https://github.com/M0lli2/form-fitness/actions/runs/44898733252)에서 Android·Wear OS 빌드와 테스트 인증서, Android 에뮬레이터 운동 여정, iOS 시뮬레이터 XCTest, iPhone·iPad 및 Apple Watch 무서명 IPA의 버전을 확인했습니다.
+- 운동도감·자세 가이드·최근 7일 근육 볼륨에 같은 3D 조형이 적용된 화면을 같은 실행의 Android 에뮬레이터 캡처로 확인했습니다.
+- Apple IPA 실기기 설치에는 배포 서명과 프로비저닝이 필요합니다.
+
 ## v0.3.1
 
 - [소스 검사](https://github.com/M0lli2/form-fitness/actions/runs/44658112152)에서 도메인 테스트 82개와 타입·네이티브 계약 검사를 통과했습니다.

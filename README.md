@@ -2,13 +2,14 @@
 
 iPhone·iPad와 Android에서 운동을 기록하는 네이티브 앱입니다. 루틴·세트 기록, 3D 운동 자세, 인바디, Apple 건강·Health Connect, Apple Watch·Wear OS 동반 앱을 제공합니다.
 
-**현재 버전은 Form 0.3.2 네이티브 테스트 빌드입니다.** Android 휴대폰과 Wear OS는 테스트 APK, iPhone·iPad와 Apple Watch는 서명이 필요한 IPA로 제공됩니다. 기기에서 건강 연동과 워치 페어링을 검증하는 절차는 설치 문서에 있습니다. [v0.3.2 다운로드](https://github.com/M0lli2/form-fitness/releases/tag/v0.3.2) · [설치 및 실기기 검증](docs/INSTALL.md)
+**현재 버전은 Form 0.3.2 네이티브 테스트 빌드입니다.** Android 휴대폰과 Wear OS는 테스트 APK, iPhone·iPad와 Apple Watch는 서명이 필요한 IPA로 제공됩니다. 저장소가 공개되어 있어 GitHub 로그인 없이 내려받을 수 있고, 기기에서 건강 연동과 워치 페어링을 검증하는 절차는 설치 문서에 있습니다. [v0.3.2 다운로드](https://github.com/M0lli2/form-fitness/releases/tag/v0.3.2) · [설치 및 실기기 검증](docs/INSTALL.md)
 
 ## 0.3.2 변경사항
 
-- 운동도감의 기본 63종과 사용자 추가 운동에서 같은 3D 모델로 근육을 확인할 수 있습니다. 22종은 기존 자세 재생을 지원하고, 나머지는 대상 근육과 단계별 운동 방법을 제공합니다.
-- 운동도감의 근육 선택과 기록의 최근 7일 근육 볼륨에도 동일한 조형을 사용합니다. 무광 회백색을 기본으로 쓰며 선택한 근육과 볼륨을 보라색으로 표시합니다.
+- 운동도감의 기본 63종과 사용자 추가 운동에서 같은 3D 모델로 근육을 확인할 수 있습니다. 22종은 기존 자세 재생을 지원하고, 나머지는 대상 근육과 단계별 운동 방법을 제공합니다. 동작을 재생하면 근육 표면이 자세를 따라 움직입니다.
+- 운동도감의 근육 선택과 기록의 최근 7일 근육 볼륨에도 동일한 조형을 사용합니다. 몸통과 팔다리를 16개 근육 부위로 나누고, 무광 회백색을 기본으로 쓰며 주동근·보조근과 선택한 근육, 기록된 볼륨을 보라색으로 표시합니다.
 - 루틴에서 운동 종목을 추가한 뒤 시작 전에 중량·횟수를 입력하고 세트를 추가할 수 있습니다.
+- 같은 빌드에서 Android·Wear OS APK 2종과 iPhone·iPad·Apple Watch용 무서명 IPA 2종, SHA-256 체크섬을 함께 올렸습니다.
 
 | 시작 전 세트 입력 | 3D 근육 모델 |
 |---|---|
@@ -59,13 +60,13 @@ iPhone·iPad와 Android에서 운동을 기록하는 네이티브 앱입니다. 
 |---|
 | <img src="docs/screenshots/settings-aligned-steppers.png" width="235" alt="주간 목표와 휴식 시간의 빼기 및 더하기 버튼이 각각 같은 열에 정렬된 다크 모드 화면"> |
 
-### 피드백 반영판 실제 화면
+### 0.3.2 3D 근육 화면
 
-아래 화면은 피드백 기능이 처음 적용된 0.1.0 Android 에뮬레이터에서 캡처했습니다. [실행 기록과 원본 이미지](https://github.com/M0lli2/form-fitness/actions/runs/44474655697)
+0.3.2 릴리스 APK를 Android 에뮬레이터에서 실행해 캡처했습니다. 운동도감과 자세 가이드, 최근 7일 근육 볼륨이 같은 조형과 색을 사용하는 것을 확인할 수 있습니다. [Android 실행·검증 기록](https://github.com/M0lli2/form-fitness/actions/runs/44898733252)
 
-| 운동도감 근육 필터 | 3D 근육 해부 | 근육 범례와 회전 조작 |
+| 3D 자세 가이드 · 푸시업 | 최근 7일 근육 볼륨 · 앞면 | 최근 7일 근육 볼륨 · 배면 |
 |---|---|---|
-| <img src="docs/screenshots/feedback-android-muscle-filter.png" width="235" alt="운동도감 타깃 근육 필터"> | <img src="docs/screenshots/feedback-android-anatomy.png" width="235" alt="운동 자세 가이드의 근육 레이어"> | <img src="docs/screenshots/feedback-android-anatomy-turned.png" width="235" alt="근육 범례와 회전·확대 조작 버튼"> |
+| <img src="docs/screenshots/anatomy-native-guide.png" width="235" alt="3D 자세 가이드의 푸시업 자세와 주동근 번호"> | <img src="docs/screenshots/weekly-anatomy-front.png" width="235" alt="기록 화면 최근 7일 근육 볼륨의 앞면"> | <img src="docs/screenshots/weekly-anatomy-back.png" width="235" alt="기록 화면 최근 7일 근육 볼륨의 배면"> |
 
 ## 설치
 
@@ -77,6 +78,8 @@ iPhone·iPad와 Android에서 운동을 기록하는 네이티브 앱입니다. 
 | iPhone + Apple Watch | [Form-0.3.2-iOS-unsigned-watch.ipa](https://github.com/M0lli2/form-fitness/releases/download/v0.3.2/Form-0.3.2-iOS-unsigned-watch.ipa). 휴대폰·워치 앱 각각에 올바른 서명과 권한 구성이 필요합니다. |
 
 [SHA-256 체크섬](https://github.com/M0lli2/form-fitness/releases/download/v0.3.2/Form-0.3.2-SHA256SUMS.txt) · [설치 순서 및 TestFlight 준비](docs/INSTALL.md)
+
+네 파일 모두 공개 저장소의 릴리스에 올라 있어 GitHub 계정 없이 내려받을 수 있습니다. iPhone·iPad와 Apple Watch 파일은 미서명이므로 설치하려면 Apple 서명과 프로비저닝이 필요합니다.
 
 ## 이전 테스트 빌드 실행 화면
 
@@ -96,9 +99,9 @@ Android 캡처는 [저장·복원 테스트](https://github.com/M0lli2/form-fitn
 
 - 하단 **운동도감**에서 운동을 선택하면 자세 상세가 열립니다. 운동 중 **운동 추가**에서도 자세를 확인한 뒤 추가할 수 있습니다.
 - 3D 가이드는 푸시업·맨몸 스쿼트·덤벨 컬 등을 포함해 총 22종입니다. 대상 운동에는 운동도감에서 3D 표시가 나타납니다.
-- 모델은 관절 좌표 기반입니다. 재생·일시 정지, 방향 전환, 확대, 주요 자세 전환을 지원합니다. 다른 운동도 단계별 텍스트 가이드를 제공합니다.
+- 모델은 원본 조형의 표면을 저장된 관절 좌표에 맞춰 변형합니다. 재생·일시 정지, 방향 전환, 확대, 주요 자세 전환을 지원합니다. 다른 운동도 단계별 텍스트 가이드를 제공합니다.
 - **근육 해부 모델**은 몸통과 팔다리의 입체 표면 위에 16개 근육 부위의 윤곽을 표시합니다. 모델이나 범례를 탭해 근육을 선택할 수 있습니다. [자세 가이드 모델](docs/MOTION-GUIDE.md)
-- 근육 그래픽과 회전 조작은 [피드백 반영판 실제 화면](#피드백-반영판-실제-화면)에서 확인할 수 있습니다.
+- 근육 그래픽과 회전 조작은 [0.3.2 3D 근육 화면](#032-3d-근육-화면)에서 확인할 수 있습니다.
 
 ## 디자인 검토
 
@@ -226,7 +229,7 @@ npm run check
 npm run typecheck
 ```
 
-v0.3.1에서 도메인 테스트 82개, 네이티브 계약·타입 검사, Android 번들 생성을 확인했습니다. 릴리스 빌드에서는 Android 에뮬레이터 운동 여정, iOS 시뮬레이터 XCTest, APK 서명·버전과 Apple IPA 버전을 검증했습니다. [소스 검사](https://github.com/M0lli2/form-fitness/actions/runs/44658112152) · [릴리스 검증](https://github.com/M0lli2/form-fitness/actions/runs/44658112071) 실기기 건강 권한, 워치 페어링, 스토어 서명·심사는 [실기기 검증 표](docs/INSTALL.md#남은-실기기-검증)에서 관리합니다.
+v0.3.2에서 도메인 테스트 87개, 네이티브 계약·타입 검사, Android 번들 생성을 확인했습니다. 릴리스 빌드에서는 Android 에뮬레이터 운동 여정, iOS 시뮬레이터 XCTest, APK 서명·버전과 Apple IPA 버전을 검증했습니다. [소스 검사](https://github.com/M0lli2/form-fitness/actions/runs/44898733199) · [릴리스 검증](https://github.com/M0lli2/form-fitness/actions/runs/44898733252) 실기기 건강 권한, 워치 페어링, 스토어 서명·심사는 [실기기 검증 표](docs/INSTALL.md#남은-실기기-검증)에서 관리합니다.
 
 ## 이전 구현 기록
 
