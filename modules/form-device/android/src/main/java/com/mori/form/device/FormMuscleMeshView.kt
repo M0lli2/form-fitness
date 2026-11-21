@@ -106,6 +106,8 @@ class FormMuscleMeshView(context: Context, appContext: AppContext) : ExpoView(co
   }
  }
 
+ override fun onSurfaceTextureUpdated(surface: SurfaceTexture) {}
+
  override fun onSurfaceTextureDestroyed(surface: SurfaceTexture): Boolean {
   if(!glReady) return true
   glReady=false

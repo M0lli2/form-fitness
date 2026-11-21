@@ -164,7 +164,8 @@ final class FormMuscleMeshView: ExpoView, MTKViewDelegate {
       capacity = buffer == nil ? 0 : next
     }
     guard let buffer = buffer else { return }
-    var low = Double.infinity, high = -.infinity
+    var low = Double.infinity
+    var high = -Double.infinity
     faces.withUnsafeBufferPointer { source in
       let count = source.count
       for offset in stride(from: 0, to: count, by: Self.faceSize) {
