@@ -4,6 +4,9 @@ from mathutils import Vector, Quaternion
 from math import radians
 from pathlib import Path
 import json
+import sys
+sys.path.insert(0, str(Path("scripts").resolve()))
+from fit_anatomy_surface import fit_surface, write_model
 
 bpy.ops.wm.read_factory_settings(use_empty=True)
 bpy.ops.import_scene.gltf(filepath=str(Path("sources/rigged.glb").resolve()))
@@ -103,6 +106,7 @@ def shot(name, position):
     scene.render.filepath = str(Path("evidence", name + ".png").resolve())
     bpy.ops.render.render(write_still=True)
 
+neutral_framing = (cx,cy,z0,height)
 shot("rigged-front", (cx+1.15,cy-4,z0+height*.64))
 shot("rigged-back", (cx-1.05,cy+4,z0+height*.64))
 # Capture the named armature for the release integration pass. Keep neutral if no remap is confirmed.
@@ -153,3 +157,23 @@ height = max(p.z for p in bounds)-z0
 camera.data.ortho_scale = height*1.18
 shot("ecorche-front", (cx+.75*height,cy-2.25*height,z0+height*.65))
 shot("ecorche-back", (cx-.70*height,cy+2.2*height,z0+height*.65))
+
+# Transfer the scanned atlas contours to a continuous surface with articulated skin.
+fit_surface(meshes[0], rig, visible, charcoal, purple)
+for obj in source:
+    obj.hide_render = True
+meshes[0].hide_render = False
+cx,cy,z0,height = neutral_framing
+bpy.context.view_layer.update()
+camera.data.ortho_scale = height * 1.16
+shot("fitted-front", (cx+.85,cy-4,z0+height*.63))
+shot("fitted-back", (cx-.85,cy+4,z0+height*.63))
+write_model(meshes[0], rig)
+for side in ("L", "R"):
+    for name, angle in ((f"upperleg01.{side}", -60), (f"lowerleg01.{side}", 105), (f"lowerarm01.{side}", -40)):
+        joint = rig.pose.bones[name]
+        axis = joint.bone.matrix_local.to_3x3().inverted() @ Vector((1,0,0))
+        joint.rotation_quaternion = Quaternion(axis.normalized(), radians(angle))
+bpy.context.view_layer.update()
+shot("fitted-flexion", (cx+1.6,cy-4,z0+height*.67))
+
