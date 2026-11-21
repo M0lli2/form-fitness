@@ -1,0 +1,27 @@
+name: Hold public Form 0.3.2 packages
+on:
+  push:
+    branches: ['release/v0.3.2']
+    paths: ['.github/workflows/hold-public-v032.yml']
+permissions:
+  contents: read
+  actions: write
+jobs:
+  hold:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Prevent access to new install files while the repository is public
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          if [[ "$(gh api "repos/$GITHUB_REPOSITORY" --jq .private)" == true ]]; then
+            exit 0
+          fi
+          for run in 44891796556 44891796553 44891796576; do
+            current=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$run")
+            test "$(jq -r .head_sha <<< "$current")" = 757fdaca97fa4c2547785cca4805c8fcbf09f98b
+            if [[ "$(jq -r .status <<< "$current")" != completed ]]; then
+              gh api -X POST "repos/$GITHUB_REPOSITORY/actions/runs/$run/cancel" || true
+            fi
+          done
