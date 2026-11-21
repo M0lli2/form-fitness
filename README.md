@@ -2,7 +2,27 @@
 
 iPhone·iPad와 Android에서 운동을 기록하는 네이티브 앱입니다. 루틴·세트 기록, 3D 운동 자세, 인바디, Apple 건강·Health Connect, Apple Watch·Wear OS 동반 앱을 제공합니다.
 
-**현재 버전은 Form 0.3.2 네이티브 테스트 빌드입니다.** Android 휴대폰과 Wear OS는 테스트 APK, iPhone·iPad와 Apple Watch는 서명이 필요한 IPA로 제공됩니다. 기기에서 건강 연동과 워치 페어링을 검증하는 절차는 설치 문서에 있습니다. [v0.3.2 다운로드](https://github.com/M0lli2/form-fitness/releases/tag/v0.3.2) · [설치 및 실기기 검증](docs/INSTALL.md)
+**현재 버전은 Form 0.3.3 네이티브 테스트 빌드입니다.** Android 휴대폰과 Wear OS는 테스트 APK, iPhone·iPad와 Apple Watch는 서명이 필요한 IPA로 제공됩니다. 기기에서 건강 연동과 워치 페어링을 검증하는 절차는 설치 문서에 있습니다. [v0.3.3 다운로드](https://github.com/M0lli2/form-fitness/releases/tag/v0.3.3) · [설치 및 실기기 검증](docs/INSTALL.md)
+
+## 0.3.3 변경사항
+
+- 근육 모델을 GPU로 그립니다. iOS는 Metal, Android는 OpenGL ES 3로 기기 배율 전체 해상도에 4x MSAA를 더해 실루엣이 매끈하고, 운동 중 표면 갱신도 부드럽습니다. GPU를 쓸 수 없는 기기에서는 기존 소프트웨어 렌더러로 물러납니다.
+- 주간 근육 볼륨에서 "이번 주 완료한 세트가 아직 없습니다" 안내가 모델 발목과 겹치지 않도록 인체 모형 아래로 옮겼습니다.
+- iOS 26 Glass·Tinted 홈 화면 테마에서 앱 아이콘의 F가 빈 외곽선이 아니라 꽉 찬 밝은 글자로 보입니다.
+- 1세트의 중량·횟수를 입력하면 아직 손대지 않은 2·3세트가 같은 값으로 따라오고, 세트를 추가하면 직전 세트의 값이 이어집니다. 직접 고친 세트는 덮어쓰지 않습니다.
+- 훈련 목적(스트렝스 85% · 근비대 75% · 근지구력 60% 1RM)을 고르면 추정 1RM과 목적 비율로 무게·반복·세트를 추천합니다. 이전 기록이 없으면 최신 체성분(체중·골격근량·체지방률)으로 시작 무게를 추정하고, 그 근거를 화면에 표시합니다.
+- 휴식 시간은 목적과 장비에 맞춰 추천되며(스트렝스 바벨 180초, 근비대 90~120초, 근지구력 60초), 운동 중에 ±15초·60/90/120초·직접 입력으로 바꿀 수 있습니다.
+- 인바디 스크린샷을 고르면 기기 안에서 글자를 읽어 키·체중·골격근량·체지방을 채웁니다(iOS Vision, Android는 붙여넣기). 키는 최근 기록에서 자동으로 채워집니다.
+- 체성분 변화는 측정한 날짜 순서대로 체중·골격근량·체지방률을 그래프로 보여 주고, 직전 측정과 첫 측정 대비 변화량을 함께 표시합니다.
+- 집중 운동 화면의 하단 조작 상자가 떠 있는 탭 바와 겹치지 않고, 상자 뒤로 여백이 남지 않습니다.
+
+| 고화질 근육 모델 (iOS 3x) | 근육 볼륨 · 문구 분리 |
+|---|---|
+| <img src="docs/screenshots/anatomy-retina-033.png" width="235" alt="iOS 시뮬레이터에서 기기 배율 전체 해상도로 그린 근육 모델"> | <img src="docs/screenshots/weekly-anatomy-android-033.png" width="235" alt="Android 에뮬레이터의 주간 근육 볼륨 카드, 안내 문구가 모델 아래에 있음"> |
+
+| 집중 운동 · 하단 상자 분리 | 훈련 목적 설정 |
+|---|---|
+| <img src="docs/screenshots/focused-workout-033.png" width="235" alt="집중 운동 화면의 하단 조작 상자가 탭 바 위에 떠 있는 모습"> | <img src="docs/screenshots/training-goal-033.png" width="235" alt="내 정보의 훈련 목적 선택과 휴식 시간 설정"> |
 
 ## 0.3.2 변경사항
 
@@ -20,7 +40,8 @@ iPhone·iPad와 Android에서 운동을 기록하는 네이티브 앱입니다. 
 
 | 버전 | 배포·변경 내용 |
 |---|---|
-| **0.3.2** | 원본 조형을 바탕으로 한 3D 근육 모델을 운동도감 전체, 자세 가이드 22종과 최근 7일 근육 볼륨에 적용했습니다. 운동을 시작하기 전 중량·횟수 입력과 세트 추가가 가능합니다. [릴리스](https://github.com/M0lli2/form-fitness/releases/tag/v0.3.2) |
+| **0.3.3** | 근육 모델을 Metal·OpenGL ES 3 기반 3x MSAA 고화질로 교체했습니다. iOS 26 Glass·Tinted 아이콘을 채운 F로 보정하고, 주간 근육 볼륨 안내 문구 겹침과 집중 운동 하단 겹침을 고쳤습니다. 세트 값 자동 반영·추가 세트 복사, 훈련 목적 기반 추천 무게·반복·세트·휴식, 운동 중 휴식 시간 자유 설정, 인바디 스크린샷 인식(iOS)과 체성분 추이 그래프를 추가했습니다. [릴리스](https://github.com/M0lli2/form-fitness/releases/tag/v0.3.3) |
+| 0.3.2 | 원본 조형을 바탕으로 한 3D 근육 모델을 운동도감 전체, 자세 가이드 22종과 최근 7일 근육 볼륨에 적용했습니다. 운동을 시작하기 전 중량·횟수 입력과 세트 추가가 가능합니다. [릴리스](https://github.com/M0lli2/form-fitness/releases/tag/v0.3.2) |
 | 0.3.1 | 기본 홈 화면 아이콘을 흰 배경과 굵은 검은색 대문자 F로 변경했습니다. Android 적응형·테마 아이콘과 iOS·iPadOS·watchOS용 Liquid Glass 레이어를 적용했습니다. [릴리스](https://github.com/M0lli2/form-fitness/releases/tag/v0.3.1) |
 | 0.3.0 | Android·iOS와 두 워치 빌드 번호 3. 빈 운동 준비와 수동 시작, 주간·일간 운동 볼륨, 하단 탭 바깥 배경 제거, 주간 목표·휴식 시간 버튼 정렬을 반영했습니다. iOS 건강 연동과 워치 연결 상태 전달을 보강했고, Apple Watch의 시간제 세트 및 심박 대기 표시를 개선했습니다. [변경 커밋](https://github.com/M0lli2/form-fitness/compare/v0.2.0...v0.3.0) · [릴리스](https://github.com/M0lli2/form-fitness/releases/tag/v0.3.0) |
 | 0.2.0 | 앱 표시 이름 **Form**, Android·iOS 빌드 번호 2. 근육 기능을 포함하며 일시정지→계속하기→저장 종료를 검증 경로에 추가했습니다. 휴대폰 APK와 서명이 같은 **Wear OS APK**를 함께 배포합니다. [v0.2.0 릴리스](https://github.com/M0lli2/form-fitness/releases/tag/v0.2.0) |
@@ -29,7 +50,7 @@ iPhone·iPad와 Android에서 운동을 기록하는 네이티브 앱입니다. 
 
 <img src="assets/icons/icon.png" width="96" alt="흰 배경 위 검은색 볼드 대문자 F를 사용한 Form 기본 아이콘">
 
-0.3.1은 흰 배경과 검은색 **Segoe UI Bold F**를 기본으로 사용합니다. Apple의 어두운 아이콘 모드에서는 대비를 위해 밝은 F를 사용하며, Liquid Glass 효과는 운영체제가 렌더링합니다. [Apple 아이콘 형식](https://developer.apple.com/design/human-interface-guidelines/app-icons)
+0.3.3부터 Glass·Tinted 테마에서도 F가 꽉 찬 밝은 글자로 보이도록 아이콘 레이어의 유리 효과와 반투명을 끄고 Tinted 전용 색을 넣었습니다. 0.3.1은 흰 배경과 검은색 **Segoe UI Bold F**를 기본으로 사용합니다. Apple의 어두운 아이콘 모드에서는 대비를 위해 밝은 F를 사용하며, Liquid Glass 효과는 운영체제가 렌더링합니다. [Apple 아이콘 형식](https://developer.apple.com/design/human-interface-guidelines/app-icons)
 
 ## 기능 사용법
 
@@ -71,12 +92,12 @@ iPhone·iPad와 Android에서 운동을 기록하는 네이티브 앱입니다. 
 
 | 환경 | 파일 및 설치 방법 |
 |---|---|
-| Android 휴대폰 | [Form-0.3.2-Android.apk](https://github.com/M0lli2/form-fitness/releases/download/v0.3.2/Form-0.3.2-Android.apk). 기존 Form 테스트 APK와 같은 인증서로 업데이트할 수 있습니다. |
-| Wear OS · Galaxy Watch4 이후 | [Form-0.3.2-Wear-OS.apk](https://github.com/M0lli2/form-fitness/releases/download/v0.3.2/Form-0.3.2-Wear-OS.apk). 휴대폰 APK와 같은 테스트 인증서를 사용합니다. |
-| iPhone · iPad | [Form-0.3.2-iOS-unsigned.ipa](https://github.com/M0lli2/form-fitness/releases/download/v0.3.2/Form-0.3.2-iOS-unsigned.ipa). 설치 전에 Apple 서명과 프로비저닝이 필요합니다. |
-| iPhone + Apple Watch | [Form-0.3.2-iOS-unsigned-watch.ipa](https://github.com/M0lli2/form-fitness/releases/download/v0.3.2/Form-0.3.2-iOS-unsigned-watch.ipa). 휴대폰·워치 앱 각각에 올바른 서명과 권한 구성이 필요합니다. |
+| Android 휴대폰 | [Form-0.3.3-Android.apk](https://github.com/M0lli2/form-fitness/releases/download/v0.3.3/Form-0.3.3-Android.apk). 기존 Form 테스트 APK와 같은 인증서로 업데이트할 수 있습니다. |
+| Wear OS · Galaxy Watch4 이후 | [Form-0.3.3-Wear-OS.apk](https://github.com/M0lli2/form-fitness/releases/download/v0.3.3/Form-0.3.3-Wear-OS.apk). 휴대폰 APK와 같은 테스트 인증서를 사용합니다. |
+| iPhone · iPad | [Form-0.3.3-iOS-unsigned.ipa](https://github.com/M0lli2/form-fitness/releases/download/v0.3.3/Form-0.3.3-iOS-unsigned.ipa). 설치 전에 Apple 서명과 프로비저닝이 필요합니다. |
+| iPhone + Apple Watch | [Form-0.3.3-iOS-unsigned-watch.ipa](https://github.com/M0lli2/form-fitness/releases/download/v0.3.3/Form-0.3.3-iOS-unsigned-watch.ipa). 휴대폰·워치 앱 각각에 올바른 서명과 권한 구성이 필요합니다. |
 
-[SHA-256 체크섬](https://github.com/M0lli2/form-fitness/releases/download/v0.3.2/Form-0.3.2-SHA256SUMS.txt) · [설치 순서 및 TestFlight 준비](docs/INSTALL.md)
+[SHA-256 체크섬](https://github.com/M0lli2/form-fitness/releases/download/v0.3.3/Form-0.3.3-SHA256SUMS.txt) · [설치 순서 및 TestFlight 준비](docs/INSTALL.md)
 
 ## 이전 테스트 빌드 실행 화면
 
