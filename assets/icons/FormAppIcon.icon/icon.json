@@ -10,6 +10,12 @@
       "value": {
         "solid": "srgb:0.05200,0.05200,0.05200,1.00000"
       }
+    },
+    {
+      "appearance": "tinted",
+      "value": {
+        "solid": "srgb:0.05200,0.05200,0.05200,1.00000"
+      }
     }
   ],
   "groups": [
@@ -21,7 +27,7 @@
         {
           "name": "F",
           "image-name": "form-f.svg",
-          "glass": true,
+          "glass": false,
           "fill-specializations": [
             {
               "value": {
@@ -33,6 +39,12 @@
               "value": {
                 "solid": "gray:1.00000,1.00000"
               }
+            },
+            {
+              "appearance": "tinted",
+              "value": {
+                "solid": "gray:1.00000,1.00000"
+              }
             }
           ]
         }
@@ -40,10 +52,6 @@
       "shadow": {
         "kind": "neutral",
         "opacity": 0.18
-      },
-      "translucency": {
-        "enabled": true,
-        "value": 0.15
       }
     }
   ],
