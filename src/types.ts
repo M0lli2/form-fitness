@@ -76,6 +76,8 @@ export type State = {
     settings: {
         goal: number;
         rest: number;
+        /** 훈련 목적: strength | hypertrophy | endurance */
+        training?: 'strength' | 'hypertrophy' | 'endurance';
         health: boolean;
         contrast: boolean;
         units: 'kg' | 'lb';

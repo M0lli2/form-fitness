@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {makeSession, editSets, appendSet, previousSets, recommendation, recommendedRest, clampRest} from '../src/core.mjs';
+import {makeSession, editSets, appendSet, previousSets, recommendation, recommendedRest, clampRest, goalRecommendation, roundLoad, trainingGoal, bodyStart} from '../src/core.mjs';
 
 const {exercises} = JSON.parse(readFileSync(new URL('../src/exercises.json', import.meta.url)));
 const pushup = exercises.find(e => e.id === 'pushup');
@@ -68,13 +68,57 @@ test('추천 무게·횟수·세트 수가 새 운동의 초기 세트에 반영
     assert.equal(other.sets[0].weight, 0);
 });
 
-test('추천 휴식은 장비와 종류로 정하고 바벨·고중량은 120초를 쓴다', () => {
+test('추천 휴식은 목적과 장비에 따라 달라진다', () => {
     assert.equal(recommendedRest(bench), 120);
-    assert.equal(recommendedRest(pushup), 60);
+    assert.equal(recommendedRest(pushup), 90);
+    assert.equal(recommendedRest(pushup, null, 'endurance'), 60);
+    assert.equal(recommendedRest(pushup, null, 'strength'), 120);
+    assert.equal(recommendedRest(bench, null, 'strength'), 180);
     assert.equal(recommendedRest(exercises.find(e => e.equipment === '머신')), 90);
-    assert.equal(recommendedRest(exercises.find(e => e.type === 'cardio')), 60);
+    assert.equal(recommendedRest(exercises.find(e => e.type === 'cardio'), null, 'strength'), 60);
     assert.equal(recommendedRest(exercises.find(e => e.muscle === '스트레칭')), 30);
     assert.equal(recommendedRest(pushup, {weight: 85}), 120);
+});
+
+test('목적별 %1RM과 적재 단위로 무게를 계산한다', () => {
+    assert.equal(roundLoad(44.6, '바벨'), 45);
+    assert.equal(roundLoad(44.6, '덤벨'), 44);
+    assert.equal(roundLoad(44.6, '맨몸'), 45);
+    assert.equal(roundLoad(0, '바벨'), 0);
+    assert.equal(trainingGoal('strength').percent, 0.85);
+    assert.equal(trainingGoal('없는목적').id, 'hypertrophy');
+    // 60kg × 10회 → 추정 1RM 80kg, 근비대 75% = 60kg
+    const readme = [saved('pushup', [60, 60, 60])];
+    const hypertrophy = goalRecommendation(readme, pushup, 'hypertrophy');
+    assert.equal(hypertrophy.hasHistory, true);
+    assert.equal(hypertrophy.oneRm, 80);
+    assert.equal(hypertrophy.weight, 60);
+    assert.equal(hypertrophy.reps, 10);
+    assert.equal(hypertrophy.sets, 3);
+    assert.match(hypertrophy.reason, /근비대\(75% 1RM\)/);
+    // 스트렝스 85% = 68kg → 바벨 단위가 아니므로 68kg
+    const strength = goalRecommendation(readme, pushup, 'strength');
+    assert.equal(strength.weight, 68);
+    assert.equal(strength.reps, 4);
+    assert.equal(strength.rest, 120);
+    // 근지구력 60% = 48kg, 15회
+    const endurance = goalRecommendation(readme, pushup, 'endurance');
+    assert.equal(endurance.weight, 48);
+    assert.equal(endurance.reps, 15);
+});
+
+test('목표 반복 상한을 넘기면 점진적 과부하로 한 단계 올린다', () => {
+    const hard = [saved('pushup', [60, 60, 60])];
+    hard[0].exercises[0].sets.forEach(set => { set.reps = 12; });
+    // 60kg × 12회 → 1RM 84kg, 근비대 75% = 63kg, 12회는 10+2 이상이므로 +1kg
+    assert.equal(goalRecommendation(hard, pushup, 'hypertrophy').weight, 64);
+    // 기록이 없으면 목적별 반복·세트·휴식만 안내하고 무게는 0으로 둔다
+    const first = goalRecommendation([], pushup, 'strength');
+    assert.equal(first.hasHistory, false);
+    assert.equal(first.weight, 0);
+    assert.equal(first.sets, 4);
+    assert.equal(first.rest, 180);
+    assert.match(first.reason, /첫 기록/);
 });
 
 test('휴식 시간은 직접 입력해도 15~600초 정수로 다듬는다', () => {
@@ -84,4 +128,27 @@ test('휴식 시간은 직접 입력해도 15~600초 정수로 다듬는다', ()
     assert.equal(clampRest(5000), 600);
     assert.equal(clampRest('abc'), 90);
     assert.equal(clampRest(''), 90);
+});
+
+test('기록이 없는 첫 운동은 최신 체성분으로 초기 무게를 제안한다', () => {
+    const body = [{id: 'b1', date: '2026-11-01T09:00:00Z', weight: 80, bodyFat: 20, muscle: 35, height: 178, source: 'manual', note: '', photo: null}];
+    const start = bodyStart(bench, body);
+    // 제지방량 64kg × 벤치 계수 0.8 = 51.2kg
+    assert.equal(start.lean, 64);
+    assert.equal(start.oneRm, 51.2);
+    const rec = goalRecommendation([], bench, 'hypertrophy', body);
+    assert.equal(rec.source, 'body');
+    assert.equal(rec.weight, 37.5);
+    assert.match(rec.reason, /체성분|체중 80kg/);
+    // 골격근량만 있으면 제지방량을 추정합니다(35kg × 1.6 = 56kg).
+    const muscleOnly = bodyStart(bench, [{...body[0], bodyFat: undefined}]);
+    assert.equal(muscleOnly.lean, 56);
+    // 체성분 기록이 없으면 안내와 함께 안전한 기본값을 씁니다.
+    const empty = goalRecommendation([], bench, 'hypertrophy', []);
+    assert.equal(empty.source, 'none');
+    assert.equal(empty.weight, 0);
+    assert.match(empty.reason, /인바디/);
+    // 이전 기록이 생기면 기록 기반 추정이 우선합니다.
+    const history = [saved('bench', [60, 60, 60])];
+    assert.equal(goalRecommendation(history, bench, 'hypertrophy', body).source, 'history');
 });

@@ -18,7 +18,9 @@ type Props={
   restDeadline:number|null;
   restSeconds:number;
   suggestedRest:number|null;
-  recommendation:{weight:number;reps:number;sets:number}|null;
+  recommendationText:string|null;
+  goal:'strength'|'hypertrophy'|'endurance';
+  onGoalChange:(goal:'strength'|'hypertrophy'|'endurance')=>void;
   guide:React.ReactNode;
   onComplete:(setId:string,values:{weight:number;reps:number})=>Promise<void>;
   onSkipRest:()=>void;
@@ -31,6 +33,7 @@ type Props={
   onNext:()=>void;
 };
 const time=(s:number)=>String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0');
+const GOALS=[['strength','스트렝스'],['hypertrophy','근비대'],['endurance','근지구력']] as const;
 
 /**
  * Planfit 공개 화면에서 확인한 '한 운동에 집중' 구조를 채택한다.
@@ -69,8 +72,8 @@ export function FocusedWorkout(props:Props){
       <FormText variant="title">{props.exercise.name}</FormText>
       <FormText variant="caption" secondary>{props.exercise.muscle} · {props.exercise.equipment}</FormText>
       <Surface><View accessibilityLabel="운동 동작 안내">{props.guide}</View><Action secondary title="자세·호흡·주의사항" onPress={props.onOpenGuide}/></Surface>
-      {props.recommendation
-        ? <View style={styles.header}><FormText variant="caption" secondary>이전 기록 추천: {displayMass(props.recommendation.weight,props.units)} {props.units} × {props.recommendation.reps}회 · {props.recommendation.sets}세트</FormText><Pressable accessibilityRole="button" accessibilityLabel="추천 적용" onPress={props.onApplyRecommendation}><FormText variant="caption">적용</FormText></Pressable></View>
+      {props.recommendationText
+        ? <View style={styles.header}><FormText variant="caption" secondary style={styles.flexText}>{props.recommendationText}</FormText><Pressable accessibilityRole="button" accessibilityLabel="추천 적용" onPress={props.onApplyRecommendation} style={styles.nudge}><FormText variant="caption">적용</FormText></Pressable></View>
         : <FormText variant="caption" secondary>{props.exercise.previous ? '지난 기록  '+props.exercise.previous : '첫 기록입니다. 편안한 중량부터 시작하세요.'}</FormText>}
       <Surface>
         <FormText variant="heading">{current ? String(props.exercise.sets.indexOf(current)+1)+'번째 세트' : '모든 세트 완료'}</FormText>
@@ -83,6 +86,12 @@ export function FocusedWorkout(props:Props){
     </ScrollView>
     <Surface role="control" style={styles.controls}>
       {rest>0 && <View style={styles.header}><FormText variant="label">휴식 {time(rest)}</FormText><Action secondary title="건너뛰기" onPress={props.onSkipRest}/></View>}
+      <View style={styles.header}>
+        {GOALS.map(goal => <Pressable key={goal[0]} accessibilityRole="button" accessibilityState={{selected:props.goal===goal[0]}}
+          accessibilityLabel={'훈련 목적 '+goal[1]} onPress={()=>props.onGoalChange(goal[0])}
+          style={[styles.goal,{backgroundColor:props.goal===goal[0]?palette.raised:'transparent'}]}>
+          <FormText variant="caption" secondary={props.goal!==goal[0]}>{goal[1]}</FormText></Pressable>)}
+      </View>
       <View style={styles.header}>
         <FormText variant="caption" secondary>휴식</FormText>
         <TextInput accessibilityLabel="휴식 시간(초)" keyboardType="number-pad" selectTextOnFocus value={restText} onChangeText={setRestText}
@@ -107,6 +116,8 @@ const styles=StyleSheet.create({
   input:{minHeight:64,borderRadius:14,padding:14,fontSize:32,fontWeight:'600',fontVariant:['tabular-nums'],textAlign:'center'},
   history:{flexDirection:'row',justifyContent:'space-between',alignItems:'center',gap:12,paddingVertical:8},
   nudge:{minHeight:44,justifyContent:'center',paddingHorizontal:8},
+  goal:{flex:1,minHeight:44,alignItems:'center',justifyContent:'center',borderRadius:12},
+  flexText:{flex:1},
   restInput:{width:76,minHeight:44,borderRadius:10,padding:8,fontSize:16,fontWeight:'600',textAlign:'center'},
   controls:{marginHorizontal:12,marginBottom:12,gap:10},
 });

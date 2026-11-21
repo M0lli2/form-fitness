@@ -70,15 +70,98 @@ export function clampRest(value) {
     if (!Number.isFinite(seconds)) return 90;
     return Math.max(15, Math.min(600, Math.round(seconds)));
 }
-/** 장비와 종류로 휴식 시간을 정합니다. 바벨·고중량 복합 동작 120초, 머신·덤벨·케이블 90초, 맨몸·코어 60초. */
-export function recommendedRest(exercise, previous) {
+/** 훈련 목적별 %1RM·반복·세트·휴식. NSCA/ACSM 권장 범위의 중간값을 씁니다. */
+export const TRAINING_GOALS = {
+    strength: { id: 'strength', label: '스트렝스', percent: 0.85, percentLabel: '85% 1RM', reps: 4, repsLabel: '3~5회', sets: 4, rest: 180 },
+    hypertrophy: { id: 'hypertrophy', label: '근비대', percent: 0.75, percentLabel: '75% 1RM', reps: 10, repsLabel: '8~12회', sets: 3, rest: 90 },
+    endurance: { id: 'endurance', label: '근지구력', percent: 0.6, percentLabel: '60% 1RM', reps: 15, repsLabel: '15~20회', sets: 3, rest: 60 },
+};
+export function trainingGoal(id) { return TRAINING_GOALS[id] ?? TRAINING_GOALS.hypertrophy; }
+/** 장비에 맞는 실제 적재 단위로 반올림합니다(바벨·머신 2.5kg, 덤벨·케틀벨 2kg, 그 외 1kg). */
+export function roundLoad(weight, equipment) {
+    if (!(weight > 0)) return 0;
+    const step = ['덤벨', '케틀벨'].includes(equipment) ? 2 : ['바벨', '머신', '케이블'].includes(equipment) ? 2.5 : 1;
+    return Math.max(step, Math.round(weight / step) * step);
+}
+/** 기록에서 그 종목의 가장 높은 추정 1RM을 찾습니다(Epley). */
+export function bestOneRm(history = [], exerciseId) {
+    let best = null;
+    for (const session of Array.isArray(history) ? history : []) {
+        const exercise = session?.exercises?.find(item => item.id === exerciseId);
+        for (const set of exercise?.sets ?? []) {
+            if (!set.done || set.kind === 'warmup') continue;
+            const value = estimated1RM(Number(set.weight) || 0, Number(set.reps) || 0);
+            if (value && (!best || value > best.value)) best = { value, weight: Number(set.weight), reps: Number(set.reps), at: session.startedAt ?? null };
+        }
+    }
+    return best;
+}
+/** 종목군별 초보~초중급 안전 계수(제지방량 대비). 스쿼트·데드·벤치·로우 같은 복합 동작에서
+ *  무리 없이 시작할 수 있는 추정 1RM을 위해 보수적으로 잡았습니다. */
+const BODY_FACTORS = [
+    [/데드리프트|히프 쓰러스트|굿모닝/, 1.25],
+    [/스쿼트|런지|레그프레스|레그 익스텐션|레그 컬|카프|브릿지/, 1.0],
+    [/벤치|체스트|푸시업|푸시|딥스|플라이/, 0.8],
+    [/로우|풀업|친업|풀다운|랫/, 0.6],
+    [/오버헤드|숄더|레터럴|아놀드/, 0.55],
+    [/컬|익스텐션|레이즈|킥백|푸시다운/, 0.35],
+];
+/** 최신 체성분으로 종목군별 초기 추정 1RM을 구합니다. 기록이 하나도 없을 때만 씁니다. */
+export function bodyStart(exercise, body = []) {
+    if (!exercise) return null;
+    const entries = [...(Array.isArray(body) ? body : [])]
+        .filter(entry => Number(entry?.weight) > 0)
+        .sort((a, b) => String(b.date ?? '').localeCompare(String(a.date ?? '')));
+    const latest = entries[0];
+    if (!latest) return null;
+    const weight = Number(latest.weight);
+    const fat = Number(latest.bodyFat);
+    const muscle = Number(latest.muscle);
+    const lean = Number.isFinite(fat) && fat > 0 && fat < 60 ? weight * (1 - fat / 100)
+        : Number.isFinite(muscle) && muscle > 0 ? muscle * 1.6 : weight * 0.8;
+    const text = `${exercise.name ?? ''} ${exercise.equipment ?? ''} ${exercise.muscle ?? ''}`;
+    const factor = (BODY_FACTORS.find(([pattern]) => pattern.test(text)) ?? [null, 0.5])[1];
+    const bodyweight = ['맨몸', '소도구'].includes(exercise.equipment);
+    return { lean: Math.round(lean * 10) / 10, factor, bodyweight, oneRm: Math.round(lean * factor * 10) / 10,
+        entry: latest };
+}
+/** 선택한 훈련 목적에 맞춘 무게·반복·세트·휴식과 그 근거입니다.
+ *  이전 기록이 있으면 추정 1RM + 점진적 과부하, 없으면 최신 체성분 기반 초기 추정을 씁니다. */
+export function goalRecommendation(history = [], exercise, goalId, body = []) {
+    const goal = trainingGoal(goalId);
+    const previous = recommendation(history, exercise?.id);
+    const best = bestOneRm(history, exercise?.id);
+    const oneRm = best?.value ?? (previous ? estimated1RM(previous.weight, previous.reps) : null);
+    if (oneRm) {
+        const step = ['덤벨', '케틀벨'].includes(exercise?.equipment) ? 2 : ['바벨', '머신', '케이블'].includes(exercise?.equipment) ? 2.5 : 1;
+        const lift = previous && previous.reps >= goal.reps + 2;
+        const weight = roundLoad(oneRm * goal.percent + (lift ? step : 0), exercise?.equipment);
+        return { ...goal, id: goal.id, hasHistory: true, source: 'history', weight, oneRm: Math.round(oneRm * 10) / 10, previous,
+            reason: `${goal.label}(${goal.percentLabel}) · 이전 기록 추정 1RM ${Math.round(oneRm * 10) / 10}kg 기준 → ${weight}kg × ${goal.reps}회 · ${goal.sets}세트 · 휴식 ${goal.rest}초` };
+    }
+    const start = bodyStart(exercise, body);
+    if (start) {
+        const weight = start.bodyweight ? 0 : roundLoad(start.oneRm * goal.percent, exercise?.equipment);
+        const basis = start.entry.bodyFat ? `체중 ${start.entry.weight}kg·체지방 ${start.entry.bodyFat}%`
+            : start.entry.muscle ? `체중 ${start.entry.weight}kg·골격근 ${start.entry.muscle}kg` : `체중 ${start.entry.weight}kg`;
+        return { ...goal, id: goal.id, hasHistory: false, source: 'body', weight, oneRm: start.oneRm,
+            reason: start.bodyweight
+                ? `${goal.label}(${goal.percentLabel}) · ${basis} 기반 체중 종목 → ${goal.repsLabel} × ${goal.sets}세트 · 휴식 ${goal.rest}초`
+                : `${goal.label}(${goal.percentLabel}) · ${basis} 기반 초기 추정 1RM ${start.oneRm}kg → ${weight}kg × ${goal.reps}회 · ${goal.sets}세트 · 휴식 ${goal.rest}초` };
+    }
+    return { ...goal, id: goal.id, hasHistory: false, source: 'none', weight: 0, oneRm: null,
+        reason: `${goal.label}(${goal.percentLabel}) · 첫 기록입니다. ${goal.repsLabel} × ${goal.sets}세트 · 휴식 ${goal.rest}초 · 인바디·체성분을 기록하면 맞춤 초기 중량이 더 정확해집니다` };
+}
+/** 장비·종류·훈련 목적에 맞는 휴식 시간입니다. */
+export function recommendedRest(exercise, previous, goalId = 'hypertrophy') {
     if (!exercise) return 90;
     if (exercise.type === 'cardio') return 60;
     if (exercise.type === 'duration') return exercise.muscle === '스트레칭' ? 30 : 45;
-    const weight = Number(previous?.weight ?? previous?.sets?.at(-1)?.weight ?? 0);
-    if (exercise.equipment === '바벨' || weight >= 80) return 120;
-    if (['머신', '케이블', '덤벨', '케틀벨', '소도구'].includes(exercise.equipment)) return 90;
-    return 60;
+    const heavy = exercise.equipment === '바벨' || Number(previous?.weight ?? previous?.sets?.at(-1)?.weight ?? 0) >= 80;
+    const goal = trainingGoal(goalId).id;
+    if (goal === 'strength') return heavy ? 180 : 120;
+    if (goal === 'endurance') return 60;
+    return heavy ? 120 : 90;
 }
 /** 첫 세트를 고치면 아직 끝내지 않았고 직접 손대지 않은 뒤 세트에도 같은 중량·횟수를 채웁니다.
  * 2세트 이후를 직접 고친 세트는 edited로 남겨 자동 반영에서 제외합니다. */
