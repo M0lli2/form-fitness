@@ -17,7 +17,7 @@ import * as Sharing from 'expo-sharing';
 import * as FS from 'expo-file-system/legacy';
 import { ThemeProvider, useTheme, Glass, Label, Button } from './theme';
 import { freshState, loadState, persist } from './storage';
-import { uid, makeSession, validateSession, volume, estimated1RM, validateBody, weekStart, calendarWeekVolume, bmi, applyWatchCommand, validateBackup } from './core.mjs';
+import { uid, makeSession, validateSession, volume, estimated1RM, validateBody, weekStart, calendarWeekVolume, bmi, applyWatchCommand, validateBackup, recommendation, previousSets, recommendedRest, editSets, appendSet } from './core.mjs';
 import { connectHealth, readHealth, exportBody, exportWorkout } from './health';
 import Device from '../modules/form-device';
 import catalog from './exercises.json';
@@ -117,7 +117,7 @@ function Main({ state, setState }: {
                 return current; const next = { ...current, seen: [...current.seen, cmd.id] }; if (cmd.action === 'completeSet') {
                 const result = applyWatchCommand(current.active, cmd, current.seen);
                 if (result.accepted)
-                    next.active = { ...result.session, restEndsAt: Date.now() + current.settings.rest * 1000 };
+                    next.active = { ...result.session, restEndsAt: Date.now() + (result.session.restSeconds ?? current.settings.rest) * 1000 };
             }
             else if (cmd.action === 'workoutFinished' && typeof cmd.start === 'string' && typeof cmd.end === 'string' && Date.parse(cmd.end) > Date.parse(cmd.start) && !current.history.some(x => x.id === cmd.id)) {
                 next.history = [{ id: cmd.id, name: '워치 근력 운동', startedAt: cmd.start, endedAt: cmd.end, restEndsAt: null, exercises: [], external: true, sync: cmd.healthSaved ? 'synced' : 'watch' }, ...current.history];
@@ -166,12 +166,14 @@ function Main({ state, setState }: {
     async function completeSet(exerciseId: string, setId: string, values?: {weight:number;reps:number}) {
         await patchActive(active => {
             if (active.preparing || active.pausedAt !== undefined) return active;
-            const set = active.exercises.find(e=>e.id===exerciseId)?.sets.find(s=>s.id===setId);
-            if (!set) return active;
-            if (values) Object.assign(set,values);
+            const exercise = active.exercises.find(e=>e.id===exerciseId);
+            const set = exercise?.sets.find(s=>s.id===setId);
+            if (!exercise || !set) return active;
+            // 첫 세트에서 입력한 중량·횟수는 아직 손대지 않은 뒤 세트에도 그대로 적용합니다.
+            if (values) editSets(exercise.sets, exercise.sets.indexOf(set), values);
             set.done = values ? true : !set.done;
             if (set.done) validateSession(active);
-            active.restEndsAt = set.done ? Date.now() + stateRef.current.settings.rest * 1000 : null;
+            active.restEndsAt = set.done ? Date.now() + (active.restSeconds ?? stateRef.current.settings.rest) * 1000 : null;
             return active;
         });
         refreshRestReminder();
@@ -185,6 +187,35 @@ function Main({ state, setState }: {
     async function skipRest() {
         await patchActive(active=>({...active,restEndsAt:null}));
         refreshRestReminder();
+    }
+    /** 운동 중 휴식 시간은 세션 값으로 보관하고, 설정의 기본값은 그대로 둡니다. */
+    const sessionRest = (active: Session | null | undefined) => active?.restSeconds ?? stateRef.current.settings.rest;
+    async function changeRest(value: number) {
+        const seconds = Math.max(15, Math.min(600, Math.round(value / 15) * 15));
+        await change(x => ({ ...x, active: x.active ? { ...x.active, restSeconds: seconds,
+            restEndsAt: x.active.restEndsAt ? Date.now() + seconds * 1000 : null } : null }));
+        refreshRestReminder();
+    }
+    async function nudgeRest(delta: number) {
+        await change(x => {
+            if (!x.active) return x;
+            const seconds = Math.max(15, Math.min(600, (x.active.restSeconds ?? x.settings.rest) + delta));
+            const left = x.active.restEndsAt ? Math.max(0, x.active.restEndsAt - Date.now()) + delta * 1000 : null;
+            return { ...x, active: { ...x.active, restSeconds: seconds,
+                restEndsAt: left === null ? null : Date.now() + Math.max(5000, left) } };
+        });
+        refreshRestReminder();
+    }
+    async function saveRestDefault(seconds: number) {
+        await change(x => ({ ...x, settings: { ...x.settings, rest: Math.max(15, Math.min(600, seconds)) } }));
+    }
+    /** 이전 기록 추천을 아직 건드리지 않은 세트에 한 번에 채웁니다. */
+    async function applyRecommendation(exerciseId: string, rec: {weight:number;reps:number}) {
+        await patchActive(active => {
+            const row = active.exercises.find(e => e.id === exerciseId);
+            if (row) row.sets.forEach(set => { if (!set.done && !set.edited) { set.weight = rec.weight; set.reps = rec.reps; } });
+            return active;
+        });
     }
     async function finish(sessionId: string) {
         const result: {record?:Session} = {};
@@ -330,10 +361,29 @@ function Main({ state, setState }: {
         </>;
         const preparing = active.preparing === true;
         const target = active.exercises.find(e => e.sets.some(set => !set.done));
+        const recs = new Map(active.exercises.map(e => [e.id, recommendation(state.history, e.id)]));
+        const restTarget = target ?? active.exercises[0];
+        const restDetail = restTarget ? exercises.find(e => e.id === restTarget.id) : undefined;
+        const suggestedRest = restDetail ? recommendedRest(restDetail, recs.get(restDetail.id)) : null;
+        const restSeconds = sessionRest(active);
+        const restControls = <View style={{ gap: 10 }}>
+            <View style={s.spread}>
+                <Label size={12} muted>휴식 {restSeconds}초{suggestedRest && suggestedRest !== restSeconds ? ` · 추천 ${suggestedRest}초` : ''}</Label>
+                <View style={s.row}>
+                    <Pressable accessibilityRole="button" accessibilityLabel="휴식 15초 줄이기" style={s.inlineLink} onPress={() => run(() => nudgeRest(-15))}><Label size={13}>−15초</Label></Pressable>
+                    <Pressable accessibilityRole="button" accessibilityLabel="휴식 15초 늘리기" style={s.inlineLink} onPress={() => run(() => nudgeRest(15))}><Label size={13}>+15초</Label></Pressable>
+                </View>
+            </View>
+            <View style={[s.row, { flexWrap: 'wrap' }]}>
+                {[60, 90, 120].map(value => <Chip key={value} title={`${value}초`} active={restSeconds === value} onPress={() => run(() => changeRest(value))}/>)}
+                {suggestedRest ? <Chip title="추천" active={restSeconds === suggestedRest} onPress={() => run(() => changeRest(suggestedRest))}/> : null}
+                <Pressable accessibilityRole="button" accessibilityLabel="휴식 시간을 기본값으로 저장" style={s.inlineLink} onPress={() => run(() => saveRestDefault(restSeconds))}><Label size={12} muted>기본값 저장</Label></Pressable>
+            </View>
+        </View>;
         if (!preparing && focused && target?.type === 'strength') {
             const detail = exercises.find(e => e.id === target.id);
             const previous = state.history.flatMap(h => h.exercises).find(e => e.id === target.id)?.sets.find(s => s.done);
-            return <View style={{flex:1}}><FocusedWorkout key={target.id} exercise={{...target,equipment:detail?.equipment ?? '',position:active.exercises.indexOf(target)+1,total:active.exercises.length,previous:previous ? displayWeight(previous.weight)+' '+unit+' × '+previous.reps : null}} units={unit} elapsedSeconds={workoutElapsedSeconds(active,now)} paused={active.pausedAt !== undefined} now={now} restDeadline={active.restEndsAt} guide={<Label>{detail?.steps[0] ?? '편안한 자세에서 시작하세요.'}</Label>} onComplete={async (id, values) => {
+            return <View style={{flex:1}}><FocusedWorkout key={target.id} exercise={{...target,equipment:detail?.equipment ?? '',position:active.exercises.indexOf(target)+1,total:active.exercises.length,previous:previous ? displayWeight(previous.weight)+' '+unit+' × '+previous.reps : null}} units={unit} elapsedSeconds={workoutElapsedSeconds(active,now)} paused={active.pausedAt !== undefined} now={now} restDeadline={active.restEndsAt} restSeconds={restSeconds} suggestedRest={suggestedRest} recommendation={recs.get(target.id) ?? null} onRestChange={value=>run(()=>changeRest(value))} onRestNudge={delta=>run(()=>nudgeRest(delta))} onAddSet={()=>run(async()=>{ await patchActive(x=>{const row=x.exercises.find(a=>a.id===target.id); if(row) row.sets=appendSet(row.sets); return x;}); })} onApplyRecommendation={()=>{const rec=recs.get(target.id); if(rec) run(()=>applyRecommendation(target.id, rec));}} guide={<Label>{detail?.steps[0] ?? '편안한 자세에서 시작하세요.'}</Label>} onComplete={async (id, values) => {
                 await completeSet(target.id,id,values);
             }} onSkipRest={()=>run(skipRest)} onOpenList={()=>setFocused(false)} onOpenGuide={()=>setModal({type:'exercise',item:detail})} onNext={()=>setFocused(false)}/></View>;
         }
@@ -342,15 +392,15 @@ function Main({ state, setState }: {
             {preparing ? !active.exercises.length && <Glass>
                 <Section title="자유 운동"/>
                 <Label muted>운동을 추가한 뒤 세트와 중량을 먼저 설정하세요.</Label>
-            </Glass> : <>{!active.exercises.length && <Glass><Label bold>첫 운동을 추가하세요</Label><Label muted>타이머가 진행 중입니다.</Label></Glass>}<Glass><View style={s.spread}><Label bold size={19}>{active.name}</Label></View><Label muted>{active.exercises.reduce((n, e) => n + e.sets.filter(x => x.done).length, 0)}세트 완료 · {volume(active).toLocaleString()} kg</Label>{active.restEndsAt && <View style={[s.rest, { backgroundColor: colors.soft }]}><Label>휴식 {clock(Math.max(0, Math.ceil((active.restEndsAt - now) / 1000)))}</Label><Button secondary title="건너뛰기" onPress={() => run(skipRest)}/></View>}</Glass></>}{active.exercises.map(e => <Glass key={e.id}><View style={s.spread}><Pressable accessibilityRole="button" onPress={() => setModal({ type: 'exercise', item: exercises.find(x => x.id === e.id) })}><Label bold size={17}>{e.name} ⓘ</Label></Pressable><Pressable accessibilityLabel={`${e.name} 삭제`} onPress={() => Alert.alert('운동 삭제', `${e.name}의 진행 기록도 삭제됩니다.`, [{ text: '취소' }, { text: '삭제', style: 'destructive', onPress: () => patchActive(x => ({ ...x, exercises: x.exercises.filter(a => a.id !== e.id) })) }])}><Label muted>×</Label></Pressable></View><View style={s.setRow}><Label size={10} style={{ width: 27 }}>세트</Label><Label size={10} style={s.flex}>{e.type === 'strength' ? unit : '초'}</Label><Label size={10} style={s.flex}>{e.type === 'strength' ? '횟수' : e.type === 'cardio' ? '거리 km' : 'RPE'}</Label>{!preparing && <Label size={10} style={{ width: 48 }}>완료</Label>}</View>{e.sets.map((set, i) => <View key={set.id}><View style={s.setRow}><Label style={{ width: 27 }}>{i + 1}</Label><Numeric value={e.type === 'strength' ? displayWeight(set.weight) : set.seconds} label={`${e.name} ${i + 1}세트 ${e.type === 'strength' ? '중량' : '시간(초)'}`} onChange={value => patchActive(x => { const st = x.exercises.find(a => a.id === e.id)?.sets.find(entry=>entry.id===set.id); if (!st) return x; if (e.type === 'strength')
-            st.weight = unit === 'lb' ? value / 2.2046226218 : value;
+            </Glass> : <>{!active.exercises.length && <Glass><Label bold>첫 운동을 추가하세요</Label><Label muted>타이머가 진행 중입니다.</Label></Glass>}<Glass><View style={s.spread}><Label bold size={19}>{active.name}</Label></View><Label muted>{active.exercises.reduce((n, e) => n + e.sets.filter(x => x.done).length, 0)}세트 완료 · {volume(active).toLocaleString()} kg</Label>{active.restEndsAt && <View style={[s.rest, { backgroundColor: colors.soft }]}><Label>휴식 {clock(Math.max(0, Math.ceil((active.restEndsAt - now) / 1000)))}</Label><Button secondary title="건너뛰기" onPress={() => run(skipRest)}/></View>}{restControls}</Glass></>}{active.exercises.map(e => <Glass key={e.id}><View style={s.spread}><Pressable accessibilityRole="button" onPress={() => setModal({ type: 'exercise', item: exercises.find(x => x.id === e.id) })}><Label bold size={17}>{e.name} ⓘ</Label></Pressable><Pressable accessibilityLabel={`${e.name} 삭제`} onPress={() => Alert.alert('운동 삭제', `${e.name}의 진행 기록도 삭제됩니다.`, [{ text: '취소' }, { text: '삭제', style: 'destructive', onPress: () => patchActive(x => ({ ...x, exercises: x.exercises.filter(a => a.id !== e.id) })) }])}><Label muted>×</Label></Pressable></View>{recs.get(e.id) ? <View style={s.spread}><Label size={12} muted>이전 기록 추천: {displayWeight(recs.get(e.id)!.weight)} {unit} × {recs.get(e.id)!.reps}회 · {recs.get(e.id)!.sets}세트</Label><Pressable accessibilityRole="button" accessibilityLabel={`${e.name} 추천 적용`} style={s.inlineLink} onPress={() => { const rec = recs.get(e.id); if (rec) applyRecommendation(e.id, rec).catch(() => { }); }}><Label size={12} bold>적용</Label></Pressable></View> : <Label size={12} muted>첫 기록입니다. 편안한 중량부터 시작하세요.</Label>}<View style={s.setRow}><Label size={10} style={{ width: 27 }}>세트</Label><Label size={10} style={s.flex}>{e.type === 'strength' ? unit : '초'}</Label><Label size={10} style={s.flex}>{e.type === 'strength' ? '횟수' : e.type === 'cardio' ? '거리 km' : 'RPE'}</Label>{!preparing && <Label size={10} style={{ width: 48 }}>완료</Label>}</View>{e.sets.map((set, i) => <View key={set.id}><View style={s.setRow}><Label style={{ width: 27 }}>{i + 1}</Label><Numeric value={e.type === 'strength' ? displayWeight(set.weight) : set.seconds} label={`${e.name} ${i + 1}세트 ${e.type === 'strength' ? '중량' : '시간(초)'}`} onChange={value => patchActive(x => { const row = x.exercises.find(a => a.id === e.id); const index = row ? row.sets.findIndex(entry=>entry.id===set.id) : -1; if (!row || index < 0) return x; if (e.type === 'strength')
+            editSets(row.sets, index, { weight: unit === 'lb' ? value / 2.2046226218 : value });
         else
-            st.seconds = value; return x; })}/><Numeric value={e.type === 'strength' ? set.reps : e.type === 'cardio' ? set.distance : Number(set.rpe || 0)} label={`${e.name} ${i + 1}세트 ${e.type === 'strength' ? '횟수' : e.type === 'cardio' ? '거리 km' : 'RPE'}`} onChange={value => patchActive(x => { const st = x.exercises.find(a => a.id === e.id)?.sets.find(entry=>entry.id===set.id); if (!st) return x; if (e.type === 'strength')
-            st.reps = value;
+            editSets(row.sets, index, { seconds: value }); return x; })}/><Numeric value={e.type === 'strength' ? set.reps : e.type === 'cardio' ? set.distance : Number(set.rpe || 0)} label={`${e.name} ${i + 1}세트 ${e.type === 'strength' ? '횟수' : e.type === 'cardio' ? '거리 km' : 'RPE'}`} onChange={value => patchActive(x => { const row = x.exercises.find(a => a.id === e.id); const index = row ? row.sets.findIndex(entry=>entry.id===set.id) : -1; if (!row || index < 0) return x; if (e.type === 'strength')
+            editSets(row.sets, index, { reps: value });
         else if (e.type === 'cardio')
-            st.distance = value;
+            editSets(row.sets, index, { distance: value });
         else
-            st.rpe = String(value); return x; })}/>{!preparing && <Pressable accessibilityRole="checkbox" accessibilityState={{ checked: set.done }} accessibilityLabel={`${e.name} ${i + 1}세트 완료`} onPress={() => run(() => completeSet(e.id, set.id))} style={[s.check, { backgroundColor: set.done ? colors.lime : colors.soft }]}><Label style={{ color: set.done ? '#26422d' : colors.ink }}>{set.done ? '✓' : '○'}</Label></Pressable>}</View><View style={s.row}><Pressable accessibilityRole="button" style={s.inlineLink} onPress={() => patchActive(x => { const st = x.exercises.find(a => a.id === e.id)?.sets.find(entry=>entry.id===set.id); if (!st) return x; st.kind = st.kind === 'normal' ? 'warmup' : st.kind === 'warmup' ? 'drop' : 'normal'; return x; })}><Label size={13} muted>{({ normal: '일반', warmup: '워밍업', drop: '드롭' } as any)[set.kind]} ↻</Label></Pressable><Pressable accessibilityRole="button" style={s.inlineLink} onPress={() => patchActive(x => { const entry=x.exercises.find(a=>a.id===e.id); if(entry) entry.sets=entry.sets.filter(item=>item.id!==set.id); return x; })}><Label size={13} muted>세트 삭제</Label></Pressable></View></View>)}<Button secondary title="+ 세트 추가" onPress={() => patchActive(x => { const ex = x.exercises.find(a => a.id === e.id)!; ex.sets.push({ ...ex.sets.at(-1) ?? { weight: 0, reps: 10, seconds: 30, distance: 0, rpe: '', kind: 'normal' }, id: uid(), done: false }); return x; })}/><TextInput placeholder="자세, 컨디션, 다음 운동을 위한 메모" placeholderTextColor={colors.muted} value={e.note} onChangeText={note => patchActive(x => { x.exercises.find(a => a.id === e.id)!.note = note; return x; })} style={[s.input, { color: colors.ink, borderColor: colors.line }]}/></Glass>)}<Button secondary={active.exercises.length>0 || !preparing} title={preparing?'운동 추가':'+ 운동 추가'} onPress={() => setModal({ type: 'add' })}/>{!preparing && <><Button title="운동 마치고 저장" disabled={busy} onPress={() => run(()=>finish(active.id))}/><Button secondary danger title="운동 취소" onPress={() => Alert.alert('진행 중인 운동을 취소할까요?', '완료하지 않은 운동 기록이 삭제됩니다.', [{ text: '계속 운동' }, { text: '취소하기', style: 'destructive', onPress: () => run(async () => { await change(x => ({ ...x, active: null })); if (notification.current)
+            editSets(row.sets, index, { rpe: String(value) }); return x; })}/>{!preparing && <Pressable accessibilityRole="checkbox" accessibilityState={{ checked: set.done }} accessibilityLabel={`${e.name} ${i + 1}세트 완료`} onPress={() => run(() => completeSet(e.id, set.id))} style={[s.check, { backgroundColor: set.done ? colors.lime : colors.soft }]}><Label style={{ color: set.done ? '#26422d' : colors.ink }}>{set.done ? '✓' : '○'}</Label></Pressable>}</View><View style={s.row}><Pressable accessibilityRole="button" style={s.inlineLink} onPress={() => patchActive(x => { const st = x.exercises.find(a => a.id === e.id)?.sets.find(entry=>entry.id===set.id); if (!st) return x; st.kind = st.kind === 'normal' ? 'warmup' : st.kind === 'warmup' ? 'drop' : 'normal'; return x; })}><Label size={13} muted>{({ normal: '일반', warmup: '워밍업', drop: '드롭' } as any)[set.kind]} ↻</Label></Pressable><Pressable accessibilityRole="button" style={s.inlineLink} onPress={() => patchActive(x => { const entry=x.exercises.find(a=>a.id===e.id); if(entry) entry.sets=entry.sets.filter(item=>item.id!==set.id); return x; })}><Label size={13} muted>세트 삭제</Label></Pressable></View></View>)}<Button secondary title="+ 세트 추가" onPress={() => patchActive(x => { const ex = x.exercises.find(a => a.id === e.id); if (ex) ex.sets = appendSet(ex.sets); return x; })}/><TextInput placeholder="자세, 컨디션, 다음 운동을 위한 메모" placeholderTextColor={colors.muted} value={e.note} onChangeText={note => patchActive(x => { x.exercises.find(a => a.id === e.id)!.note = note; return x; })} style={[s.input, { color: colors.ink, borderColor: colors.line }]}/></Glass>)}<Button secondary={active.exercises.length>0 || !preparing} title={preparing?'운동 추가':'+ 운동 추가'} onPress={() => setModal({ type: 'add' })}/>{!preparing && <><Button title="운동 마치고 저장" disabled={busy} onPress={() => run(()=>finish(active.id))}/><Button secondary danger title="운동 취소" onPress={() => Alert.alert('진행 중인 운동을 취소할까요?', '완료하지 않은 운동 기록이 삭제됩니다.', [{ text: '계속 운동' }, { text: '취소하기', style: 'destructive', onPress: () => run(async () => { await change(x => ({ ...x, active: null })); if (notification.current)
                     await Notifications.cancelScheduledNotificationAsync(notification.current); }) }])}/></>}</>;
     }
     function library() {

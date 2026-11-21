@@ -1,5 +1,5 @@
 import React, {useEffect,useRef,useState} from 'react';
-import {Alert,ScrollView,StyleSheet,TextInput,useWindowDimensions,View} from 'react-native';
+import {Alert,Pressable,ScrollView,StyleSheet,TextInput,useWindowDimensions,View} from 'react-native';
 import {Action,FormText,Surface} from './Primitives';
 import {useFormTheme} from './Theme';
 import {parseSetInput,remainingSeconds,displayMass,parseMass} from './policy.mjs';
@@ -16,9 +16,16 @@ type Props={
   paused:boolean;
   now:number;
   restDeadline:number|null;
+  restSeconds:number;
+  suggestedRest:number|null;
+  recommendation:{weight:number;reps:number;sets:number}|null;
   guide:React.ReactNode;
   onComplete:(setId:string,values:{weight:number;reps:number})=>Promise<void>;
   onSkipRest:()=>void;
+  onRestChange:(value:number)=>void;
+  onRestNudge:(delta:number)=>void;
+  onAddSet:()=>void;
+  onApplyRecommendation:()=>void;
   onOpenList:()=>void;
   onOpenGuide:()=>void;
   onNext:()=>void;
@@ -60,7 +67,9 @@ export function FocusedWorkout(props:Props){
       <FormText variant="title">{props.exercise.name}</FormText>
       <FormText variant="caption" secondary>{props.exercise.muscle} · {props.exercise.equipment}</FormText>
       <Surface><View accessibilityLabel="운동 동작 안내">{props.guide}</View><Action secondary title="자세·호흡·주의사항" onPress={props.onOpenGuide}/></Surface>
-      <FormText variant="caption" secondary>{props.exercise.previous ? '지난 기록  '+props.exercise.previous : '첫 기록입니다. 편안한 중량부터 시작하세요.'}</FormText>
+      {props.recommendation
+        ? <View style={styles.header}><FormText variant="caption" secondary>이전 기록 추천: {displayMass(props.recommendation.weight,props.units)} {props.units} × {props.recommendation.reps}회 · {props.recommendation.sets}세트</FormText><Pressable accessibilityRole="button" accessibilityLabel="추천 적용" onPress={props.onApplyRecommendation}><FormText variant="caption">적용</FormText></Pressable></View>
+        : <FormText variant="caption" secondary>{props.exercise.previous ? '지난 기록  '+props.exercise.previous : '첫 기록입니다. 편안한 중량부터 시작하세요.'}</FormText>}
       <Surface>
         <FormText variant="heading">{current ? String(props.exercise.sets.indexOf(current)+1)+'번째 세트' : '모든 세트 완료'}</FormText>
         {current && <View style={[styles.inputs,fontScale>=1.5 && {flexDirection:'column'}]}>
@@ -72,7 +81,16 @@ export function FocusedWorkout(props:Props){
     </ScrollView>
     <Surface role="control" style={styles.controls}>
       {rest>0 && <View style={styles.header}><FormText variant="label">휴식 {time(rest)}</FormText><Action secondary title="건너뛰기" onPress={props.onSkipRest}/></View>}
+      <View style={styles.header}>
+        <FormText variant="caption" secondary>휴식 {props.restSeconds}초{props.suggestedRest && props.suggestedRest!==props.restSeconds ? ' · 추천 '+props.suggestedRest+'초' : ''}</FormText>
+        <View style={styles.header}>
+          <Pressable accessibilityRole="button" accessibilityLabel="휴식 15초 줄이기" onPress={()=>props.onRestNudge(-15)} style={styles.nudge}><FormText variant="caption">−15초</FormText></Pressable>
+          <Pressable accessibilityRole="button" accessibilityLabel="휴식 15초 늘리기" onPress={()=>props.onRestNudge(15)} style={styles.nudge}><FormText variant="caption">+15초</FormText></Pressable>
+          {props.suggestedRest!==null && <Pressable accessibilityRole="button" accessibilityLabel="추천 휴식 적용" onPress={()=>props.onRestChange(props.suggestedRest as number)} style={styles.nudge}><FormText variant="caption">추천</FormText></Pressable>}
+        </View>
+      </View>
       <Action title={busy?'저장 중…':current?'세트 완료':props.exercise.position===props.exercise.total?'운동 결과 확인':'다음 운동'} disabled={busy || props.paused} onPress={current?complete:props.onNext}/>
+      <Action secondary title="+ 세트 추가" onPress={props.onAddSet}/>
       <Action secondary title="전체 운동 목록" onPress={props.onOpenList}/>
     </Surface>
   </View>;
@@ -82,6 +100,7 @@ const styles=StyleSheet.create({
   inputs:{flexDirection:'row',gap:16},field:{flex:1,gap:8},
   input:{minHeight:64,borderRadius:14,padding:14,fontSize:32,fontWeight:'600',fontVariant:['tabular-nums'],textAlign:'center'},
   history:{flexDirection:'row',justifyContent:'space-between',alignItems:'center',gap:12,paddingVertical:8},
+  nudge:{minHeight:44,justifyContent:'center',paddingHorizontal:8},
   controls:{marginHorizontal:12,marginBottom:12,gap:10},
 });
 

@@ -40,7 +40,60 @@ export function validateSession(session) { if (!session.exercises.some(e => e.se
         if (s.rpe !== '' && s.rpe != null)
             numberIn(s.rpe, 1, 10, 'RPE');
     } return session; }
-export function makeSession(name, exercises, history = []) { return { id: uid(), name, startedAt: new Date().toISOString(), restEndsAt: null, exercises: exercises.map(e => { const old = history.flatMap(h => h.exercises).find(x => x.id === e.id); return { id: e.id, name: e.name, type: e.type, muscle: e.muscle, sets: Array.from({ length: e.type === 'strength' ? 3 : 1 }, (_, i) => ({ id: uid(), weight: old?.sets[i]?.weight || 0, reps: old?.sets[i]?.reps || 10, seconds: e.type === 'cardio' ? 1200 : 30, distance: 0, rpe: '', kind: 'normal', done: false })), note: '' }; }) }; }
+/** 같은 종목의 가장 최근 완료 기록에서 실제로 마친 세트들을 뽑습니다.
+ * @param {any[]} history 최신순으로 쌓인 세션 목록
+ * @param {string} exerciseId */
+export function previousSets(history = [], exerciseId) {
+    let latest = null;
+    for (const session of Array.isArray(history) ? history : []) {
+        const exercise = session?.exercises?.find(item => item.id === exerciseId);
+        const sets = (exercise?.sets ?? []).filter(set => set.done && set.kind !== 'warmup')
+            .map(set => ({ weight: Number(set.weight) || 0, reps: Number(set.reps) || 0 }));
+        if (!sets.length) continue;
+        const at = Date.parse(session.endedAt ?? session.startedAt ?? '') || 0;
+        if (!latest || at >= latest.at) latest = { at, startedAt: session.startedAt ?? null, sets };
+    }
+    return latest;
+}
+/** 이전 기록에서 가장 무거운(같으면 더 많이 반복한) 작업 세트를 추천 기준으로 씁니다. */
+export function recommendation(history = [], exerciseId) {
+    const previous = previousSets(history, exerciseId);
+    if (!previous) return null;
+    const top = previous.sets.reduce((best, set) => set.weight > best.weight
+        || (set.weight === best.weight && set.reps > best.reps) ? set : best, previous.sets[0]);
+    return { weight: top.weight, reps: top.reps, sets: previous.sets.length, at: previous.startedAt };
+}
+/** 장비와 종류로 휴식 시간을 정합니다. 바벨·고중량 복합 동작 120초, 머신·덤벨·케이블 90초, 맨몸·코어 60초. */
+export function recommendedRest(exercise, previous) {
+    if (!exercise) return 90;
+    if (exercise.type === 'cardio') return 60;
+    if (exercise.type === 'duration') return exercise.muscle === '스트레칭' ? 30 : 45;
+    const weight = Number(previous?.weight ?? previous?.sets?.at(-1)?.weight ?? 0);
+    if (exercise.equipment === '바벨' || weight >= 80) return 120;
+    if (['머신', '케이블', '덤벨', '케틀벨', '소도구'].includes(exercise.equipment)) return 90;
+    return 60;
+}
+/** 첫 세트를 고치면 아직 끝내지 않았고 직접 손대지 않은 뒤 세트에도 같은 중량·횟수를 채웁니다.
+ * 2세트 이후를 직접 고친 세트는 edited로 남겨 자동 반영에서 제외합니다. */
+export function editSets(sets, index, patch) {
+    const set = sets?.[index];
+    if (!set) return sets;
+    Object.assign(set, patch);
+    if (index !== 0) { set.edited = true; return sets; }
+    for (const next of sets.slice(1)) {
+        if (next.done || next.edited) continue;
+        if (patch.weight !== undefined) next.weight = set.weight;
+        if (patch.reps !== undefined) next.reps = set.reps;
+    }
+    return sets;
+}
+/** 새로 추가한 세트는 직전 세트의 중량·횟수를 그대로 이어받습니다. */
+export function appendSet(sets = []) {
+    const last = sets[sets.length - 1];
+    const base = last ? { ...last } : { weight: 0, reps: 10, seconds: 30, distance: 0, rpe: '', kind: 'normal' };
+    return [...sets, { ...base, id: uid(), done: false, edited: false }];
+}
+export function makeSession(name, exercises, history = []) { return { id: uid(), name, startedAt: new Date().toISOString(), restEndsAt: null, exercises: exercises.map(e => { const previous = e.type === 'strength' ? previousSets(history, e.id) : null; const count = e.type === 'strength' ? Math.min(6, Math.max(1, previous?.sets.length ?? 3)) : 1; return { id: e.id, name: e.name, type: e.type, muscle: e.muscle, sets: Array.from({ length: count }, (_, i) => { const source = previous ? previous.sets[Math.min(i, previous.sets.length - 1)] : null; return { id: uid(), weight: source?.weight ?? 0, reps: source?.reps ?? (e.type === 'strength' ? 10 : 0), seconds: e.type === 'cardio' ? 1200 : 30, distance: 0, rpe: '', kind: 'normal', done: false }; }), note: '' }; }) }; }
 /** Persist the pause instant and the remaining rest so both survive an app restart. */
 export function toggleWorkoutPause(session, now = Date.now()) {
     if (session.preparing) return session;
