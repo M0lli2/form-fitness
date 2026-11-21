@@ -118,7 +118,7 @@ test('목표 반복 상한을 넘기면 점진적 과부하로 한 단계 올린
     assert.equal(first.hasHistory, false);
     assert.equal(first.weight, 0);
     assert.equal(first.sets, 4);
-    assert.equal(first.rest, 180);
+    assert.equal(first.rest, 120);
     assert.match(first.reason, /첫 기록/);
 });
 

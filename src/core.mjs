@@ -136,21 +136,24 @@ export function goalRecommendation(history = [], exercise, goalId, body = []) {
         const step = ['덤벨', '케틀벨'].includes(exercise?.equipment) ? 2 : ['바벨', '머신', '케이블'].includes(exercise?.equipment) ? 2.5 : 1;
         const lift = previous && previous.reps >= goal.reps + 2;
         const weight = roundLoad(oneRm * goal.percent + (lift ? step : 0), exercise?.equipment);
-        return { ...goal, id: goal.id, hasHistory: true, source: 'history', weight, oneRm: Math.round(oneRm * 10) / 10, previous,
-            reason: `${goal.label}(${goal.percentLabel}) · 이전 기록 추정 1RM ${Math.round(oneRm * 10) / 10}kg 기준 → ${weight}kg × ${goal.reps}회 · ${goal.sets}세트 · 휴식 ${goal.rest}초` };
+        const rest = recommendedRest(exercise, previous, goal.id);
+        return { ...goal, id: goal.id, hasHistory: true, source: 'history', weight, rest, oneRm: Math.round(oneRm * 10) / 10, previous,
+            reason: `${goal.label}(${goal.percentLabel}) · 이전 기록 추정 1RM ${Math.round(oneRm * 10) / 10}kg 기준 → ${weight}kg × ${goal.reps}회 · ${goal.sets}세트 · 휴식 ${rest}초` };
     }
     const start = bodyStart(exercise, body);
     if (start) {
         const weight = start.bodyweight ? 0 : roundLoad(start.oneRm * goal.percent, exercise?.equipment);
+        const rest = recommendedRest(exercise, { weight: start.oneRm }, goal.id);
         const basis = start.entry.bodyFat ? `체중 ${start.entry.weight}kg·체지방 ${start.entry.bodyFat}%`
             : start.entry.muscle ? `체중 ${start.entry.weight}kg·골격근 ${start.entry.muscle}kg` : `체중 ${start.entry.weight}kg`;
-        return { ...goal, id: goal.id, hasHistory: false, source: 'body', weight, oneRm: start.oneRm,
+        return { ...goal, id: goal.id, hasHistory: false, source: 'body', weight, rest, oneRm: start.oneRm,
             reason: start.bodyweight
-                ? `${goal.label}(${goal.percentLabel}) · ${basis} 기반 체중 종목 → ${goal.repsLabel} × ${goal.sets}세트 · 휴식 ${goal.rest}초`
-                : `${goal.label}(${goal.percentLabel}) · ${basis} 기반 초기 추정 1RM ${start.oneRm}kg → ${weight}kg × ${goal.reps}회 · ${goal.sets}세트 · 휴식 ${goal.rest}초` };
+                ? `${goal.label}(${goal.percentLabel}) · ${basis} 기반 체중 종목 → ${goal.repsLabel} × ${goal.sets}세트 · 휴식 ${rest}초`
+                : `${goal.label}(${goal.percentLabel}) · ${basis} 기반 초기 추정 1RM ${start.oneRm}kg → ${weight}kg × ${goal.reps}회 · ${goal.sets}세트 · 휴식 ${rest}초` };
     }
-    return { ...goal, id: goal.id, hasHistory: false, source: 'none', weight: 0, oneRm: null,
-        reason: `${goal.label}(${goal.percentLabel}) · 첫 기록입니다. ${goal.repsLabel} × ${goal.sets}세트 · 휴식 ${goal.rest}초 · 인바디·체성분을 기록하면 맞춤 초기 중량이 더 정확해집니다` };
+    const rest = recommendedRest(exercise, null, goal.id);
+    return { ...goal, id: goal.id, hasHistory: false, source: 'none', weight: 0, rest, oneRm: null,
+        reason: `${goal.label}(${goal.percentLabel}) · 첫 기록입니다. ${goal.repsLabel} × ${goal.sets}세트 · 휴식 ${rest}초 · 인바디·체성분을 기록하면 맞춤 초기 중량이 더 정확해집니다` };
 }
 /** 장비·종류·훈련 목적에 맞는 휴식 시간입니다. */
 export function recommendedRest(exercise, previous, goalId = 'hypertrophy') {
