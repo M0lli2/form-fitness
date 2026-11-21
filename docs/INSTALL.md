@@ -72,4 +72,4 @@ Mac에 테스트할 iPhone을 연결하고, 페어링한 Apple Watch를 Xcode에
 
 Google Play 내부 테스트용 휴대폰 AAB는 Play 프로젝트와 업로드 서명이 연결된 환경에서 `npx eas-cli build --platform android --profile production`으로 생성합니다. Wear OS는 별도 AAB와 앱 서명의 일치 여부를 확인하고 해당 Wear OS 테스트 트랙에 등록합니다. 공개 배포 전 스토어의 건강 권한 선언, 개인정보처리방침 공개 URL, 스토어 등록 정보, 의존성 보안 점검을 완료합니다.
 
-빌드와 실행 검증은 [v0.3.1 Actions 기록](https://github.com/M0lli2/form-fitness/actions/runs/44658112071)에서 확인하세요.
+빌드와 실행 검증은 [v0.3.2 Actions 기록](https://github.com/M0lli2/form-fitness/actions/runs/44898733252)에서 확인하세요.
