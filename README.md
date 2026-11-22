@@ -20,7 +20,19 @@ iPhone·iPad와 Android에서 운동을 기록하는 네이티브 앱입니다. 
 
 ### 0.3.5 변경 화면
 
-0.3.5 릴리스 APK를 Android 에뮬레이터에서 실행한 자동 여정 캡처와 iOS 시뮬레이터 화면을 확인한 뒤 이 표에 채웁니다.
+0.3.5 릴리스 APK를 Android 에뮬레이터에서 실행한 자동 여정이 캡처했습니다. 시험 기록이 맨몸 푸시업(중량 0 kg)이라 볼륨은 0 kg로 표시됩니다.
+
+| 집중 운동 · 경량 컨트롤 | 집중 운동 · 컨트롤 접힘 |
+|---|---|
+| <img src="docs/screenshots/focused-controls-035.png" width="235" alt="운동명과 세트 완료, 휴식 −15·+15초, +세트 추가, 전체 운동 목록, 세부 설정 열기가 한 상자에 모인 집중 운동"> | <img src="docs/screenshots/focused-compact-035.png" width="235" alt="휴식 시간과 컨트롤 열기, 세트 완료만 남은 접힌 컨트롤 바"> |
+
+| 준비 화면 · 세트 옵션과 RPE | 운동도감 · 최근/즐겨찾기 필터 |
+|---|---|
+| <img src="docs/screenshots/preparation-rpe-035.png" width="235" alt="고블릿 스쿼트 준비 화면의 순서·대체·슈퍼세트·원판 버튼과 세트별 RPE 입력"> | <img src="docs/screenshots/library-filters-035.png" width="235" alt="운동도감의 모든 운동·최근 한 운동·즐겨찾기 빠른 보기와 부위, 타깃 근육 필터"> |
+
+| 집중 운동 · 다음 세트 | 기록 · 최근 운동 요약 |
+|---|---|
+| <img src="docs/screenshots/focused-next-set-035.png" width="235" alt="한 세트를 마친 뒤 휴식 타이머와 다음 세트로 넘어간 집중 운동"> | <img src="docs/screenshots/progress-summary-035.png" width="235" alt="기록 탭 상단의 최근 운동 요약 카드: 볼륨, 직전 대비, 세트·분, 주간 목표 진행"> |
 
 ## 0.3.4 변경사항
 
@@ -303,7 +315,7 @@ npm run check
 npm run typecheck
 ```
 
-v0.3.5에서 도메인 테스트 127개(순서·슈퍼세트·대체·RPE·PR·원판·도감 필터 포함), 네이티브 계약·타입 검사, Android 번들 생성을 확인했습니다. 릴리스 빌드에서는 Android 에뮬레이터 운동 여정, iOS 시뮬레이터 XCTest, APK 서명·버전과 Apple IPA 버전을 검증합니다. 실기기 건강 권한, 워치 페어링, 스토어 서명·심사는 [실기기 검증 표](docs/INSTALL.md#남은-실기기-검증)에서 관리합니다.
+v0.3.5에서 도메인 테스트 127개(순서·슈퍼세트·대체·RPE·PR·원판·도감 필터 포함), 네이티브 계약·타입 검사, Android 번들 생성을 확인했습니다. 릴리스 빌드에서는 Android 에뮬레이터 운동 여정, iOS 시뮬레이터 XCTest, APK 서명·버전과 Apple IPA 버전을 검증했습니다. [릴리스 검증](https://github.com/M0lli2/form-fitness/actions/runs/45005531771) · 에셋 5종은 로그인 없이 내려받아 SHA-256 체크섬과 일치함을 확인했습니다. 실기기 건강 권한, 워치 페어링, 스토어 서명·심사는 [실기기 검증 표](docs/INSTALL.md#남은-실기기-검증)에서 관리합니다.
 
 ## 이전 구현 기록
 
