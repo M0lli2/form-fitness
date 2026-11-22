@@ -45,6 +45,25 @@ def seek(label, name, swipe_x=.5):
         time.sleep(.5)
     raise AssertionError("Control not visible after bounded scroll: " + label)
 
+def reveal(label, name, attempts=8):
+    # Find a control that belongs at the top of a screen the list was already scrolled past.
+    for _ in range(attempts):
+        try:
+            root = capture(name)
+        except (ET.ParseError, subprocess.CalledProcessError, subprocess.TimeoutExpired):
+            time.sleep(.5)
+            continue
+        if find(root, label) is not None:
+            return root
+        bounds = list(map(int, re.findall(r"\d+", next(root.iter("node")).get("bounds", ""))))
+        if len(bounds) != 4:
+            raise AssertionError("Missing viewport bounds")
+        _, _, width, height = bounds
+        x = str(int(width*.08))
+        adb("shell", "input", "swipe", x, str(int(height*.38)), x, str(int(height*.78)), "400")
+        time.sleep(.5)
+    raise AssertionError("Control not visible after scrolling up: " + label)
+
 def reveal_model(root):
     # Move the whole figure above the floating tabs before taking its screenshot.
     _, _, width, height = map(int, re.findall(r"\d+", next(root.iter("node")).get("bounds", "")))
@@ -173,6 +192,46 @@ try:
     tap_exact("기록 없이 종료", root)
     root = wait_for("새 루틴", "20-blank-closed")
     results.append("blank workout restores its preparation at zero, then starts, pauses, resumes and ends on command")
+    # A routine card opens the same preparation at 0:00, fills following sets, and hides its controls on demand.
+    root = seek("기본에 충실한 전신 준비", "23-routine-card", swipe_x=.08)
+    tap_exact("기본에 충실한 전신 준비", root)
+    root = wait_for("준비 중 · 0:00", "23-routine-prepared")
+    if find(root, "일시정지") is not None:
+        raise AssertionError("Routine card started the timer before 운동 시작")
+    if find(root, "기본에 충실한 전신") is None:
+        raise AssertionError("Prepared routine name is missing")
+    first_weight, third_weight = "고블릿 스쿼트 1세트 중량", "고블릿 스쿼트 3세트 중량"
+    root = seek(first_weight, "23-routine-weight", swipe_x=.08)
+    tap_exact(first_weight, root)
+    adb("shell", "input", "keyevent", "123")
+    adb("shell", "input", "keyevent", "67")
+    adb("shell", "input", "text", "22")
+    # Closing the keyboard commits the number; the later sets must follow it.
+    adb("shell", "input", "keyevent", "4")
+    root = seek(third_weight, "23-routine-propagated", swipe_x=.08)
+    if find(root, third_weight).get("text") != "22":
+        raise AssertionError("Editing set 1 did not fill set 3 of the routine")
+    results.append("a routine opens prepared at zero and a set edit fills the following sets")
+    root = seek("운동 시작", "23-routine-start", swipe_x=.08)
+    tap_exact("운동 시작", root)
+    root = wait_for("일시정지", "23-routine-running")
+    root = reveal("한 운동에 집중하기", "23-routine-focus")
+    tap_exact("한 운동에 집중하기", root)
+    root = wait_for("컨트롤 숨기기", "24-focused-controls")
+    tap_exact("컨트롤 숨기기", root)
+    root = wait_for("컨트롤 열기", "24-focused-compact")
+    if find(root, "+ 세트 추가") is not None:
+        raise AssertionError("Collapsed controls still show the full control box")
+    tap_exact("컨트롤 열기", root)
+    root = wait_for("컨트롤 숨기기", "24-focused-expanded")
+    results.append("focused workout controls collapse to a compact bar and reopen")
+    root = seek("전체 운동 목록", "24-focused-list", swipe_x=.08)
+    tap_exact("전체 운동 목록", root)
+    root = seek("운동 종료", "24-routine-stop")
+    tap_exact("운동 종료", root)
+    root = wait_for("기록 없이 종료", "24-routine-stop-confirmation")
+    tap_exact("기록 없이 종료", root)
+    root = wait_for("새 루틴", "24-routine-closed")
     tap_exact("운동도감", root)
     root = wait_for("운동 목록", "21-library")
     root = wait_for("타깃 근육", "21-muscle-filter")
@@ -215,6 +274,15 @@ try:
     root = wait_for("축소", "23-guide-zoomed")
     root = seek("이 운동 기록하기", "24-guide-start")
     tap_exact("이 운동 기록하기", root)
+    # The catalog entry also opens the preparation screen; the clock waits for 운동 시작.
+    root = wait_for("준비 중 · 0:00", "24-guided-prepared")
+    if find(root, "일시정지") is not None:
+        raise AssertionError("Catalog entry started the timer before 운동 시작")
+    root = seek("운동 시작", "24-guided-start", swipe_x=.08)
+    tap_exact("운동 시작", root)
+    root = wait_for("일시정지", "25-guided-running")
+    root = reveal("한 운동에 집중하기", "25-guided-focus")
+    tap_exact("한 운동에 집중하기", root)
     root = seek("세트 완료", "25-workout")
     tap_exact("세트 완료", root)
     root = wait_for("2번째 세트", "26-completed-set")
