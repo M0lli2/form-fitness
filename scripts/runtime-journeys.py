@@ -75,6 +75,33 @@ def tap_visible(label, name, tries=8):
         time.sleep(.5)
     raise AssertionError("Control could not be scrolled into view: " + label)
 
+def tap_reachable(label, name, tries=8):
+    """Scroll only when the node is outside the viewport. Bottom-anchored sheet buttons stay tappable
+    even though they sit below the stricter keyboard-safe band used by tap_visible."""
+    for _ in range(tries):
+        root = capture(name)
+        node = find(root, label)
+        bounds = list(map(int, re.findall(r"\d+", next(root.iter("node")).get("bounds", ""))))
+        if len(bounds) != 4:
+            raise AssertionError("Missing viewport bounds")
+        _, _, width, height = bounds
+        if node is not None:
+            x1, y1, x2, y2 = map(int, re.findall(r"\d+", node.get("bounds", "")))
+            if y1 >= 0 and y2 <= int(height*.93):
+                tap_exact(label, root)
+                return root
+            x = str(int(width*.08))
+            if y2 > int(height*.93):
+                adb("shell", "input", "swipe", x, str(int(height*.80)), x, str(int(height*.45)), "300")
+            else:
+                adb("shell", "input", "swipe", x, str(int(height*.45)), x, str(int(height*.80)), "300")
+            time.sleep(.5)
+            continue
+        x = str(int(width*.08))
+        adb("shell", "input", "swipe", x, str(int(height*.78)), x, str(int(height*.38)), "400")
+        time.sleep(.5)
+    raise AssertionError("Control could not be reached: " + label)
+
 def reveal(label, name, attempts=8):
     # Find a control that belongs at the top of a screen the list was already scrolled past.
     for _ in range(attempts):
@@ -304,7 +331,7 @@ try:
     root = seek("확대", "23-guide-zoom")
     tap_exact("확대", root)
     root = wait_for("축소", "23-guide-zoomed")
-    root = tap_visible("이 운동 기록하기", "24-guide-start")
+    root = tap_reachable("이 운동 기록하기", "24-guide-start")
     # The catalog entry also opens the preparation screen; the clock waits for 운동 시작.
     root = wait_for("준비 중 · 0:00", "24-guided-prepared")
     if find(root, "일시정지") is not None:
@@ -336,7 +363,7 @@ try:
     root = wait_for("최근 6주 운동 볼륨", "30-history")
     # 요약·성장·체성분 카드가 더해져 근육 볼륨 카드가 아래에 있습니다. 보이는 곳까지 내려가 눌러야 합니다.
     root = tap_visible("이번 주 근육 볼륨", "30-muscle-title")
-    root = tap_visible("배면", "30-muscle-heatmap")
+    root = tap_reachable("배면", "30-muscle-heatmap")
     time.sleep(.5)
     root = selected("배면", "30-muscle-heatmap-back")
     results.append("catalog and weekly muscle volume display the front and back anatomy")
