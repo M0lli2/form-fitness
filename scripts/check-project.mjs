@@ -9,6 +9,14 @@ const read = p => fs.readFileSync(path.join(root, p), 'utf8');
 for (const file of ['package.json', 'app.json', 'tsconfig.json', 'eas.json', 'src/exercises.json', 'modules/form-device/expo-module.config.json'])
     JSON.parse(read(file));
 
+// 0. 버전은 한 곳에서만 정하고, 손으로 적는 곳(Wear OS 모듈)이 뒤처지지 않게 함께 검사합니다.
+const appVersion = JSON.parse(read('app.json')).expo.version;
+const appCode = JSON.parse(read('app.json')).expo.android.versionCode;
+assert.equal(JSON.parse(read('package.json')).version, appVersion, 'package.json version differs from app.json');
+const wearConfig = read('wearos/app/build.gradle.kts');
+assert.ok(wearConfig.includes(`versionName = "${appVersion}"`), 'Wear OS versionName differs from app.json');
+assert.ok(wearConfig.includes(`versionCode = ${appCode}`), 'Wear OS versionCode differs from app.json');
+
 // 1. 휴대폰 브리지: 두 플랫폼이 같은 메서드·이벤트를 내보내야 합니다.
 const iosPath = 'modules/form-device/ios/FormDeviceModule.swift';
 const androidPath = 'modules/form-device/android/src/main/java/com/mori/form/device/FormDeviceModule.kt';
