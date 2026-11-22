@@ -45,6 +45,36 @@ def seek(label, name, swipe_x=.5):
         time.sleep(.5)
     raise AssertionError("Control not visible after bounded scroll: " + label)
 
+def tap_visible(label, name, tries=8):
+    """Scroll a labelled control into the visible band before tapping it.
+
+    Accessibility nodes stay in the dump when they are scrolled below the fold, so tapping their
+    bounds would miss and a following Back press would leave the app instead of closing the keyboard.
+    """
+    for _ in range(tries):
+        root = capture(name)
+        node = find(root, label)
+        bounds = list(map(int, re.findall(r"\d+", next(root.iter("node")).get("bounds", ""))))
+        if len(bounds) != 4:
+            raise AssertionError("Missing viewport bounds")
+        _, _, width, height = bounds
+        if node is not None:
+            x1, y1, x2, y2 = map(int, re.findall(r"\d+", node.get("bounds", "")))
+            if y1 >= int(height*.08) and y2 <= int(height*.70):
+                tap_exact(label, root)
+                return root
+            x = str(int(width*.08))
+            if y2 > int(height*.70):
+                adb("shell", "input", "swipe", x, str(int(height*.66)), x, str(int(height*.42)), "300")
+            else:
+                adb("shell", "input", "swipe", x, str(int(height*.42)), x, str(int(height*.66)), "300")
+            time.sleep(.5)
+            continue
+        x = str(int(width*.08))
+        adb("shell", "input", "swipe", x, str(int(height*.78)), x, str(int(height*.38)), "400")
+        time.sleep(.5)
+    raise AssertionError("Control could not be scrolled into view: " + label)
+
 def reveal(label, name, attempts=8):
     # Find a control that belongs at the top of a screen the list was already scrolled past.
     for _ in range(attempts):
@@ -155,18 +185,15 @@ try:
     root = seek("이 운동 추가", "20-blank-add-exercise")
     tap_exact("이 운동 추가", root)
     weight, repetitions = "푸시업 1세트 중량", "푸시업 1세트 횟수"
-    root = seek(weight, "20-blank-weight")
-    tap_exact(weight, root)
+    root = tap_visible(weight, "20-blank-weight")
     adb("shell", "input", "keyevent", "123")
     adb("shell", "input", "keyevent", "67")
     adb("shell", "input", "text", "42")
-    root = seek(repetitions, "20-blank-repetitions")
-    tap_exact(repetitions, root)
+    root = tap_visible(repetitions, "20-blank-repetitions")
     # The compact editor places both fields above the numeric keyboard.
     time.sleep(.5)
     adb("shell", "input", "keyevent", "4")
-    root = seek("+ 세트 추가", "20-blank-set-add", swipe_x=.08)
-    tap_exact("+ 세트 추가", root)
+    root = tap_visible("+ 세트 추가", "20-blank-set-add")
     root = seek("푸시업 4세트 중량", "20-blank-added-set", swipe_x=.08)
     if find(root, "준비 중 · 0:00") is None or find(root, "푸시업 1세트 완료") is not None:
         raise AssertionError("The prepared timer or completion state changed")
@@ -201,8 +228,7 @@ try:
     if find(root, "기본에 충실한 전신") is None:
         raise AssertionError("Prepared routine name is missing")
     first_weight, third_weight = "고블릿 스쿼트 1세트 중량", "고블릿 스쿼트 3세트 중량"
-    root = seek(first_weight, "23-routine-weight", swipe_x=.08)
-    tap_exact(first_weight, root)
+    root = tap_visible(first_weight, "23-routine-weight")
     adb("shell", "input", "keyevent", "123")
     adb("shell", "input", "keyevent", "67")
     adb("shell", "input", "text", "22")

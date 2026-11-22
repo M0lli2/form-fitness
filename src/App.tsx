@@ -455,11 +455,9 @@ function Main({ state, setState }: {
         }
         if (active.pausedAt !== undefined) return <Glass><Section title={active.name}/><Label muted>계속하기를 누르면 세트 기록을 이어갈 수 있습니다.</Label></Glass>;
         return <>{!preparing && target?.type==='strength' && <Button secondary title="한 운동에 집중하기" onPress={()=>setFocused(true)}/>}
-            {preparing ? <Glass>
-                <Section title={active.exercises.length ? active.name : '자유 운동'} right={active.exercises.length ? '준비 중 · 0:00' : undefined}/>
-                <Label muted>{active.exercises.length
-                    ? '무게와 횟수를 확인·수정하세요. 상단의 운동 시작을 누르면 타이머가 시작됩니다.'
-                    : '운동을 추가한 뒤 세트와 중량을 먼저 설정하세요.'}</Label>
+            {preparing ? !active.exercises.length && <Glass>
+                <Section title="자유 운동"/>
+                <Label muted>운동을 추가한 뒤 세트와 중량을 먼저 설정하세요.</Label>
             </Glass> : <>{!active.exercises.length && <Glass><Label bold>첫 운동을 추가하세요</Label><Label muted>타이머가 진행 중입니다.</Label></Glass>}<Glass><View style={s.spread}><Label bold size={19}>{active.name}</Label></View><Label muted>{active.exercises.reduce((n, e) => n + e.sets.filter(x => x.done).length, 0)}세트 완료 · {volume(active).toLocaleString()} kg</Label>{active.restEndsAt && <View style={[s.rest, { backgroundColor: colors.soft }]}><Label>휴식 {clock(Math.max(0, Math.ceil((active.restEndsAt - now) / 1000)))}</Label><Button secondary title="건너뛰기" onPress={() => run(skipRest)}/></View>}</Glass></>}{active.exercises.map(e => <Glass key={e.id}><View style={s.spread}><Pressable accessibilityRole="button" onPress={() => setModal({ type: 'exercise', item: exercises.find(x => x.id === e.id) })}><Label bold size={17}>{e.name} ⓘ</Label></Pressable><Pressable accessibilityLabel={`${e.name} 삭제`} onPress={() => Alert.alert('운동 삭제', `${e.name}의 진행 기록도 삭제됩니다.`, [{ text: '취소' }, { text: '삭제', style: 'destructive', onPress: () => patchActive(x => ({ ...x, exercises: x.exercises.filter(a => a.id !== e.id) })) }])}><Label muted>×</Label></Pressable></View>{recs.get(e.id) ? <View style={s.spread}><Label size={12} muted style={s.flex}>{recs.get(e.id)!.reason}</Label><Pressable accessibilityRole="button" accessibilityLabel={`${e.name} 추천 적용`} style={s.inlineLink} onPress={() => { const rec = recs.get(e.id); if (rec && rec.weight > 0) run(async () => { await applyRecommendation(e.id, rec); await changeRest(rec.rest); }); }}><Label size={12} bold>{recs.get(e.id)!.weight > 0 ? '적용' : '참고'}</Label></Pressable></View> : null}<View style={s.setRow}><Label size={10} style={{ width: 27 }}>세트</Label><Label size={10} style={s.flex}>{e.type === 'strength' ? unit : '초'}</Label><Label size={10} style={s.flex}>{e.type === 'strength' ? '횟수' : e.type === 'cardio' ? '거리 km' : 'RPE'}</Label>{!preparing && <Label size={10} style={{ width: 48 }}>완료</Label>}</View>{e.sets.map((set, i) => <View key={set.id}><View style={s.setRow}><Label style={{ width: 27 }}>{i + 1}</Label><Numeric value={e.type === 'strength' ? displayWeight(set.weight) : set.seconds} label={`${e.name} ${i + 1}세트 ${e.type === 'strength' ? '중량' : '시간(초)'}`} onChange={value => patchActive(x => { const row = x.exercises.find(a => a.id === e.id); const index = row ? row.sets.findIndex(entry=>entry.id===set.id) : -1; if (!row || index < 0) return x; if (e.type === 'strength')
             editSets(row.sets, index, { weight: unit === 'lb' ? value / 2.2046226218 : value });
         else
@@ -626,8 +624,11 @@ function Main({ state, setState }: {
                 <Button secondary danger={!state.active.preparing} title={state.active.preparing ? '준비 닫기' : '운동 종료'}
                     disabled={busy} onPress={()=>state.active && requestStop(state.active)}/>
             </View>
-            <Label bold>{state.active.preparing ? '준비 중 · 0:00'
-                : (state.active.pausedAt === undefined ? '진행 중' : '일시정지됨')+' · '+clock(workoutElapsedSeconds(state.active,now))}</Label>
+            <View style={s.row}>
+                <Label bold size={13} numberOfLines={1} style={s.flex}>{state.active.name}</Label>
+                <Label bold size={13}>{state.active.preparing ? '준비 중 · 0:00'
+                    : (state.active.pausedAt === undefined ? '진행 중' : '일시정지됨')+' · '+clock(workoutElapsedSeconds(state.active,now))}</Label>
+            </View>
         </View>}{showFocused ? <KeyboardAvoidingView style={s.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}><View style={[s.flex,{paddingBottom:contentEnd}]}>{workout()}</View></KeyboardAvoidingView> : <ScrollView key={page} style={s.flex} contentContainerStyle={[s.content,{paddingBottom:contentEnd+20}]} scrollIndicatorInsets={{bottom:contentEnd}} keyboardShouldPersistTaps="handled">{editingDraft
             ? <Label muted size={13}>시작 전에 중량과 횟수를 입력할 수 있습니다.</Label>
             : <View style={s.pageTitle}><Label heading size={30} bold>{title}</Label><Label muted size={14}>{page === 'home' ? new Date().toLocaleDateString('ko-KR',{month:'long',day:'numeric',weekday:'long'}) : pageDescriptions[page]}</Label></View>}{page === 'home' ? home() : page === 'workout' ? workout() : page === 'library' ? library() : page === 'progress' ? progress() : page === 'body' ? body() : settings()}</ScrollView>}{/* Only the tab box floats over the screen. The surrounding space remains part of the content. */}

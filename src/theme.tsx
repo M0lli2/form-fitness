@@ -18,17 +18,19 @@ export function Glass({ children, style }: {
     children: React.ReactNode;
     style?: StyleProp<ViewStyle>;
 }) { const { colors } = useTheme(); return <View style={[styles.card, {borderColor:colors.line,backgroundColor:colors.solid},style]}>{children}</View>; }
-export function Label({ children, size = 15, muted = false, bold = false, heading = false, style }: {
+export function Label({ children, size = 15, muted = false, bold = false, heading = false, numberOfLines, style }: {
     children: React.ReactNode;
     size?: number;
     muted?: boolean;
     bold?: boolean;
     heading?: boolean;
+    /** 긴 루틴 이름처럼 한 줄로 잘라야 하는 곳에서만 씁니다. */
+    numberOfLines?: number;
     style?: any;
 }) {
     const { colors } = useTheme();
     // Keep the platform's Korean system typeface and scalable text settings.
-    return <Text accessibilityRole={heading ? 'header' : undefined} style={[{ fontFamily: Platform.OS === 'android' ? 'sans-serif' : undefined, fontSize: size,
+    return <Text accessibilityRole={heading ? 'header' : undefined} numberOfLines={numberOfLines} style={[{ fontFamily: Platform.OS === 'android' ? 'sans-serif' : undefined, fontSize: size,
         letterSpacing: size >= 20 ? -0.45 : 0, lineHeight: Math.ceil(size * (size >= 20 ? 1.28 : 1.48)),
         color: muted ? colors.muted : colors.ink, fontWeight: bold ? '700' : '400' }, style]}>{children}</Text>;
 }
