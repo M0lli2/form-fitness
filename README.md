@@ -2,7 +2,16 @@
 
 iPhone·iPad와 Android에서 운동을 기록하는 네이티브 앱입니다. 루틴·세트 기록, 3D 운동 자세, 인바디, Apple 건강·Health Connect, Apple Watch·Wear OS 동반 앱을 제공합니다.
 
-**현재 버전은 Form 0.3.3 네이티브 테스트 빌드입니다.** Android 휴대폰과 Wear OS는 테스트 APK, iPhone·iPad와 Apple Watch는 서명이 필요한 IPA로 제공됩니다. 저장소가 공개되어 있어 GitHub 로그인 없이 내려받을 수 있고, 기기에서 건강 연동과 워치 페어링을 검증하는 절차는 설치 문서에 있습니다. [v0.3.3 다운로드](https://github.com/M0lli2/form-fitness/releases/tag/v0.3.3) · [설치 및 실기기 검증](docs/INSTALL.md)
+**현재 버전은 Form 0.3.4 네이티브 테스트 빌드입니다.** Android 휴대폰과 Wear OS는 테스트 APK, iPhone·iPad와 Apple Watch는 서명이 필요한 IPA로 제공됩니다. 저장소가 공개되어 있어 GitHub 로그인 없이 내려받을 수 있고, 기기에서 건강 연동과 워치 페어링을 검증하는 절차는 설치 문서에 있습니다. [v0.3.4 다운로드](https://github.com/M0lli2/form-fitness/releases/tag/v0.3.4) · [설치 및 실기기 검증](docs/INSTALL.md)
+
+## 0.3.4 변경사항
+
+- 루틴·추천 구성으로 들어가면 타이머가 바로 돌지 않고 `준비 중 · 0:00`에서 멈춥니다. 무게와 횟수를 확인·수정한 뒤 상단 **운동 시작**을 눌러야 운동 시간이 흐릅니다. 홈 추천 카드, 루틴 카드의 ▶, 기록의 '같은 구성으로 다시 운동'이 모두 같은 방식입니다.
+- 준비 화면에서 어느 세트를 고치든 그 뒤의 미완료·미수정 세트가 같은 값으로 따라옵니다. 2세트에 22 kg을 넣으면 3·4세트도 22 kg이 되고, 시간·거리·RPE도 함께 이어집니다. 직접 고친 세트와 이미 완료한 세트는 덮어쓰지 않습니다.
+- 숫자 입력은 다른 칸을 누르거나 키보드를 내리거나 입력을 잠깐 멈춰도 값이 그대로 저장됩니다.
+- 집중 운동 하단 컨트롤 박스를 **컨트롤 숨기기 / 컨트롤 열기**로 접고 펼 수 있습니다. 접으면 큰 박스 대신 `컨트롤 열기`와 작은 `세트 완료`만 남아 뒤쪽 추천 문구와 안내를 가리지 않습니다.
+- 루틴마다 **추천 포함 ON/OFF**를 고를 수 있습니다. 홈의 추천 카드와 운동 시작 시트에는 추천에 포함한 루틴만 나오고, 모두 제외하면 자유 운동으로 안내합니다.
+- 기본으로 들어 있는 추천 구성도 이름·설명·운동 종목·추천 여부를 직접 고치거나 삭제할 수 있습니다. 내 루틴 이름도 직접 쓰고, 운동을 넣었다 빼며, 추천에 넣을지 정할 수 있습니다. 삭제는 확인을 거치며 운동 기록은 남습니다.
 
 ## 0.3.3 변경사항
 
@@ -41,7 +50,8 @@ iPhone·iPad와 Android에서 운동을 기록하는 네이티브 앱입니다. 
 
 | 버전 | 배포·변경 내용 |
 |---|---|
-| **0.3.3** | 근육 모델을 Metal·OpenGL ES 3 기반 3x MSAA 고화질로 교체했습니다. iOS 26 Glass·Tinted 아이콘을 채운 F로 보정하고, 주간 근육 볼륨 안내 문구 겹침과 집중 운동 하단 겹침을 고쳤습니다. 세트 값 자동 반영·추가 세트 복사, 훈련 목적 기반 추천 무게·반복·세트·휴식, 운동 중 휴식 시간 자유 설정, 인바디 스크린샷 인식(iOS)과 체성분 추이 그래프를 추가했습니다. [릴리스](https://github.com/M0lli2/form-fitness/releases/tag/v0.3.3) |
+| **0.3.4** | 루틴·추천 구성 진입을 `준비 중 · 0:00`으로 통일하고 세트 값 자동 반영을 2세트 이후까지 확장했습니다. 집중 운동 하단 컨트롤 접기/펼치기, 루틴 추천 포함 ON/OFF와 기본 루틴 수정·삭제를 추가했습니다. [릴리스](https://github.com/M0lli2/form-fitness/releases/tag/v0.3.4) |
+| 0.3.3 | 근육 모델을 Metal·OpenGL ES 3 기반 3x MSAA 고화질로 교체했습니다. iOS 26 Glass·Tinted 아이콘을 채운 F로 보정하고, 주간 근육 볼륨 안내 문구 겹침과 집중 운동 하단 겹침을 고쳤습니다. 세트 값 자동 반영·추가 세트 복사, 훈련 목적 기반 추천 무게·반복·세트·휴식, 운동 중 휴식 시간 자유 설정, 인바디 스크린샷 인식(iOS)과 체성분 추이 그래프를 추가했습니다. [릴리스](https://github.com/M0lli2/form-fitness/releases/tag/v0.3.3) |
 | 0.3.2 | 원본 조형을 바탕으로 한 3D 근육 모델을 운동도감 전체, 자세 가이드 22종과 최근 7일 근육 볼륨에 적용했습니다. 운동을 시작하기 전 중량·횟수 입력과 세트 추가가 가능합니다. [릴리스](https://github.com/M0lli2/form-fitness/releases/tag/v0.3.2) |
 | 0.3.1 | 기본 홈 화면 아이콘을 흰 배경과 굵은 검은색 대문자 F로 변경했습니다. Android 적응형·테마 아이콘과 iOS·iPadOS·watchOS용 Liquid Glass 레이어를 적용했습니다. [릴리스](https://github.com/M0lli2/form-fitness/releases/tag/v0.3.1) |
 | 0.3.0 | Android·iOS와 두 워치 빌드 번호 3. 빈 운동 준비와 수동 시작, 주간·일간 운동 볼륨, 하단 탭 바깥 배경 제거, 주간 목표·휴식 시간 버튼 정렬을 반영했습니다. iOS 건강 연동과 워치 연결 상태 전달을 보강했고, Apple Watch의 시간제 세트 및 심박 대기 표시를 개선했습니다. [변경 커밋](https://github.com/M0lli2/form-fitness/compare/v0.2.0...v0.3.0) · [릴리스](https://github.com/M0lli2/form-fitness/releases/tag/v0.3.0) |
@@ -57,7 +67,8 @@ iPhone·iPad와 Android에서 운동을 기록하는 네이티브 앱입니다. 
 
 | 기능 | 사용 방법 |
 |---|---|
-| 운동 시작·일시정지·종료 | 루틴 탭에서 **빈 운동 시작**을 누르면 운동을 미리 고를 수 있는 준비 화면이 열립니다. 준비 중에 운동별 세트·중량·횟수를 입력할 수 있습니다. 입력한 값은 **운동 시작**을 눌러도 유지되고, 타이머는 그때부터 흐릅니다. 일시정지하면 운동 시간과 휴식 타이머가 멈춥니다. 계속하기로 기록을 이어가고 운동 종료에서 완료한 세트를 저장합니다. |
+| 운동 시작·일시정지·종료 | 루틴 탭에서 **빈 운동 시작**을 누르면 운동을 미리 고를 수 있는 준비 화면이 열립니다. **루틴 카드의 ▶나 홈의 추천 루틴으로 들어가도 같은 준비 화면**에서 `0:00`으로 멈춰 있고, 세트·중량·횟수를 확인한 뒤 **운동 시작**을 눌러야 타이머가 흐릅니다. 일시정지하면 운동 시간과 휴식 타이머가 멈춥니다. 계속하기로 기록을 이어가고 운동 종료에서 완료한 세트를 저장합니다. |
+| 루틴 만들기·고치기·지우기 | 루틴 탭의 **+ 새 루틴**에서 이름을 직접 쓰고 운동을 골라 담습니다. 기본으로 들어 있는 추천 구성도 **루틴 편집**에서 이름·설명·운동·**추천 포함** 여부를 바꾸고 **삭제**할 수 있습니다. 카드의 **추천 포함/제외** 스위치로 홈 추천 카드 노출을 바로 바꿉니다. |
 | 주간·일간 운동 볼륨 | 홈의 **이번 주 운동**에서 **주간**을 누르면 월요일부터 일요일까지의 합계를 봅니다. 요일을 누르면 **일간**으로 전환되어 그날의 운동 횟수와 볼륨을 봅니다. |
 | 주간 목표·휴식 시간 | **내 정보 → 운동 설정**에서 각 항목의 **− / +**로 값을 조절합니다. 숫자의 자릿수가 달라도 두 줄의 버튼은 같은 위치에 표시되며, 최소·최대값에서는 해당 방향의 버튼이 비활성화됩니다. |
 | 3D 자세·근육 정보 | 운동도감의 모든 운동에서 근육을 확인합니다. 3D 자세 표시가 있는 22종은 재생과 8방향 회전을 지원합니다. 모델의 근육 또는 범례를 누르면 상세 정보를 확인할 수 있습니다. |
@@ -93,12 +104,12 @@ iPhone·iPad와 Android에서 운동을 기록하는 네이티브 앱입니다. 
 
 | 환경 | 파일 및 설치 방법 |
 |---|---|
-| Android 휴대폰 | [Form-0.3.3-Android.apk](https://github.com/M0lli2/form-fitness/releases/download/v0.3.3/Form-0.3.3-Android.apk). 기존 Form 테스트 APK와 같은 인증서로 업데이트할 수 있습니다. |
-| Wear OS · Galaxy Watch4 이후 | [Form-0.3.3-Wear-OS.apk](https://github.com/M0lli2/form-fitness/releases/download/v0.3.3/Form-0.3.3-Wear-OS.apk). 휴대폰 APK와 같은 테스트 인증서를 사용합니다. |
-| iPhone · iPad | [Form-0.3.3-iOS-unsigned.ipa](https://github.com/M0lli2/form-fitness/releases/download/v0.3.3/Form-0.3.3-iOS-unsigned.ipa). 설치 전에 Apple 서명과 프로비저닝이 필요합니다. |
-| iPhone + Apple Watch | [Form-0.3.3-iOS-unsigned-watch.ipa](https://github.com/M0lli2/form-fitness/releases/download/v0.3.3/Form-0.3.3-iOS-unsigned-watch.ipa). 휴대폰·워치 앱 각각에 올바른 서명과 권한 구성이 필요합니다. |
+| Android 휴대폰 | [Form-0.3.4-Android.apk](https://github.com/M0lli2/form-fitness/releases/download/v0.3.4/Form-0.3.4-Android.apk). 기존 Form 테스트 APK와 같은 인증서로 업데이트할 수 있습니다. |
+| Wear OS · Galaxy Watch4 이후 | [Form-0.3.4-Wear-OS.apk](https://github.com/M0lli2/form-fitness/releases/download/v0.3.4/Form-0.3.4-Wear-OS.apk). 휴대폰 APK와 같은 테스트 인증서를 사용합니다. |
+| iPhone · iPad | [Form-0.3.4-iOS-unsigned.ipa](https://github.com/M0lli2/form-fitness/releases/download/v0.3.4/Form-0.3.4-iOS-unsigned.ipa). 설치 전에 Apple 서명과 프로비저닝이 필요합니다. |
+| iPhone + Apple Watch | [Form-0.3.4-iOS-unsigned-watch.ipa](https://github.com/M0lli2/form-fitness/releases/download/v0.3.4/Form-0.3.4-iOS-unsigned-watch.ipa). 휴대폰·워치 앱 각각에 올바른 서명과 권한 구성이 필요합니다. |
 
-[SHA-256 체크섬](https://github.com/M0lli2/form-fitness/releases/download/v0.3.3/Form-0.3.3-SHA256SUMS.txt) · [설치 순서 및 TestFlight 준비](docs/INSTALL.md)
+[SHA-256 체크섬](https://github.com/M0lli2/form-fitness/releases/download/v0.3.4/Form-0.3.4-SHA256SUMS.txt) · [설치 순서 및 TestFlight 준비](docs/INSTALL.md)
 
 네 파일 모두 공개 저장소의 릴리스에 올라 있어 GitHub 계정 없이 내려받을 수 있습니다. iPhone·iPad와 Apple Watch 파일은 미서명이므로 설치하려면 Apple 서명과 프로비저닝이 필요합니다.
 
@@ -139,7 +150,7 @@ Android 캡처는 [저장·복원 테스트](https://github.com/M0lli2/form-fitn
 |---|---|---|
 | 운동 기록 | 세트, 중량, 횟수, 시간, 거리, 일반·워밍업·드롭, 메모, 이전 기록 채움 | 고급 슈퍼세트·RPE 전용 입력 개선 필요 |
 | 휴식 | 종료 시각 기준 타이머, 로컬 알림, 취소 | OS 강제 종료·절전 모드 실기기 확인 필요 |
-| 루틴 | 생성·편집·운동 선택, 기본 전신·상체·하체·맨몸 루틴 | 주간 캘린더 예약 미구현 |
+| 루틴 | 생성·편집·삭제, 운동 선택, 이름 직접 입력, 추천 포함 ON/OFF, 기본 전신·상체·하체·맨몸 루틴, 준비 화면 진입 | 주간 캘린더 예약·순서 드래그 미구현 |
 | 성장 | 히스토리, 주간·일간 운동 볼륨, 7일 근육 볼륨, 추정 1RM | 소셜 기능 미구현 |
 | 운동법 | 한국어 기본 63종, 사용자 운동 등록, 부위·장비 검색, 3단계 설명, 주의사항 | 모든 운동을 망라하지 않음. 3D 관절 가이드 22종. 나머지 3D·동작 영상·트레이너 감수는 후속 |
 | 인바디 | 측정일, 체중, 체지방률, 골격근량, 키, 허리둘레, 내장지방 레벨, BMR, 메모, 사진 | 수동 입력. 제조사 API / OCR 미구현 |
@@ -250,10 +261,11 @@ npm run check
 npm run typecheck
 ```
 
-v0.3.2에서 도메인 테스트 87개, 네이티브 계약·타입 검사, Android 번들 생성을 확인했습니다. 릴리스 빌드에서는 Android 에뮬레이터 운동 여정, iOS 시뮬레이터 XCTest, APK 서명·버전과 Apple IPA 버전을 검증했습니다. [소스 검사](https://github.com/M0lli2/form-fitness/actions/runs/44898733199) · [릴리스 검증](https://github.com/M0lli2/form-fitness/actions/runs/44898733252) 실기기 건강 권한, 워치 페어링, 스토어 서명·심사는 [실기기 검증 표](docs/INSTALL.md#남은-실기기-검증)에서 관리합니다.
+v0.3.4에서 도메인 테스트 108개(세트 전파·준비 흐름·루틴 추천/수정/삭제 포함), 네이티브 계약·타입 검사, Android 번들 생성을 확인했습니다. 릴리스 빌드에서는 Android 에뮬레이터 운동 여정, iOS 시뮬레이터 XCTest, APK 서명·버전과 Apple IPA 버전을 검증했습니다. [소스 검사](https://github.com/M0lli2/form-fitness/actions/runs/44898733199) · [릴리스 검증](https://github.com/M0lli2/form-fitness/actions/runs/44898733252) 실기기 건강 권한, 워치 페어링, 스토어 서명·심사는 [실기기 검증 표](docs/INSTALL.md#남은-실기기-검증)에서 관리합니다.
 
 ## 이전 구현 기록
 
+- [11월 22일 0.3.4 작업](docs/PROGRESS-2026-11-22.md)
 - [11월 19일 통합 작업](docs/PROGRESS-2026-11-19.md)
 - [iOS·Android 동기화 감사](docs/IOS-PARITY-2026-11-19.md)
 - [검증 이력](docs/VALIDATION.md)

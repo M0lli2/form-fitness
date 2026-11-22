@@ -46,6 +46,8 @@ export function FocusedWorkout(props:Props){
   const [weight,setWeight]=useState(''),[reps,setReps]=useState('');
   const [restText,setRestText]=useState(String(props.restSeconds));
   useEffect(()=>{setRestText(String(props.restSeconds));},[props.restSeconds]);
+  // 하단 컨트롤 박스는 기본으로 펼치고, 사용자가 접어 화면 가림을 없앨 수 있습니다(IMG_9257).
+  const [controlsOpen,setControlsOpen]=useState(true);
   const [busy,setBusy]=useState(false);
   const lock=useRef(false);
   const current=props.exercise.sets.find(set=>!set.done);
@@ -84,7 +86,13 @@ export function FocusedWorkout(props:Props){
         {props.exercise.sets.map((set,index)=><View key={set.id} style={styles.history}><FormText variant="caption" secondary>{index+1}세트</FormText><FormText variant="label" style={{fontVariant:['tabular-nums']}}>{displayMass(set.weight,props.units)} {props.units} × {set.reps}</FormText><FormText variant="caption" accessibilityLabel={set.done?'완료':'미완료'}>{set.done?'완료':'대기'}</FormText></View>)}
       </Surface>
     </ScrollView>
-    <Surface role="control" style={styles.controls}>
+    {controlsOpen ? <Surface role="control" style={styles.controls}>
+        <View style={styles.header}>
+          <FormText variant="caption" secondary>컨트롤</FormText>
+          <Pressable accessibilityRole="button" accessibilityState={{expanded:true}} accessibilityLabel="컨트롤 숨기기"
+            onPress={()=>setControlsOpen(false)} style={styles.nudge}>
+            <FormText variant="caption">컨트롤 숨기기 ▾</FormText></Pressable>
+        </View>
       {rest>0 && <View style={styles.header}><FormText variant="label">휴식 {time(rest)}</FormText><Action secondary title="건너뛰기" onPress={props.onSkipRest}/></View>}
       <View style={styles.header}>
         {GOALS.map(goal => <Pressable key={goal[0]} accessibilityRole="button" accessibilityState={{selected:props.goal===goal[0]}}
@@ -107,7 +115,16 @@ export function FocusedWorkout(props:Props){
       <Action title={busy?'저장 중…':current?'세트 완료':props.exercise.position===props.exercise.total?'운동 결과 확인':'다음 운동'} disabled={busy || props.paused} onPress={current?complete:props.onNext}/>
       <Action secondary title="+ 세트 추가" onPress={props.onAddSet}/>
       <Action secondary title="전체 운동 목록" onPress={props.onOpenList}/>
-    </Surface>
+    </Surface> : <Surface role="control" style={styles.compact}>
+        {rest>0 && <FormText variant="caption" style={{fontVariant:['tabular-nums']}}>휴식 {time(rest)}</FormText>}
+        <Pressable accessibilityRole="button" accessibilityState={{expanded:false}} accessibilityLabel="컨트롤 열기"
+          onPress={()=>setControlsOpen(true)} style={[styles.compactButton,{backgroundColor:palette.raised}]}>
+          <FormText variant="caption">컨트롤 열기 ▴</FormText></Pressable>
+        <Pressable accessibilityRole="button" accessibilityLabel={current?'세트 완료':'다음 운동'} disabled={busy||props.paused}
+          onPress={current?complete:props.onNext}
+          style={[styles.compactButton,styles.compactPrimary,{backgroundColor:palette.action,opacity:(busy||props.paused)?0.55:1}]}>
+          <FormText variant="caption" style={{color:palette.onAction}}>{busy?'저장 중…':current?'세트 완료':'다음 운동'}</FormText></Pressable>
+      </Surface>}
   </View>;
 }
 const styles=StyleSheet.create({
@@ -120,6 +137,10 @@ const styles=StyleSheet.create({
   flexText:{flex:1},
   restInput:{width:76,minHeight:44,borderRadius:10,padding:8,fontSize:16,fontWeight:'600',textAlign:'center'},
   controls:{marginHorizontal:12,marginBottom:12,gap:10},
+  // 접힌 상태: 큰 박스 없이 토글과 세트 완료만 남겨 뒤쪽 안내를 가리지 않습니다.
+  compact:{marginHorizontal:12,marginBottom:12,paddingHorizontal:12,paddingVertical:9,flexDirection:'row',alignItems:'center',justifyContent:'flex-end',gap:8},
+  compactButton:{minHeight:44,minWidth:44,paddingHorizontal:14,borderRadius:12,alignItems:'center',justifyContent:'center'},
+  compactPrimary:{paddingHorizontal:18},
 });
 
 

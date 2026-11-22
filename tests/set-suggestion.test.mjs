@@ -24,16 +24,39 @@ test('1세트를 고치면 아직 손대지 않은 뒤 세트가 같은 값으�
 
 test('직접 고친 세트와 이미 끝낸 세트는 자동 반영으로 덮어쓰지 않는다', () => {
     const sets = makeSession('t', [pushup]).exercises[0].sets;
+    // 2세트를 고치면 뒤의 미완료·미수정 세트가 같은 값을 따라옵니다.
     editSets(sets, 1, {weight: 30});
+    assert.deepEqual(sets.map(set => set.weight), [0, 30, 30]);
     sets[2].done = true;
     editSets(sets, 0, {weight: 50, reps: 6});
     assert.equal(sets[0].weight, 50);
+    // 직접 고친 2세트는 1세트 값으로 덮이지 않고, 끝낸 3세트도 그대로 둡니다.
     assert.equal(sets[1].weight, 30);
-    assert.equal(sets[2].weight, 0);
-    // 2세트를 다시 고치면 그 세트만 바뀌고 3세트는 그대로 둡니다.
+    assert.equal(sets[2].weight, 30);
     editSets(sets, 1, {weight: 32});
     assert.equal(sets[0].weight, 50);
     assert.equal(sets[1].weight, 32);
+    assert.equal(sets[2].weight, 30);
+});
+
+test('준비 화면에서 2세트에 입력한 값이 3·4세트로 이어진다(IMG_9256)', () => {
+    const sets = [1, 2, 3, 4].map(number => ({id: 's' + number, weight: 0, reps: 10, seconds: 30,
+        distance: 0, rpe: '', kind: 'normal', done: false}));
+    // 준비 중 · 0:00 상태에서 1·2세트에 22kg을 입력한 경우
+    editSets(sets, 0, {weight: 22});
+    editSets(sets, 1, {weight: 22});
+    assert.deepEqual(sets.map(set => set.weight), [22, 22, 22, 22]);
+    // 2세트 횟수를 바꾸면 3·4세트도 따라옵니다.
+    editSets(sets, 1, {reps: 8});
+    assert.deepEqual(sets.map(set => set.reps), [10, 8, 8, 8]);
+    // 뒤 세트를 직접 고친 뒤에는 그 세트를 건드리지 않습니다.
+    editSets(sets, 3, {weight: 30});
+    editSets(sets, 1, {weight: 25});
+    assert.deepEqual(sets.map(set => set.weight), [22, 25, 25, 30]);
+    // 시간·거리·RPE도 같은 규칙으로 전파합니다.
+    const cardio = [{id: 'c1', seconds: 600, distance: 1, rpe: ''}, {id: 'c2', seconds: 0, distance: 0, rpe: ''}];
+    editSets(cardio, 0, {seconds: 900, distance: 1.5, rpe: '7'});
+    assert.deepEqual(cardio[1], {id: 'c2', seconds: 900, distance: 1.5, rpe: '7'});
 });
 
 test('추가한 세트는 직전 세트의 중량·횟수를 그대로 이어받는다', () => {

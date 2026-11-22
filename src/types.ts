@@ -64,6 +64,8 @@ export type Routine = {
     name: string;
     subtitle: string;
     ids: string[];
+    /** 홈 추천 카드·추천 루틴에 포함할지 여부. 없으면 포함으로 봅니다. */
+    recommended?: boolean;
 };
 export type State = {
     schema: 1;

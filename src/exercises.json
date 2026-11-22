@@ -888,6 +888,7 @@
       "id": "full",
       "name": "기본에 충실한 전신",
       "subtitle": "처음 시작하는 웨이트 트레이닝",
+      "recommended": true,
       "ids": [
         "goblet",
         "db-bench",
@@ -900,6 +901,7 @@
       "id": "upper",
       "name": "상체에 집중하는 날",
       "subtitle": "가슴 · 등 · 어깨 · 팔",
+      "recommended": true,
       "ids": [
         "bench",
         "seated-row",
@@ -913,6 +915,7 @@
       "id": "lower",
       "name": "단단한 하체의 시작",
       "subtitle": "하체 · 둔근 · 코어",
+      "recommended": true,
       "ids": [
         "back-squat",
         "rdl",
@@ -926,6 +929,7 @@
       "id": "home",
       "name": "기구 없이, 어디서든",
       "subtitle": "맨몸으로 채우는 20분",
+      "recommended": true,
       "ids": [
         "squat",
         "pushup",

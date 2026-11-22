@@ -166,17 +166,20 @@ export function recommendedRest(exercise, previous, goalId = 'hypertrophy') {
     if (goal === 'endurance') return 60;
     return heavy ? 120 : 90;
 }
-/** 첫 세트를 고치면 아직 끝내지 않았고 직접 손대지 않은 뒤 세트에도 같은 중량·횟수를 채웁니다.
- * 2세트 이후를 직접 고친 세트는 edited로 남겨 자동 반영에서 제외합니다. */
+/** 어느 세트를 고치든 그 뒤의 미완료·미수정 세트에 같은 값을 채웁니다.
+ * 예전에는 1세트(index 0)만 전파해서, 준비 화면에서 2세트를 고치면 3·4세트가 0으로 남았습니다(IMG_9256).
+ * 직접 고친 세트는 edited로 남겨 앞 세트의 자동 반영에서 제외하고, 0번 세트는 전파 기준값으로 남깁니다. */
+export const SET_VALUE_KEYS = ['weight', 'reps', 'seconds', 'distance', 'rpe'];
 export function editSets(sets, index, patch) {
     const set = sets?.[index];
     if (!set) return sets;
     Object.assign(set, patch);
-    if (index !== 0) { set.edited = true; return sets; }
-    for (const next of sets.slice(1)) {
+    if (index !== 0) set.edited = true;
+    for (const next of sets.slice(index + 1)) {
         if (next.done || next.edited) continue;
-        if (patch.weight !== undefined) next.weight = set.weight;
-        if (patch.reps !== undefined) next.reps = set.reps;
+        for (const key of SET_VALUE_KEYS) {
+            if (patch[key] !== undefined) next[key] = set[key];
+        }
     }
     return sets;
 }
@@ -211,6 +214,11 @@ export function closeWorkout(session, now = Date.now()) {
     const end = Math.max(now, Date.parse(record.startedAt) + 1);
     return {...record, endedAt:new Date(end).toISOString(), restEndsAt:null,
         pausedMs:(record.pausedMs ?? 0) + (pausedAt === undefined ? 0 : Math.max(0, end - pausedAt))};
+}
+/** 루틴·추천 구성·기록 다시하기도 세트와 중량을 먼저 확인하는 준비 화면으로 들어갑니다(IMG_9257·IMG_9258).
+ * 타이머는 사용자가 상단의 `운동 시작`을 누를 때 beginPreparedWorkout이 시작합니다. */
+export function prepareSession(name, exercises = [], history = []) {
+    return {...makeSession(name, exercises, history), preparing: true};
 }
 /** Save the selection before starting the clock; older saved sessions have no preparing flag. */
 export function prepareWorkout() {
@@ -317,7 +325,8 @@ export function validateBackup(value) { if (value?.schema !== 1 || !Array.isArra
     if (!(h.external === true && h.exercises.length === 0 && ['watch','synced'].includes(h.sync))) validateSession(h);
 } for (const b of value.body)
     validateBody(b); for (const r of value.routines)
-    if (typeof r.id !== 'string' || typeof r.name !== 'string' || !Array.isArray(r.ids) || r.ids.some(id => typeof id !== 'string'))
+    if (typeof r.id !== 'string' || typeof r.name !== 'string' || !Array.isArray(r.ids) || r.ids.some(id => typeof id !== 'string')
+        || (r.recommended !== undefined && typeof r.recommended !== 'boolean'))
         throw Error('루틴 형식이 올바르지 않습니다.'); return value; }
 
 /** Keep export revisions stable on retries and increment only when a local edit is saved.
@@ -349,3 +358,36 @@ export function validateCustomExercise(input) {
     };
 }
 
+/** 루틴 이름·운동 목록·추천 포함 여부를 한 곳에서 정리합니다. 사용자가 직접 쓴 이름을 그대로 살립니다. */
+export function normalizeRoutine(input) {
+    const name = String(input?.name ?? '').trim();
+    if (!name) throw Error('루틴 이름을 입력하세요.');
+    if (name.length > 40) throw Error('루틴 이름은 40자 이내로 입력하세요.');
+    const ids = [...new Set((Array.isArray(input?.ids) ? input.ids : []).filter(id => typeof id === 'string' && id))];
+    if (!ids.length) throw Error('루틴에 운동을 하나 이상 넣으세요.');
+    return {
+        id: typeof input?.id === 'string' && input.id ? input.id : uid(),
+        name,
+        subtitle: String(input?.subtitle ?? '').trim() || '나만의 트레이닝',
+        ids,
+        recommended: input?.recommended !== false,
+    };
+}
+/** 저장과 수정을 같은 경로로 처리합니다. 같은 ID는 내용만 바꾸고 목록 맨 앞으로 올립니다. */
+export function saveRoutine(routines = [], routine) {
+    const next = normalizeRoutine(routine);
+    const list = Array.isArray(routines) ? routines : [];
+    return [next, ...list.filter(item => item?.id !== next.id)];
+}
+/** 삭제는 루틴만 지웁니다. 운동 기록과 세션은 건드리지 않습니다. */
+export function removeRoutine(routines = [], id) {
+    return (Array.isArray(routines) ? routines : []).filter(item => item?.id !== id);
+}
+/** 홈 추천·추천 카드에는 recommended가 false가 아닌 루틴만 씁니다. 예전 루틴은 추천에 포함합니다. */
+export function recommendedRoutines(routines = []) {
+    return (Array.isArray(routines) ? routines : []).filter(item => item?.recommended !== false);
+}
+/** 카드에서 추천 포함 스위치만 바꿀 때 순서와 내용은 그대로 둡니다. */
+export function setRoutineRecommended(routines = [], id, recommended) {
+    return (Array.isArray(routines) ? routines : []).map(item => item?.id === id ? {...item, recommended: recommended !== false} : item);
+}
