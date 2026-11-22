@@ -269,19 +269,18 @@ try:
     tap_exact("운동도감", root)
     root = wait_for("운동 목록", "21-library")
     root = wait_for("타깃 근육", "21-muscle-filter")
-    root = seek("근육 모형으로 찾기", "21-anatomy-open", swipe_x=.08)
-    tap_exact("근육 모형으로 찾기", root)
+    # 빠른 보기 필터가 더해져 모형 토글이 첫 화면 아래에 있을 수 있으므로 보이는 곳까지 스크롤해 누릅니다.
+    root = tap_visible("근육 모형으로 찾기", "21-anatomy-open")
     time.sleep(.5)
     reveal_model(root)
     root = seek("도감 근육 모형 · 앞면", "21-anatomy-front", swipe_x=.08)
     tap_exact("배면", root)
     time.sleep(.5)
     root = seek("도감 근육 모형 · 배면", "21-anatomy-back", swipe_x=.08)
-    tap_exact("근육 모형 접기", root)
+    root = tap_visible("근육 모형 접기", "21-anatomy-close")
     root = wait_for("운동 목록", "21-anatomy-closed")
     # A catalog exercise without keyframes still shows the same anatomy in both views.
-    root = seek("니 푸시업", "22-static-exercise")
-    tap_exact("니 푸시업", root)
+    root = tap_visible("니 푸시업", "22-static-exercise")
     root = seek("니 푸시업 근육 모형 · 앞면", "22-static-anatomy-front", swipe_x=.08)
     tap_exact("배면", root)
     root = seek("니 푸시업 근육 모형 · 배면", "22-static-anatomy-back", swipe_x=.08)
@@ -291,8 +290,7 @@ try:
     # Choose the first catalog exercise by its observed UI name.
     catalog = json.loads(open("src/exercises.json", encoding="utf-8").read())
     exercise = catalog["exercises"][0]["name"]
-    root = seek(exercise, "22-exercise")
-    tap_exact(exercise, root)
+    root = tap_visible(exercise, "22-exercise")
     root = wait_for("운동 자세 가이드", "23-guide")
     root = wait_for("3D 자세 가이드", "23-guide-3d")
     root = seek("동작 재생", "23-guide-play")
@@ -306,8 +304,7 @@ try:
     root = seek("확대", "23-guide-zoom")
     tap_exact("확대", root)
     root = wait_for("축소", "23-guide-zoomed")
-    root = seek("이 운동 기록하기", "24-guide-start")
-    tap_exact("이 운동 기록하기", root)
+    root = tap_visible("이 운동 기록하기", "24-guide-start")
     # The catalog entry also opens the preparation screen; the clock waits for 운동 시작.
     root = wait_for("준비 중 · 0:00", "24-guided-prepared")
     if find(root, "일시정지") is not None:
@@ -337,10 +334,9 @@ try:
     else:
         raise AssertionError("Saved-workout confirmation button missing")
     root = wait_for("최근 6주 운동 볼륨", "30-history")
-    root = seek("이번 주 근육 볼륨", "30-muscle-title")
-    reveal_model(root)
-    root = seek("배면", "30-muscle-heatmap", swipe_x=.08)
-    tap_exact("배면", root)
+    # 요약·성장·체성분 카드가 더해져 근육 볼륨 카드가 아래에 있습니다. 보이는 곳까지 내려가 눌러야 합니다.
+    root = tap_visible("이번 주 근육 볼륨", "30-muscle-title")
+    root = tap_visible("배면", "30-muscle-heatmap")
     time.sleep(.5)
     root = selected("배면", "30-muscle-heatmap-back")
     results.append("catalog and weekly muscle volume display the front and back anatomy")
