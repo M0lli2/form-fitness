@@ -525,7 +525,7 @@ function Main({ state, setState }: {
             <View style={s.group}>
                 <Label size={13} bold>빠른 보기</Label>
                 <View style={[s.row,{flexWrap:'wrap'}]}>
-                    {([['all','전체'],['recent','최근 한 운동'],['favorite','즐겨찾기']] as const).map(([key,label]) =>
+                    {([['all','모든 운동'],['recent','최근 한 운동'],['favorite','즐겨찾기']] as const).map(([key,label]) =>
                         <Chip key={key} title={key==='favorite'?`★ ${label}`:label} active={libraryView===key} onPress={()=>setLibraryView(key)}/>)}
                 </View>
                 {libraryView==='recent' && !recentIds.length && <Label muted size={12}>운동을 마치면 최근에 한 종목이 여기에 모입니다.</Label>}

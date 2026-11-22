@@ -105,7 +105,7 @@ export function FocusedWorkout(props:Props){
   const targetKg=Number(String(parseMass(weight || '0',props.units).toFixed(2))) || 0;
 
   return <View style={[styles.root,{backgroundColor:palette.canvas}]}>
-    <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.content}>
+    <ScrollView style={styles.scroll} keyboardShouldPersistTaps="handled" contentContainerStyle={styles.content}>
       <View style={styles.header}>
         <FormText variant="label" accessibilityLabel="운동 경과 시간">{time(props.elapsedSeconds)}</FormText>
         <FormText variant="caption" secondary>{props.exercise.position} / {props.exercise.total} 운동</FormText>
@@ -185,29 +185,31 @@ export function FocusedWorkout(props:Props){
       </View>
     </ScrollView>
     {controlsOpen ? <Surface role="control" style={styles.controls}>
-        <View style={styles.header}>
-          <FormText variant="caption" secondary>컨트롤</FormText>
-          <Pressable accessibilityRole="button" accessibilityState={{expanded:true}} accessibilityLabel="컨트롤 숨기기"
-            onPress={()=>setControlsOpen(false)} style={styles.nudge}>
-            <FormText variant="caption">컨트롤 숨기기 ▾</FormText></Pressable>
-        </View>
       <View style={styles.header}>
         <FormText variant="label" style={{fontVariant:['tabular-nums']}}>{rest>0?'휴식 '+time(rest):'휴식 준비'}</FormText>
-        <View style={styles.header}>
-          <Pressable accessibilityRole="button" accessibilityLabel="휴식 15초 줄이기" onPress={()=>props.onRestNudge(-15)} style={styles.nudge}><FormText variant="caption">−15초</FormText></Pressable>
-          <Pressable accessibilityRole="button" accessibilityLabel="휴식 15초 늘리기" onPress={()=>props.onRestNudge(15)} style={styles.nudge}><FormText variant="caption">+15초</FormText></Pressable>
-          {rest>0 && <Pressable accessibilityRole="button" accessibilityLabel="건너뛰기" onPress={props.onSkipRest} style={styles.nudge}><FormText variant="caption">건너뛰기</FormText></Pressable>}
+        <View style={[styles.header,{gap:4}]}>
+          <Pressable accessibilityRole="button" accessibilityLabel="휴식 15초 줄이기" onPress={()=>props.onRestNudge(-15)} style={styles.tightNudge}><FormText variant="caption">−15초</FormText></Pressable>
+          <Pressable accessibilityRole="button" accessibilityLabel="휴식 15초 늘리기" onPress={()=>props.onRestNudge(15)} style={styles.tightNudge}><FormText variant="caption">+15초</FormText></Pressable>
+          {rest>0 && <Pressable accessibilityRole="button" accessibilityLabel="건너뛰기" onPress={props.onSkipRest} style={styles.tightNudge}><FormText variant="caption">건너뛰기</FormText></Pressable>}
+          <Pressable accessibilityRole="button" accessibilityState={{expanded:true}} accessibilityLabel="컨트롤 숨기기"
+            onPress={()=>setControlsOpen(false)} style={styles.tightNudge}>
+            <FormText variant="caption" secondary>▾</FormText></Pressable>
         </View>
       </View>
       <Action title={busy?'저장 중…':pending?(selected?.done?'세트 저장':'세트 완료'):props.exercise.position===props.exercise.total?'운동 결과 확인':'다음 운동'} disabled={busy || props.paused} onPress={pending?complete:props.onNext}/>
       <View style={styles.header}>
-        {selected && selected.done && <Action secondary title="다음 세트로" onPress={()=>pending && setSelectedId(pending.id)}/>}
-        <View style={styles.flexText}><Action secondary title="+ 세트 추가" onPress={props.onAddSet}/></View>
+        <Pressable accessibilityRole="button" accessibilityLabel="+ 세트 추가" onPress={props.onAddSet} style={[styles.half,{backgroundColor:palette.raised}]}>
+          <FormText variant="caption">+ 세트 추가</FormText></Pressable>
+        <Pressable accessibilityRole="button" accessibilityLabel="전체 운동 목록" onPress={props.onOpenList} style={[styles.half,{backgroundColor:palette.raised}]}>
+          <FormText variant="caption">전체 운동 목록</FormText></Pressable>
       </View>
-      <Action secondary title="전체 운동 목록" onPress={props.onOpenList}/>
-      <Pressable accessibilityRole="button" accessibilityState={{expanded:detailsOpen}} accessibilityLabel={detailsOpen?'세부 설정 접기':'세부 설정 열기'}
-        onPress={()=>setDetailsOpen(value=>!value)} style={styles.nudge}>
-        <FormText variant="caption">{detailsOpen?'세부 설정 접기 ▴':'세부 설정 열기 ▾'}</FormText></Pressable>
+      <View style={styles.header}>
+        <Pressable accessibilityRole="button" accessibilityState={{expanded:detailsOpen}} accessibilityLabel={detailsOpen?'세부 설정 접기':'세부 설정 열기'}
+          onPress={()=>setDetailsOpen(value=>!value)} style={[styles.detailToggle,{borderColor:palette.line}]}>
+          <FormText variant="caption">{detailsOpen?'세부 설정 접기 ▴':'세부 설정 열기 ▾'}</FormText></Pressable>
+        {selected && selected.done && pending && <Pressable accessibilityRole="button" accessibilityLabel="다음 세트로" onPress={()=>setSelectedId(pending.id)} style={styles.tightNudge}>
+          <FormText variant="caption">다음 세트 ›</FormText></Pressable>}
+      </View>
       {detailsOpen && <>
         <View style={styles.header}>
           {GOALS.map(goal => <Pressable key={goal[0]} accessibilityRole="button" accessibilityState={{selected:props.goal===goal[0]}}
@@ -237,7 +239,7 @@ export function FocusedWorkout(props:Props){
   </View>;
 }
 const styles=StyleSheet.create({
-  root:{flex:1},content:{padding:20,gap:16},
+  root:{flex:1},scroll:{flex:1},content:{padding:20,gap:14},
   header:{flexDirection:'row',justifyContent:'space-between',alignItems:'center',gap:12},
   inputs:{flexDirection:'row',gap:16},field:{flex:1,gap:8},
   stepper:{flexDirection:'row',alignItems:'center',gap:6},
@@ -246,11 +248,14 @@ const styles=StyleSheet.create({
   history:{flexDirection:'row',justifyContent:'space-between',alignItems:'center',gap:10,paddingVertical:8,paddingHorizontal:4,borderRadius:10},
   deleteSet:{minWidth:36,minHeight:36,alignItems:'center',justifyContent:'center'},
   nudge:{minHeight:44,justifyContent:'center',paddingHorizontal:8},
+  tightNudge:{minHeight:44,justifyContent:'center',paddingHorizontal:4},
   goal:{flex:1,minHeight:44,alignItems:'center',justifyContent:'center',borderRadius:12},
   flexText:{flex:1},
   center:{textAlign:'center'},
   restInput:{width:76,minHeight:44,borderRadius:10,padding:8,fontSize:16,fontWeight:'600',textAlign:'center'},
-  controls:{marginHorizontal:12,marginBottom:12,gap:10},
+  controls:{marginHorizontal:12,marginBottom:12,gap:8,padding:12},
+  half:{flex:1,minHeight:46,borderRadius:12,alignItems:'center',justifyContent:'center'},
+  detailToggle:{minHeight:42,borderRadius:12,borderWidth:StyleSheet.hairlineWidth,alignItems:'center',justifyContent:'center'},
   compact:{marginHorizontal:12,marginBottom:12,paddingHorizontal:12,paddingVertical:9,flexDirection:'row',alignItems:'center',justifyContent:'flex-end',gap:8},
   compactButton:{minHeight:44,minWidth:44,paddingHorizontal:14,borderRadius:12,alignItems:'center',justifyContent:'center'},
   compactPrimary:{paddingHorizontal:18},
