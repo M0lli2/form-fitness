@@ -1,9 +1,21 @@
-/** 두 테마의 의미 기반 색상. 투명도를 줄여도 정보 대비와 버튼 계층을 유지합니다. */
+/** 두 테마의 의미 기반 색상. 투명도를 줄여도 정보 대비와 버튼 계층을 유지합니다.
+ *  0.3.6: 색의 출처를 `ui-v2/tokens.ts` 하나로 모으고, 카드·버튼 반경도 디자인 시스템 값과 맞췄습니다. */
 import React, { createContext, useContext } from 'react';
 import { useColorScheme, Platform, View, Text, Pressable, StyleSheet, type ViewStyle, type StyleProp } from 'react-native';
-export const palettes = { light: {bg:'#F4F4F5',ink:'#121214',muted:'#56565D',glass:'rgba(255,255,255,.64)',solid:'#FFFFFF',line:'#DADCE5',accent:'#314D9F',accentBase:'#E2E9FF',hero:'#242428',lime:'#E3E3E8',soft:'#ECECEE',danger:'#B42331'}, dark: {bg:'#101012',ink:'#F7F7F8',muted:'#B8B8C1',glass:'rgba(35,35,40,.64)',solid:'#1C1C1F',line:'#3F424D',accent:'#B7C9FF',accentBase:'#303B5C',hero:'#303036',lime:'#EEEEF2',soft:'#2B2B30',danger:'#FF9FA8'} };
+import { colors as designColors, geometry, typeScale } from './ui-v2/tokens';
+
+/** tokens의 역할 기반 색을 기존 화면이 쓰는 이름으로 옮깁니다. */
+function paletteOf(mode: 'light' | 'dark') {
+    const c = designColors[mode];
+    return {
+        bg: c.canvas, ink: c.text, muted: c.secondary, glass: c.glassFill, solid: c.surface,
+        line: c.line, accent: c.focus, accentBase: c.accentSoft, hero: mode === 'dark' ? '#303036' : '#242428',
+        lime: mode === 'dark' ? '#EEEEF2' : '#E3E3E8', soft: c.raised, danger: c.error,
+    };
+}
+export const palettes = { light: paletteOf('light'), dark: paletteOf('dark') };
 type ThemeValue = {
-    colors: typeof palettes.light;
+    colors: ReturnType<typeof paletteOf>;
     dark: boolean;
     contrast: boolean;
 };
@@ -17,7 +29,7 @@ export const useTheme = () => useContext(Theme);
 export function Glass({ children, style }: {
     children: React.ReactNode;
     style?: StyleProp<ViewStyle>;
-}) { const { colors } = useTheme(); return <View style={[styles.card, {borderColor:colors.line,backgroundColor:colors.solid},style]}>{children}</View>; }
+}) { const { colors } = useTheme(); return <View style={[styles.card, { borderColor: colors.line, backgroundColor: colors.solid }, style]}>{children}</View>; }
 export function Label({ children, size = 15, muted = false, bold = false, heading = false, numberOfLines, style }: {
     children: React.ReactNode;
     size?: number;
@@ -31,14 +43,16 @@ export function Label({ children, size = 15, muted = false, bold = false, headin
     const { colors } = useTheme();
     // Keep the platform's Korean system typeface and scalable text settings.
     return <Text accessibilityRole={heading ? 'header' : undefined} numberOfLines={numberOfLines} style={[{ fontFamily: Platform.OS === 'android' ? 'sans-serif' : undefined, fontSize: size,
-        letterSpacing: size >= 20 ? -0.45 : 0, lineHeight: Math.ceil(size * (size >= 20 ? 1.28 : 1.48)),
+        letterSpacing: size >= 20 ? -0.35 : 0, lineHeight: Math.ceil(size * (size >= 20 ? 1.3 : 1.47)),
         color: muted ? colors.muted : colors.ink, fontWeight: bold ? '700' : '400' }, style]}>{children}</Text>;
 }
-export function Button({ title, onPress, secondary = false, disabled = false, danger = false }: {
+export function Button({ title, onPress, secondary = false, disabled = false, danger = false, tone = 'default' }: {
     title: string;
     onPress: () => void;
     secondary?: boolean;
     disabled?: boolean;
     danger?: boolean;
-}) { const { colors } = useTheme(); return <Pressable accessibilityRole="button" accessibilityLabel={title} accessibilityState={{disabled}} disabled={disabled} onPress={onPress} style={({ pressed }) => [styles.button, { backgroundColor: secondary ? colors.soft : colors.ink, opacity: disabled ? .4 : pressed ? .75 : 1 }]}><Text style={{ color: danger ? colors.danger : secondary ? colors.ink : colors.bg, fontSize: 15, lineHeight:22, fontWeight: '700', textAlign:'center' }}>{title}</Text></Pressable>; }
-const styles = StyleSheet.create({ card: { borderRadius: 21, borderWidth: 1, padding: 17, overflow: 'hidden', gap: 12 }, button: { minHeight: 50, borderRadius: 15, paddingHorizontal: 17, paddingVertical: 13, alignItems: 'center', justifyContent: 'center' } });
+    /** 어두운 히어로·이미지 위에서는 밝은 버튼을 씁니다. */
+    tone?: 'default' | 'onDark';
+}) { const { colors } = useTheme(); const onDark = tone === 'onDark'; return <Pressable accessibilityRole="button" accessibilityLabel={title} accessibilityState={{ disabled }} disabled={disabled} onPress={onPress} style={({ pressed }) => [styles.button, { backgroundColor: onDark ? '#FFFFFF' : secondary ? colors.soft : colors.ink, opacity: disabled ? .4 : pressed ? .75 : 1 }]}><Text style={{ color: onDark ? '#121214' : danger ? colors.danger : secondary ? colors.ink : colors.bg, fontSize: typeScale.label.fontSize, lineHeight: typeScale.label.lineHeight, fontWeight: '700', textAlign: 'center' }}>{title}</Text></Pressable>; }
+const styles = StyleSheet.create({ card: { borderRadius: geometry.cardRadius, borderWidth: 1, padding: geometry.screenPadding, overflow: 'hidden', gap: geometry.gap }, button: { minHeight: geometry.controlMinHeight, borderRadius: geometry.buttonRadius, paddingHorizontal: 18, paddingVertical: 13, alignItems: 'center', justifyContent: 'center' } });

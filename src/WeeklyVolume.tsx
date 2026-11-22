@@ -43,7 +43,7 @@ export function WeeklyVolume({history, unit}: {history: Session[]; unit: 'kg' | 
 
     return <View style={{gap: 10}}>
         <View style={styles.spread}>
-            <Label bold size={15}>이번 주 근육 볼륨</Label>
+            <Label bold size={17}>이번 주 근육 볼륨</Label>
             <AnatomySides side={side} onChange={setSide}/>
         </View>
         <StandingAnatomy side={side} heat={heat} caption={`최근 7일 근육 볼륨, ${side === 'front' ? '앞면' : '배면'}. `+
@@ -52,7 +52,7 @@ export function WeeklyVolume({history, unit}: {history: Session[]; unit: 'kg' | 
         {/* 안내 문구는 모델 발목과 겹치지 않게 인체 모형 아래에 둡니다. */}
         {!load.hasData && <Text style={[styles.empty,{color:colors.muted}]}>이번 주 완료한 세트가 아직 없습니다.</Text>}
         <View style={styles.spread}>
-            <Label muted size={12}>{load.sessions}회 운동 · {load.totalSets}세트 · {weightText(load.totalVolume)}</Label>
+            <Label muted size={12} style={{fontVariant:['tabular-nums']}}>{load.sessions}회 운동 · {load.totalSets}세트 · {weightText(load.totalVolume)}</Label>
             <HeatLegend/>
         </View>
         {load.hasData && <View style={{gap: 4}}>

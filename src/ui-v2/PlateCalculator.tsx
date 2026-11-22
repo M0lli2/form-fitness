@@ -72,7 +72,7 @@ const styles = StyleSheet.create({
   field: {gap: 6},
   row: {flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8},
   spread: {flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center'},
-  input: {minHeight: 52, borderWidth: 1, borderRadius: 13, padding: 12, fontSize: 22, fontWeight: '600', textAlign: 'center'},
-  chip: {minHeight: 40, paddingHorizontal: 12, borderRadius: 12, borderWidth: StyleSheet.hairlineWidth, alignItems: 'center', justifyContent: 'center'},
-  plate: {minHeight: 40, paddingHorizontal: 12, borderRadius: 10, alignItems: 'center', justifyContent: 'center'},
+  input: {minHeight: 52, borderWidth: 1, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10, fontSize: 22, fontWeight: '600', textAlign: 'center', fontVariant: ['tabular-nums']},
+  chip: {minHeight: 36, paddingHorizontal: 12, borderRadius: 999, borderWidth: 1, alignItems: 'center', justifyContent: 'center'},
+  plate: {minHeight: 36, paddingHorizontal: 12, borderRadius: 12, alignItems: 'center', justifyContent: 'center'},
 });
