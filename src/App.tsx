@@ -543,6 +543,15 @@ function Main({ state, setState }: {
                     <View style={s.row}>{muscleChips().map(m => <Chip key={m.id} title={m.name} active={targets.includes(m.id)}
                         onPress={()=>toggleTarget(m.id)}/>)}</View>
                 </ScrollView>
+                {catalogAnatomy && <View style={{gap:10}}>
+                    <StandingAnatomy side={catalogSide} height={180} highlights={targets} onMuscle={toggleTarget}
+                        caption={`도감 근육 모형 · ${catalogSide==='front'?'앞면':'배면'}`}/>
+                    <View style={[s.spread,{gap:10}]}>
+                        <Label muted size={12} style={s.flex}>근육을 눌러 운동을 찾으세요.</Label>
+                        <AnatomySides side={catalogSide} onChange={setCatalogSide}/>
+                    </View>
+                </View>}
+                {/* 토글 바는 모형 아래에 고정합니다. 모형을 펼쳐도 바가 화면 밖으로 밀리지 않습니다. */}
                 <Pressable accessibilityRole="button" accessibilityState={{expanded:catalogAnatomy}}
                     accessibilityLabel={catalogAnatomy?'근육 모형 접기':'근육 모형으로 찾기'}
                     style={[s.outlineBar,{borderColor:colors.line}]}
@@ -550,12 +559,6 @@ function Main({ state, setState }: {
                     <Label size={13} bold>{catalogAnatomy?'근육 모형 접기':'근육 모형으로 찾기'}</Label>
                     <Label size={13} muted>{catalogAnatomy?'▴':'▾'}</Label>
                 </Pressable>
-                {catalogAnatomy && <View style={{gap:8}}>
-                    <View style={s.spread}><Label muted size={12}>근육을 눌러 운동을 찾으세요.</Label>
-                        <AnatomySides side={catalogSide} onChange={setCatalogSide}/></View>
-                    <StandingAnatomy side={catalogSide} height={180} highlights={targets} onMuscle={toggleTarget}
-                        caption={`도감 근육 모형 · ${catalogSide==='front'?'앞면':'배면'}`}/>
-                </View>}
             </View>
             {(group || detailNames.length > 0) && <Label muted size={12}>
                 {group ? `${group.name} 전체` : detailNames.join(' · ')}{includeSecondary ? ' · 보조근 포함' : ' · 주동근만'}
