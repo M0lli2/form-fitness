@@ -19,3 +19,8 @@ __pycache__/
 # CI evidence downloaded locally for review
 .evidence/
 .evidence*/
+
+# 릴리스 에셋 검증용으로 내려받은 파일과 CI 런타임 근거는 저장소에 넣지 않습니다.
+.verify/
+.evidence/
+.evidence-ios/

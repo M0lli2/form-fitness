@@ -390,7 +390,7 @@ npm run check
 npm run typecheck
 ```
 
-v0.3.6에서 도메인 테스트 129개(순서·슈퍼세트·대체·RPE·PR·원판·도감 필터 포함), 네이티브 계약·타입 검사, Android 번들 생성을 확인했습니다. 릴리스 빌드에서는 Android 에뮬레이터 운동 여정, iOS 시뮬레이터 XCTest, APK 서명·버전과 Apple IPA 버전을 검증했습니다. [릴리스 검증](https://github.com/M0lli2/form-fitness/actions/runs/45016635138) · 에셋 5종은 로그인 없이 내려받아 SHA-256 체크섬과 일치함을 확인했습니다. 실기기 건강 권한, 워치 페어링, 스토어 서명·심사는 [실기기 검증 표](docs/INSTALL.md#남은-실기기-검증)에서 관리합니다.
+v0.3.7에서 도메인 테스트 131개(추천 문구 분리 포함), 네이티브 계약·타입·버전 동기화 검사, Android 번들 생성을 확인했습니다. 릴리스 빌드에서는 Android 에뮬레이터 자동 여정 16항목, iOS 시뮬레이터 XCTest, APK 서명·버전과 Apple IPA 버전을 검증했습니다. [릴리스 검증](https://github.com/M0lli2/form-fitness/actions/runs/45025169416) · [v0.3.7 릴리스](https://github.com/M0lli2/form-fitness/releases/tag/v0.3.7)의 에셋 5종은 로그인 없이 내려받아 HTTP 200과 SHA-256 일치를 확인했습니다. 실기기 건강 권한, 워치 페어링, 스토어 서명·심사는 [실기기 검증 표](docs/INSTALL.md#남은-실기기-검증)에서 관리합니다.
 
 ## 이전 구현 기록
 
