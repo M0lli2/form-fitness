@@ -25,6 +25,10 @@ iPhone·iPad와 Android에서 운동을 기록하는 네이티브 앱입니다. 
 |---|---|
 | <img src="docs/screenshots/focused-controls-collapsed-034.png" width="235" alt="컨트롤 열기와 세트 완료만 남은 한 줄 컨트롤 바와 그 뒤로 보이는 추천 문구"> | <img src="docs/screenshots/focused-controls-expanded-034.png" width="235" alt="컨트롤 숨기기 토글과 훈련 목적, 휴식 시간, 세트 완료, 세트 추가, 전체 운동 목록이 있는 컨트롤 박스"> |
 
+| 기본 루틴 편집 · 추천 포함 | 추천 포함을 끈 상태 |
+|---|---|
+| <img src="docs/screenshots/routine-editor-034.png" width="235" alt="기본 제공 루틴의 이름·설명을 고치고 추천 포함 스위치와 선택한 운동 목록, 루틴 수정 버튼이 있는 편집 화면"> | <img src="docs/screenshots/routine-editor-excluded-034.png" width="235" alt="추천 루틴에 포함 스위치를 끈 기본 루틴 편집 화면"> |
+
 ## 0.3.3 변경사항
 
 - 근육 모델을 GPU로 그립니다. iOS는 Metal, Android는 OpenGL ES 3로 기기 배율 전체 해상도에 4x MSAA를 더해 실루엣이 매끈하고, 운동 중 표면 갱신도 부드럽습니다. GPU를 쓸 수 없는 기기에서는 기존 소프트웨어 렌더러로 물러납니다.
