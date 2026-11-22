@@ -103,11 +103,26 @@ final class WorkoutJourney: XCTestCase {
     }
 
     /// Android `Android saved-data journeys`와 같은 경로를 iOS에서 확인합니다.
-    /// 홈 → 루틴 시작 → 세트 완료 → 일시정지·계속 → 종료 저장 → 기록 → 강제 종료 후 재실행.
+    /// 홈 → 루틴 준비 → 운동 시작·집중 → 세트 완료 → 일시정지·계속 → 종료 저장 → 기록 → 강제 종료 후 재실행.
     func testSavedWorkoutJourneyAndPersistence() {
-        tap("운동 시작하기")
+        tap("루틴으로 준비하기")
         tap("기본에 충실한 전신")
+        // 루틴도 준비 화면에서 0:00으로 멈추고, 운동 시작을 눌러야 타이머가 흐릅니다(IMG_9257·IMG_9258).
+        XCTAssertTrue(control("준비 중 · 0:00").waitForExistence(timeout: 20))
+        XCTAssertFalse(control("일시정지").exists, "Routine started before 운동 시작")
+        XCTAssertTrue(control("고블릿 스쿼트 1세트 중량").waitForExistence(timeout: 10))
+        attach("routine-prepared")
+        tap("운동 시작")
+        XCTAssertTrue(control("일시정지").waitForExistence(timeout: 15))
+        tap("한 운동에 집중하기")
         XCTAssertTrue(app.staticTexts["고블릿 스쿼트"].waitForExistence(timeout: 20))
+        // 하단 컨트롤 박스를 접으면 세트 완료만 남고, 다시 펼 수 있습니다.
+        tap("컨트롤 숨기기")
+        XCTAssertTrue(control("컨트롤 열기").waitForExistence(timeout: 10))
+        XCTAssertFalse(control("+ 세트 추가").exists, "Collapsed controls still show the full box")
+        attach("focused-controls-collapsed")
+        tap("컨트롤 열기")
+        XCTAssertTrue(control("컨트롤 숨기기").waitForExistence(timeout: 10))
         tap("세트 완료")
         XCTAssertTrue(app.staticTexts["2번째 세트"].waitForExistence(timeout: 15))
         attach("focused-set-completed")
