@@ -15,3 +15,6 @@ wearos/local.properties
 
 # Python bytecode from local checks
 __pycache__/
+
+# CI evidence downloaded locally for review
+.evidence/
