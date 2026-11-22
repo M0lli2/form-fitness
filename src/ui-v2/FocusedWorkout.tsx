@@ -284,7 +284,7 @@ const styles=StyleSheet.create({
   presetRow:{flexDirection:'row',alignItems:'center',gap:6,flexWrap:'wrap'},
   restInputWrap:{flexDirection:'row',alignItems:'center',gap:6,minHeight:36,paddingHorizontal:12,borderRadius:999,borderWidth:1},
   restInput:{minWidth:46,minHeight:34,padding:0,fontSize:14,fontWeight:'600',textAlign:'center',fontVariant:['tabular-nums']},
-  controls:{marginHorizontal:12,marginBottom:12,gap:10,padding:14},
+  controls:{marginHorizontal:12,marginBottom:12,gap:8,padding:12},
   half:{flex:1,minHeight:44,borderRadius:12,borderWidth:1,alignItems:'center',justifyContent:'center'},
   detailToggle:{flexDirection:'row',justifyContent:'space-between',alignItems:'center',minHeight:44,paddingHorizontal:14,borderRadius:12,borderWidth:1},
   details:{gap:8},
