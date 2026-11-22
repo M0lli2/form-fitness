@@ -12,3 +12,6 @@ dist/
 wearos/.gradle/
 wearos/**/build/
 wearos/local.properties
+
+# Python bytecode from local checks
+__pycache__/
