@@ -3,7 +3,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {makeSession, parseRpe, volume} from '../src/core.mjs';
-import {cycleSetKind, exerciseGrowth, exercisePosition, historyPrFlags, libraryPool, lineGeometry,
+import {applyPreviousSets, cycleSetKind, exerciseGrowth, exercisePosition, historyPrFlags, libraryPool, lineGeometry,
   massStep, moveExercise, moveItem, nextExercise, normalizeFavorites, personalBest, plateMath,
   previousHints, recentExerciseIds, replaceExercise, sessionSummary, substitutionCandidates,
   supersetGroups, supersetLabel, toggleFavorite, toggleSuperset, weeklyProgress} from '../src/workout-features.mjs';
@@ -187,4 +187,28 @@ test('중량 빠른 조절 폭은 kg 2.5, lb 5이고 볼륨 계산은 그대로�
   assert.equal(massStep('lb'), 5);
   const s = session('h1', '2026-11-01T10:00:00Z', [['bench', [{weight: 60, reps: 10}]]]);
   assert.equal(volume(s), 600);
+});
+
+test('지난 기록 채우기는 미완료 세트에 직전 무게·횟수를 옮기고 완료 세트는 지킨다', () => {
+  const sets = [
+    {id: 'a', weight: 0, reps: 10, done: true, kind: 'normal'},
+    {id: 'b', weight: 0, reps: 10, done: false, kind: 'normal'},
+    {id: 'c', weight: 0, reps: 10, done: false, kind: 'normal'},
+  ];
+  const previous = [{weight: 60, reps: 8}, {weight: 62.5, reps: 6}, {weight: 65, reps: 5}];
+  const filled = applyPreviousSets(sets, previous);
+  assert.equal(filled[0].weight, 0, '완료한 세트는 덮어쓰지 않는다');
+  assert.deepEqual([filled[1].weight, filled[1].reps], [62.5, 6], '두 번째 세트는 직전 두 번째 기록을 따른다');
+  assert.deepEqual([filled[2].weight, filled[2].reps], [65, 5]);
+  assert.equal(filled[1].edited, true, '추천이 다시 덮어쓰지 않도록 edited를 남긴다');
+  assert.equal(sets[1].weight, 0, '원본 배열은 바꾸지 않는다');
+});
+
+test('지난 기록 채우기는 세트가 더 많으면 마지막 기록을 반복하고, 기록이 없으면 그대로 둔다', () => {
+  const sets = [{id: 'a', weight: 0, reps: 10, done: false}, {id: 'b', weight: 0, reps: 10, done: false}, {id: 'c', weight: 0, reps: 10, done: false}];
+  const filled = applyPreviousSets(sets, [{weight: 40, reps: 12}]);
+  assert.deepEqual(filled.map(set => set.weight), [40, 40, 40]);
+  assert.deepEqual(applyPreviousSets(sets, null), sets);
+  assert.deepEqual(applyPreviousSets(sets, []), sets);
+  assert.deepEqual(applyPreviousSets([], [{weight: 40, reps: 12}]), []);
 });

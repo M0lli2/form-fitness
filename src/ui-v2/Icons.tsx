@@ -16,11 +16,12 @@ export function TabIcon({name, active}: {name: TabIconName; active: boolean}) {
   return <View pointerEvents="none" accessible={false} accessibilityElementsHidden
     importantForAccessibility="no-hide-descendants" style={styles.box}>
     {name === 'home' ? <>
-      {/* 지붕 두 변과 아래가 열린 몸체 */}
+      {/* 지붕 두 변 + 아래가 열린 몸체 + 문 */}
       <View style={[styles.bar, {left: 3.1, top: 6.5, width: 9.4, backgroundColor: color, transform: [{rotate: '-45deg'}]}]}/>
       <View style={[styles.bar, {left: 9.5, top: 6.5, width: 9.4, backgroundColor: color, transform: [{rotate: '45deg'}]}]}/>
       <View style={[styles.frame, {left: 5.2, top: 10.4, width: 11.6, height: 9.4, borderColor: color,
         borderTopWidth: 0, borderBottomLeftRadius: 2.5, borderBottomRightRadius: 2.5}]}/>
+      <View style={[styles.frame, {left: 9.6, top: 14.4, width: 2.8, height: 5.4, borderColor: color, borderRadius: 1.2}]}/>
     </> : name === 'workout' ? <>
       {/* 루틴: 점과 줄 세 개 */}
       {[4.9, 10.1, 15.3].map(top => <React.Fragment key={top}>

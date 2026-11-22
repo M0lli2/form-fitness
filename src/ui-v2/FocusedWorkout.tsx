@@ -1,5 +1,5 @@
 import React, {useEffect,useRef,useState} from 'react';
-import {Alert,Pressable,ScrollView,StyleSheet,TextInput,useWindowDimensions,View} from 'react-native';
+import {Alert,Platform,Pressable,ScrollView,StyleSheet,TextInput,useWindowDimensions,View} from 'react-native';
 import {Action,FormText,Surface} from './Primitives';
 import {useFormTheme} from './Theme';
 import {displayMass,parseMass,parseSetInput,remainingSeconds} from './policy.mjs';
@@ -134,7 +134,7 @@ export function FocusedWorkout(props:Props){
             <FormText variant="caption" secondary>중량 · {props.units}</FormText>
             <View style={styles.stepper}>
               <Pressable accessibilityRole="button" accessibilityLabel={'중량 '+massStep(props.units)+' 줄이기'} onPress={()=>nudgeWeight(-massStep(props.units))} style={[styles.step,{backgroundColor:palette.raised}]}><FormText variant="heading">−</FormText></Pressable>
-              <TextInput accessibilityLabel={'현재 세트 중량 '+props.units} keyboardType="decimal-pad" selectTextOnFocus value={weight} onChangeText={setWeight} editable={!busy} style={[styles.input,{color:palette.text,backgroundColor:palette.raised}]}/>
+              <TextInput accessibilityLabel={'현재 세트 중량 '+props.units} keyboardType="decimal-pad" selectTextOnFocus value={weight} onChangeText={setWeight} editable={!busy} inputAccessoryViewID={Platform.OS === 'ios' ? 'form-keyboard-done' : undefined} style={[styles.input,{color:palette.text,backgroundColor:palette.raised}]}/>
               <Pressable accessibilityRole="button" accessibilityLabel={'중량 '+massStep(props.units)+' 늘리기'} onPress={()=>nudgeWeight(massStep(props.units))} style={[styles.step,{backgroundColor:palette.raised}]}><FormText variant="heading">+</FormText></Pressable>
             </View>
             {hint(selected) ? <FormText variant="caption" secondary style={styles.center}>이전 {displayMass(hint(selected)!.weight,props.units)} {props.units} × {hint(selected)!.reps}</FormText> : null}
@@ -143,7 +143,7 @@ export function FocusedWorkout(props:Props){
             <FormText variant="caption" secondary>반복 · 회</FormText>
             <View style={styles.stepper}>
               <Pressable accessibilityRole="button" accessibilityLabel="횟수 1 줄이기" onPress={()=>nudgeReps(-1)} style={[styles.step,{backgroundColor:palette.raised}]}><FormText variant="heading">−</FormText></Pressable>
-              <TextInput accessibilityLabel="현재 세트 반복 횟수" keyboardType="number-pad" selectTextOnFocus value={reps} onChangeText={setReps} editable={!busy} style={[styles.input,{color:palette.text,backgroundColor:palette.raised}]}/>
+              <TextInput accessibilityLabel="현재 세트 반복 횟수" keyboardType="number-pad" selectTextOnFocus value={reps} onChangeText={setReps} editable={!busy} inputAccessoryViewID={Platform.OS === 'ios' ? 'form-keyboard-done' : undefined} style={[styles.input,{color:palette.text,backgroundColor:palette.raised}]}/>
               <Pressable accessibilityRole="button" accessibilityLabel="횟수 1 늘리기" onPress={()=>nudgeReps(1)} style={[styles.step,{backgroundColor:palette.raised}]}><FormText variant="heading">+</FormText></Pressable>
             </View>
           </View>
@@ -154,7 +154,7 @@ export function FocusedWorkout(props:Props){
             {['7','8','9','10'].map(value=><Pressable key={value} accessibilityRole="button" accessibilityState={{selected:rpe===value}} accessibilityLabel={'RPE '+value}
               onPress={()=>setRpe(current=>current===value?'':value)} style={[styles.rpeChip,{borderColor:rpe===value?palette.text:palette.line,backgroundColor:rpe===value?palette.raised:'transparent'}]}>
               <FormText variant="caption" secondary={rpe!==value}>{value}</FormText></Pressable>)}
-            <TextInput accessibilityLabel={`${props.exercise.name} ${sets.indexOf(selected)+1}세트 RPE`} keyboardType="decimal-pad" value={rpe} onChangeText={setRpe} placeholder="예: 8.5"
+            <TextInput accessibilityLabel={`${props.exercise.name} ${sets.indexOf(selected)+1}세트 RPE`} keyboardType="decimal-pad" value={rpe} onChangeText={setRpe} placeholder="예: 8.5" inputAccessoryViewID={Platform.OS === 'ios' ? 'form-keyboard-done' : undefined}
               placeholderTextColor={palette.secondary} style={[styles.rpeInput,{color:palette.text,backgroundColor:palette.raised}]}/>
           </View>
         </View>}
@@ -218,7 +218,7 @@ export function FocusedWorkout(props:Props){
           style={[styles.chip,{borderColor:props.restSeconds===props.suggestedRest?palette.text:palette.line,backgroundColor:props.restSeconds===props.suggestedRest?palette.raised:'transparent'}]}>
           <FormText variant="caption" secondary={props.restSeconds!==props.suggestedRest}>{'추천 '+props.suggestedRest}초</FormText></Pressable>}
         <View style={[styles.restInputWrap,{borderColor:palette.line}]}>
-          <TextInput accessibilityLabel="휴식 시간(초)" keyboardType="number-pad" selectTextOnFocus value={restText} onChangeText={setRestText}
+          <TextInput accessibilityLabel="휴식 시간(초)" keyboardType="number-pad" selectTextOnFocus value={restText} onChangeText={setRestText} inputAccessoryViewID={Platform.OS === 'ios' ? 'form-keyboard-done' : undefined}
             onEndEditing={event=>{const text=event.nativeEvent.text.trim(); if(!text){setRestText(String(props.restSeconds)); return; } const value=Number(text.replace(',','.')); if(Number.isFinite(value))props.onRestChange(value); else setRestText(String(props.restSeconds));}}
             style={[styles.restInput,{color:palette.text}]}/>
           <FormText variant="caption" secondary>초</FormText>

@@ -153,6 +153,21 @@ export function previousHints(history, exerciseId) {
     return previousSets(history, exerciseId)?.sets ?? null;
 }
 
+/** 직전 세션의 무게·횟수를 이번 세트에 한 번에 채웁니다(0.3.6 '지난 기록 채우기').
+ *  이미 완료한 세트는 기록을 보존하고, 직전 기록보다 세트가 많으면 마지막 값을 반복합니다.
+ *  채운 세트는 edited로 표시해 추천 무게가 다시 덮어쓰지 않게 합니다. */
+/** @param {any[]} sets @param {{weight:number,reps:number}[] | null | undefined} previous */
+export function applyPreviousSets(sets, previous) {
+    if (!Array.isArray(sets) || !sets.length) return sets ?? [];
+    if (!Array.isArray(previous) || !previous.length) return sets;
+    return sets.map((set, index) => {
+        if (!set || set.done) return set;
+        const source = previous[index] ?? previous[previous.length - 1];
+        if (!source) return set;
+        return {...set, weight: source.weight, reps: source.reps, edited: true};
+    });
+}
+
 /** 완료한 세트가 있는 종목은 종류(일반·워밍업·드롭)를 순환합니다. */
 export function cycleSetKind(kind) {
     return kind === 'warmup' ? 'drop' : kind === 'drop' ? 'normal' : 'warmup';
