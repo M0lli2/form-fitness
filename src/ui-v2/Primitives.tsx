@@ -1,9 +1,9 @@
 import React from 'react';
-import {Platform, Pressable, StyleSheet, Text, View, type TextProps, type ViewProps, type TextStyle} from 'react-native';
+import {Platform, Pressable, StyleSheet, Text, View, type StyleProp, type TextProps, type ViewProps, type TextStyle, type ViewStyle} from 'react-native';
 import {GlassView, isLiquidGlassAvailable} from 'expo-glass-effect';
 import {BlurView} from 'expo-blur';
 import {useFormTheme} from './Theme';
-import {geometry, typeScale} from './tokens';
+import {geometry, radius, squircle, typeScale} from './tokens';
 import {resolveMaterial} from './policy.mjs';
 
 /** 글자 확대를 제한하지 않는다. 한국어는 OS의 언어별 fallback을 사용한다. */
@@ -16,11 +16,12 @@ export function FormText({variant='body', secondary=false, style, ...props}:Text
   ]}/>;
 }
 
-/** 운동표/인바디 같은 content에는 Glass를 사용하지 않는다. */
+/** 운동표/인바디 같은 content에는 Glass를 사용하지 않는다.
+ *  표면은 모두 같은 동심원 곡률을 씁니다 — 콘텐츠 카드 24, 떠 있는 내비게이션 바 30. */
 export function Surface({role='content', style, children, ...props}:Omit<ViewProps,'role'> & {role?:'content'|'navigation'|'control'}) {
   const {palette,mode,glass} = useFormTheme();
   const material = resolveMaterial({enabled:glass, reduceTransparency:false, role, platform:Platform.OS, nativeAvailable:isLiquidGlassAvailable()});
-  const shape = {borderRadius:role === 'content' ? geometry.cardRadius : geometry.controlRadius};
+  const shape = {borderRadius:role === 'navigation' ? radius.nav : geometry.cardRadius, ...squircle};
   return <View {...props} style={[styles.surface, shape, {borderColor:palette.line}, style]}>
     {/* Keep the decorative native view within the surface and outside hit testing. */}
     <View pointerEvents="none" accessibilityElementsHidden importantForAccessibility="no-hide-descendants" style={[styles.material,shape]}>
@@ -34,17 +35,17 @@ export function Surface({role='content', style, children, ...props}:Omit<ViewPro
   </View>;
 }
 
-/** Glass 부모의 opacity를 바꾸지 않고 눌림 상태를 색으로 표현한다. */
-export function Action({title,onPress,disabled=false,secondary=false}:{title:string;onPress:()=>void;disabled?:boolean;secondary?:boolean}) {
+/** Glass 부모의 opacity를 바꾸지 않고 눌림 상태를 색으로 표현한다.
+ *  기본 버튼은 높이 52 · 반경 16(카드 24보다 한 단계 안쪽)으로 모든 화면이 같은 값을 씁니다. */
+export function Action({title,onPress,disabled=false,secondary=false,style}:{title:string;onPress:()=>void;disabled?:boolean;secondary?:boolean;style?:StyleProp<ViewStyle>}) {
   const {palette}=useFormTheme();
   return <Pressable accessibilityRole="button" accessibilityState={{disabled}} disabled={disabled} onPress={onPress}
-    style={({pressed})=>[styles.action,{backgroundColor:disabled || secondary ? palette.raised : palette.action,borderWidth:2,borderColor:pressed?palette.focus:'transparent'}]}>
-    <FormText variant="label" style={{textAlign:'center',color:disabled || secondary ? palette.secondary : palette.onAction}}>{title}</FormText>
+    style={({pressed})=>[styles.action,squircle,{backgroundColor:disabled || secondary ? palette.raised : palette.action,borderWidth:2,borderColor:pressed?palette.focus:'transparent'},style]}>
+    <FormText variant="label" numberOfLines={1} style={{textAlign:'center',color:disabled || secondary ? palette.secondary : palette.onAction}}>{title}</FormText>
   </Pressable>;
 }
 const styles=StyleSheet.create({
   material:{...StyleSheet.absoluteFillObject,overflow:'hidden'},
-  surface:{overflow:'hidden',borderWidth:1,padding:20,gap:12},
-  action:{minHeight:52,borderRadius:16,paddingHorizontal:20,paddingVertical:14,alignItems:'center',justifyContent:'center'},
+  surface:{overflow:'hidden',borderWidth:1,padding:geometry.cardPadding,gap:geometry.cardGap},
+  action:{minHeight:geometry.controlMinHeight, borderRadius:geometry.buttonRadius, paddingHorizontal:geometry.cardPadding, paddingVertical:12, alignItems:'center', justifyContent:'center'},
 });
-

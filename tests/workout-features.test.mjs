@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {makeSession, parseRpe, volume} from '../src/core.mjs';
 import {applyPreviousSets, cycleSetKind, exerciseGrowth, exercisePosition, historyPrFlags, libraryPool, lineGeometry,
-  massStep, moveExercise, moveItem, nextExercise, normalizeFavorites, personalBest, plateMath,
+  massStep, moveExercise, moveItem, nextExercise, normalizeFavorites, personalBest, plateMath, recommendationLines,
   previousHints, recentExerciseIds, replaceExercise, sessionSummary, substitutionCandidates,
   supersetGroups, supersetLabel, toggleFavorite, toggleSuperset, weeklyProgress} from '../src/workout-features.mjs';
 
@@ -211,4 +211,19 @@ test('지난 기록 채우기는 세트가 더 많으면 마지막 기록을 반
   assert.deepEqual(applyPreviousSets(sets, null), sets);
   assert.deepEqual(applyPreviousSets(sets, []), sets);
   assert.deepEqual(applyPreviousSets([], [{weight: 40, reps: 12}]), []);
+});
+
+test('추천 문구는 목적 배지와 처방 한 줄로 나뉘어 320pt 폭에서도 단어 중간에 끊기지 않는다', () => {
+  const lines = recommendationLines({label: '근비대', percentLabel: '75% 1RM', repsLabel: '8~12회', sets: 3, rest: 90, source: 'none'});
+  assert.equal(lines.badge, '근비대 75% 1RM', '배지에는 목적과 강도만 둔다');
+  assert.equal(lines.detail, '8~12회 × 3세트 · 휴식 90초 · 첫 기록');
+  assert.ok(!lines.detail.includes('인바디'), '긴 안내 문장은 배너에서 빼 둔다');
+});
+
+test('추천 문구는 이전 기록·체성분 근거를 각각 한 구절로만 남긴다', () => {
+  assert.equal(recommendationLines({label: '스트렝스', percentLabel: '85% 1RM', repsLabel: '3~5회', sets: 4, rest: 180, source: 'history', oneRm: 82.5}).detail,
+    '3~5회 × 4세트 · 휴식 180초 · 이전 추정 1RM 82.5kg 기준');
+  assert.equal(recommendationLines({label: '근지구력', percentLabel: '60% 1RM', repsLabel: '15~20회', sets: 3, rest: 60, source: 'body'}).detail,
+    '15~20회 × 3세트 · 휴식 60초 · 체성분 기반 초기 추정');
+  assert.deepEqual(recommendationLines(null), {badge: '', detail: ''});
 });

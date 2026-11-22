@@ -2,7 +2,7 @@
  *  0.3.6: 색의 출처를 `ui-v2/tokens.ts` 하나로 모으고, 카드·버튼 반경도 디자인 시스템 값과 맞췄습니다. */
 import React, { createContext, useContext } from 'react';
 import { useColorScheme, Platform, View, Text, Pressable, StyleSheet, type ViewStyle, type StyleProp } from 'react-native';
-import { colors as designColors, geometry, typeScale } from './ui-v2/tokens';
+import { colors as designColors, geometry, squircle, typeScale } from './ui-v2/tokens';
 
 /** tokens의 역할 기반 색을 기존 화면이 쓰는 이름으로 옮깁니다. */
 function paletteOf(mode: 'light' | 'dark') {
@@ -55,4 +55,4 @@ export function Button({ title, onPress, secondary = false, disabled = false, da
     /** 어두운 히어로·이미지 위에서는 밝은 버튼을 씁니다. */
     tone?: 'default' | 'onDark';
 }) { const { colors } = useTheme(); const onDark = tone === 'onDark'; return <Pressable accessibilityRole="button" accessibilityLabel={title} accessibilityState={{ disabled }} disabled={disabled} onPress={onPress} style={({ pressed }) => [styles.button, { backgroundColor: onDark ? '#FFFFFF' : secondary ? colors.soft : colors.ink, opacity: disabled ? .4 : pressed ? .75 : 1 }]}><Text style={{ color: onDark ? '#121214' : danger ? colors.danger : secondary ? colors.ink : colors.bg, fontSize: typeScale.label.fontSize, lineHeight: typeScale.label.lineHeight, fontWeight: '700', textAlign: 'center' }}>{title}</Text></Pressable>; }
-const styles = StyleSheet.create({ card: { borderRadius: geometry.cardRadius, borderWidth: 1, padding: geometry.screenPadding, overflow: 'hidden', gap: geometry.gap }, button: { minHeight: geometry.controlMinHeight, borderRadius: geometry.buttonRadius, paddingHorizontal: 18, paddingVertical: 13, alignItems: 'center', justifyContent: 'center' } });
+const styles = StyleSheet.create({ card: { borderRadius: geometry.cardRadius, borderWidth: 1, padding: geometry.cardPadding, overflow: 'hidden', gap: geometry.cardGap, ...squircle }, button: { minHeight: geometry.controlMinHeight, borderRadius: geometry.buttonRadius, paddingHorizontal: geometry.xl, paddingVertical: 12, alignItems: 'center', justifyContent: 'center', ...squircle } });

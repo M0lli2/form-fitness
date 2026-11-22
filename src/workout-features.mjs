@@ -350,3 +350,20 @@ export function normalizeFavorites(value) {
 export function todayKey(reference = new Date()) {
     return localDateInput(reference);
 }
+
+/** 추천 문구를 화면 폭에 맞는 두 조각으로 나눕니다.
+ *  긴 한 문장을 그대로 두면 320pt 폭에서 `첫 기록입 / 니다.`처럼 단어 중간이 잘리고,
+ *  목적·반복·세트·휴식이 한 줄에 뭉쳐 읽히지 않습니다.
+ *  배지에는 목적과 강도(예: `근비대 75% 1RM`), 아래 줄에는 처방(반복·세트·휴식)과 근거만 남깁니다. */
+export function recommendationLines(rec) {
+    if (!rec) return {badge: '', detail: ''};
+    const badge = [rec.label, rec.percentLabel].filter(Boolean).join(' ');
+    const parts = [];
+    if (rec.repsLabel) parts.push(`${rec.repsLabel} × ${rec.sets}세트`);
+    else if (rec.sets) parts.push(`${rec.sets}세트`);
+    if (rec.rest) parts.push(`휴식 ${rec.rest}초`);
+    if (rec.source === 'history' && rec.oneRm) parts.push(`이전 추정 1RM ${rec.oneRm}kg 기준`);
+    else if (rec.source === 'body') parts.push('체성분 기반 초기 추정');
+    else parts.push('첫 기록');
+    return {badge, detail: parts.join(' · ')};
+}
