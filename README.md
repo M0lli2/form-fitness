@@ -2,7 +2,42 @@
 
 iPhone·iPad와 Android에서 운동을 기록하는 네이티브 앱입니다. 루틴·세트 기록, 3D 운동 자세, 인바디, Apple 건강·Health Connect, Apple Watch·Wear OS 동반 앱을 제공합니다.
 
-**현재 버전은 Form 0.3.6 네이티브 테스트 빌드입니다.** Android 휴대폰과 Wear OS는 테스트 APK, iPhone·iPad와 Apple Watch는 서명이 필요한 IPA로 제공됩니다. 저장소가 공개되어 있어 GitHub 로그인 없이 내려받을 수 있고, 기기에서 건강 연동과 워치 페어링을 검증하는 절차는 설치 문서에 있습니다. [v0.3.6 다운로드](https://github.com/M0lli2/form-fitness/releases/tag/v0.3.6) · [설치 및 실기기 검증](docs/INSTALL.md)
+**현재 버전은 Form 0.3.7 네이티브 테스트 빌드입니다.** Android 휴대폰과 Wear OS는 테스트 APK, iPhone·iPad와 Apple Watch는 서명이 필요한 IPA로 제공됩니다. 저장소가 공개되어 있어 GitHub 로그인 없이 내려받을 수 있고, 기기에서 건강 연동과 워치 페어링을 검증하는 절차는 설치 문서에 있습니다. [v0.3.7 다운로드](https://github.com/M0lli2/form-fitness/releases/tag/v0.3.7) · [설치 및 실기기 검증](docs/INSTALL.md)
+
+## 0.3.7 변경사항
+
+Apple Human Interface Guidelines의 곡률·비율 원칙을 화면 전체에 강제 적용한 폴리싱 릴리스입니다.
+
+- **곡률을 6단 사다리로 고정**했습니다. `pill 999 · sheet 32 · nav 30 · card 24 · inner 16 · small 12` 외의 반경은 화면에서 쓰지 않습니다. iOS는 `borderCurve: 'continuous'`(squircle)로 그려 모서리가 애플 네이티브 곡률을 따릅니다(Android는 같은 반경의 원형 곡률).
+- **동심원 곡률**을 식으로 맞췄습니다. `concentric(outer, inset) = max(8, outer − inset)` — 하단 탭 바 30에서 여백 6을 뺀 선택 캡슐이 정확히 24, 세그먼트 트랙 16에서 여백 4를 뺀 활성 칸이 12입니다.
+- **4pt 그리드**: 화면 20 · 섹션 20 · 카드 안 12/16, 높이는 36(필·아이콘)·44(보조)·48(입력)·52(기본 버튼)만 씁니다.
+- **도구 줄의 3+2 줄바꿈 제거**: 운동 카드 툴바는 `위로 아래로 대체 원판`(4칸 등분) + `슈퍼세트 지난 기록`(2칸 등분) 두 줄로, 집중 운동은 같은 도구를 4칸 + 1칸으로 나눠 어느 폭에서도 줄마다 같은 폭이 유지됩니다.
+- **집중 운동 종목명이 잘리지 않습니다**: 경과 시간·순번·종목명·부위를 스크롤 밖 고정 머리말로 옮겨, 컨트롤 패널을 펼친 320×640에서도 이름이 패널에 가리지 않습니다. 세션 중에는 로고 줄을 숨겨 세로 공간을 확보했습니다.
+- **추천 문구**는 긴 한 문장 대신 `근비대 75% 1RM` 배지와 `8~12회 × 3세트 · 휴식 90초 · 첫 기록` 한 줄로 나눠, 단어 중간에서 끊기지 않습니다.
+- **세트 하단 3필**(`일반 ↻`·`세트 삭제`·RPE)은 카드 폭을 정확히 3등분한 칸에 들어갑니다.
+- **기록 탭 중복 제거**: 종목 성장 그래프 머리말의 종목명을 없애고, 그 자리에 그래프가 그리는 세션 수를 표시합니다.
+- **텍스트 전수 정리**: 화면 글자를 11·13·15·17·18·22·26·30·36 단계로만 쓰고, 제목·라벨·배지는 마침표 없이, 설명 문장은 모두 `다.`로 끝냅니다. 단위는 `0 kg`·`12 %`(한 칸)와 `3회`·`3세트`(붙임)로 나눴습니다.
+- 새로운 네이티브 의존성은 추가하지 않았습니다.
+
+### 0.3.7 변경 화면
+
+0.3.7 릴리스 빌드를 실제로 실행한 캡처입니다. 홈은 iOS 시뮬레이터, 나머지는 320×640 Android 에뮬레이터의 자동 여정이 찍었습니다.
+
+| 홈 · squircle 히어로와 균등 요일 줄 (iOS) | 집중 운동 · 고정 머리말과 4줄 컨트롤 |
+|---|---|
+| <img src="docs/screenshots/home-037.png" width="235" alt="홈 화면: 연속 곡률 히어로 카드, 흰 루틴으로 준비하기 버튼, 이번 주 운동 카드의 주간·일간 전환과 주간 목표 막대, 카드 폭에 맞춘 하단 탭 바"> | <img src="docs/screenshots/focused-controls-037.png" width="235" alt="집중 운동: 스크롤 밖에 고정된 종목명과 부위, 휴식·프리셋·접기·세트 완료·세트 추가·전체 운동 목록 네 줄 컨트롤"> |
+
+| 루틴 준비 · 4칸·2칸 도구 줄 | 집중 운동 · 휴식 타이머 |
+|---|---|
+| <img src="docs/screenshots/preparation-037.png" width="235" alt="준비 화면: 위로·아래로·대체·원판 4칸 줄과 슈퍼세트 2칸 줄, 목적 배지와 처방 한 줄로 나뉜 추천 카드, 카드 폭을 3등분한 일반·세트 삭제·RPE 필"> | <img src="docs/screenshots/rest-timer-037.png" width="235" alt="세트를 마친 뒤 01:30 휴식 타이머와 −15초·+15초, 건너뛰기·휴식 프리셋·접기 필이 놓인 집중 운동"> |
+
+| 집중 운동 · 컨트롤 접힘 | 운동도감 · 반경 16 검색과 세그먼트 |
+|---|---|
+| <img src="docs/screenshots/focused-compact-037.png" width="235" alt="컨트롤을 접어 종목명과 추천 카드가 보이고, 하단에 컨트롤 열기와 세트 완료만 남은 화면"> | <img src="docs/screenshots/library-037.png" width="235" alt="운동도감: 반경 16 검색창, 모든 운동·최근 한 운동·즐겨찾기 3분할 세그먼트, 보조근 포함 알약 토글, 전체 폭 근육 모형으로 찾기 바"> |
+
+| 운동 기록 · 중복 없는 성장 카드 머리말 |  |
+|---|---|
+| <img src="docs/screenshots/progress-037.png" width="235" alt="운동 기록: 최근 운동 요약 카드, 전체 운동·최고 추정 1RM 타일, 오른쪽에 세션 수를 표시하는 종목 성장 그래프 머리말"> | |
 
 ## 0.3.6 변경사항
 
@@ -134,6 +169,7 @@ iPhone·iPad와 Android에서 운동을 기록하는 네이티브 앱입니다. 
 
 | 버전 | 배포·변경 내용 |
 |---|---|
+| **0.3.7** | Apple 수준 곡률·비율 폴리싱 릴리스입니다. 6단 반경 사다리와 squircle(연속 곡률), 동심원 곡률 식, 4pt 그리드, 4칸/2칸 도구 줄, 집중 운동 고정 머리말, 배지·한 줄로 나눈 추천 문구, 3등분 세트 필, 기록 카드 중복 제거, 텍스트·단위·마침표 통일을 반영했습니다. [릴리스](https://github.com/M0lli2/form-fitness/releases/tag/v0.3.7) |
 | **0.3.6** | UI/UX 밸런스·통일성 개선 릴리스입니다. 모노크롬 탭 아이콘, 디자인 시스템 단일화(색·타이포·반경·간격), 상단 액션 양분 배치, 운동 카드 필 툴바, 세트 표 열 정렬, 집중 운동 휴식 2단·프리셋 필, 도감 3분할 세그먼트, 기록 지표 타일과 주간 목표 결합을 반영했습니다. [릴리스](https://github.com/M0lli2/form-fitness/releases/tag/v0.3.6) |
 | **0.3.5** | 운동 중 순서 변경·대체 운동·슈퍼세트, 세트별 직전 기록, 종목 성장 그래프와 PR 배지, 선택형 RPE, 원판 계산기, 기본 118종, 집중 운동 경량 컨트롤·빠른 조절·세트 목록 터치, 도감 최근/즐겨찾기/기구 필터, 체성분 꺾은선, 직관적 탭 아이콘과 운동 완료 요약을 반영했습니다. [릴리스](https://github.com/M0lli2/form-fitness/releases/tag/v0.3.5) |
 | 0.3.4 | 루틴·추천 구성 진입을 `준비 중 · 0:00`으로 통일하고 세트 값 자동 반영을 2세트 이후까지 확장했습니다. 집중 운동 하단 컨트롤 접기/펼치기, 루틴 추천 포함 ON/OFF와 기본 루틴 수정·삭제를 추가했습니다. [릴리스](https://github.com/M0lli2/form-fitness/releases/tag/v0.3.4) |
@@ -197,12 +233,12 @@ iPhone·iPad와 Android에서 운동을 기록하는 네이티브 앱입니다. 
 
 | 환경 | 파일 및 설치 방법 |
 |---|---|
-| Android 휴대폰 | [Form-0.3.6-Android.apk](https://github.com/M0lli2/form-fitness/releases/download/v0.3.6/Form-0.3.6-Android.apk). 기존 Form 테스트 APK와 같은 인증서로 업데이트할 수 있습니다. |
-| Wear OS · Galaxy Watch4 이후 | [Form-0.3.6-Wear-OS.apk](https://github.com/M0lli2/form-fitness/releases/download/v0.3.6/Form-0.3.6-Wear-OS.apk). 휴대폰 APK와 같은 테스트 인증서를 사용합니다. |
-| iPhone · iPad | [Form-0.3.6-iOS-unsigned.ipa](https://github.com/M0lli2/form-fitness/releases/download/v0.3.6/Form-0.3.6-iOS-unsigned.ipa). 설치 전에 Apple 서명과 프로비저닝이 필요합니다. |
-| iPhone + Apple Watch | [Form-0.3.6-iOS-unsigned-watch.ipa](https://github.com/M0lli2/form-fitness/releases/download/v0.3.6/Form-0.3.6-iOS-unsigned-watch.ipa). 휴대폰·워치 앱 각각에 올바른 서명과 권한 구성이 필요합니다. |
+| Android 휴대폰 | [Form-0.3.7-Android.apk](https://github.com/M0lli2/form-fitness/releases/download/v0.3.7/Form-0.3.7-Android.apk). 기존 Form 테스트 APK와 같은 인증서로 업데이트할 수 있습니다. |
+| Wear OS · Galaxy Watch4 이후 | [Form-0.3.7-Wear-OS.apk](https://github.com/M0lli2/form-fitness/releases/download/v0.3.7/Form-0.3.7-Wear-OS.apk). 휴대폰 APK와 같은 테스트 인증서를 사용합니다. |
+| iPhone · iPad | [Form-0.3.7-iOS-unsigned.ipa](https://github.com/M0lli2/form-fitness/releases/download/v0.3.7/Form-0.3.7-iOS-unsigned.ipa). 설치 전에 Apple 서명과 프로비저닝이 필요합니다. |
+| iPhone + Apple Watch | [Form-0.3.7-iOS-unsigned-watch.ipa](https://github.com/M0lli2/form-fitness/releases/download/v0.3.7/Form-0.3.7-iOS-unsigned-watch.ipa). 휴대폰·워치 앱 각각에 올바른 서명과 권한 구성이 필요합니다. |
 
-[SHA-256 체크섬](https://github.com/M0lli2/form-fitness/releases/download/v0.3.6/Form-0.3.6-SHA256SUMS.txt) · [설치 순서 및 TestFlight 준비](docs/INSTALL.md)
+[SHA-256 체크섬](https://github.com/M0lli2/form-fitness/releases/download/v0.3.7/Form-0.3.7-SHA256SUMS.txt) · [설치 순서 및 TestFlight 준비](docs/INSTALL.md)
 
 네 파일 모두 공개 저장소의 릴리스에 올라 있어 GitHub 계정 없이 내려받을 수 있습니다. iPhone·iPad와 Apple Watch 파일은 미서명이므로 설치하려면 Apple 서명과 프로비저닝이 필요합니다.
 
@@ -358,6 +394,7 @@ v0.3.6에서 도메인 테스트 129개(순서·슈퍼세트·대체·RPE·PR·�
 
 ## 이전 구현 기록
 
+- [11월 22일 0.3.7 곡률·비율 폴리싱](docs/PROGRESS-2026-11-22-v037.md)
 - [11월 22일 0.3.6 UI/UX 밸런스 작업](docs/PROGRESS-2026-11-22-v036.md)
 - [11월 22일 0.3.5 작업](docs/PROGRESS-2026-11-22-v035.md)
 - [11월 22일 0.3.4 작업](docs/PROGRESS-2026-11-22.md)

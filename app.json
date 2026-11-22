@@ -2,7 +2,7 @@
   "expo": {
     "name": "Form",
     "slug": "form-native",
-    "version": "0.3.6",
+    "version": "0.3.7",
     "scheme": "form",
     "orientation": "default",
     "userInterfaceStyle": "automatic",

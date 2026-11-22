@@ -196,8 +196,8 @@ export function FocusedWorkout(props:Props){
       {/* 순서·대체·원판은 4칸, 슈퍼세트는 아래 한 칸 — 3+2로 어긋나지 않게 나눕니다. */}
       <View style={styles.ops}>
       <ToolRow>
-        <Pressable accessibilityRole="button" accessibilityLabel="운동 순서 위로" onPress={()=>props.onMove(-1)} style={[styles.op,{borderColor:palette.line}]}><FormText variant="caption" numberOfLines={1}>위로</FormText></Pressable>
-        <Pressable accessibilityRole="button" accessibilityLabel="운동 순서 아래로" onPress={()=>props.onMove(1)} style={[styles.op,{borderColor:palette.line}]}><FormText variant="caption" numberOfLines={1}>아래로</FormText></Pressable>
+        <Pressable accessibilityRole="button" accessibilityLabel="운동 순서 위로" onPress={()=>props.onMove(-1)} style={[styles.op,{borderColor:palette.line}]}><FormText variant="caption" numberOfLines={1}>↑</FormText></Pressable>
+        <Pressable accessibilityRole="button" accessibilityLabel="운동 순서 아래로" onPress={()=>props.onMove(1)} style={[styles.op,{borderColor:palette.line}]}><FormText variant="caption" numberOfLines={1}>↓</FormText></Pressable>
         <Pressable accessibilityRole="button" accessibilityLabel="대체 운동" onPress={props.onSubstitute} style={[styles.op,{borderColor:palette.line}]}><FormText variant="caption" numberOfLines={1}>대체</FormText></Pressable>
         <Pressable accessibilityRole="button" accessibilityLabel="원판 계산기" onPress={()=>props.onOpenPlates(targetKg)} style={[styles.op,{borderColor:palette.line}]}><FormText variant="caption" numberOfLines={1}>원판</FormText></Pressable>
       </ToolRow>
