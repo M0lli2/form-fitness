@@ -101,6 +101,14 @@ def reveal_model(root):
     adb("shell", "input", "swipe", x, str(int(height*.78)), x, str(int(height*.37)), "460")
     time.sleep(.6)
 
+def find_switch(root, label):
+    for node in root.iter("node"):
+        if node.get("content-desc") == label and "Switch" in node.get("class", ""):
+            bounds = list(map(int, re.findall(r"\d+", node.get("bounds", ""))))
+            if len(bounds) == 4 and bounds[2] > bounds[0]:
+                return node
+    return None
+
 def selected(label, name, attribute="selected"):
     deadline = time.monotonic() + 45
     while time.monotonic() < deadline:
@@ -345,6 +353,27 @@ try:
     root = wait_for("최근 6주 운동 볼륨", "33-history-reload")
     root = seek(exercise, "34-persisted-workout")
     results.append("saved workout remains after process restart")
+    # The same editor renames a bundled routine and turns its recommended switch off without saving.
+    tap_exact("루틴", root)
+    root = wait_for("새 루틴", "35-routines")
+    root = tap_visible("기본에 충실한 전신 편집", "35-routine-edit")
+    root = wait_for("이 루틴 삭제", "36-routine-editor")
+    if find(root, "루틴 수정") is None:
+        raise AssertionError("Bundled routine editor is missing its save action")
+    switch = find_switch(root, "추천 루틴에 포함")
+    if switch is None:
+        raise AssertionError("Recommended switch is missing from the routine editor")
+    before = switch.get("checked")
+    x1, y1, x2, y2 = map(int, re.findall(r"\d+", switch.get("bounds", "")))
+    adb("shell", "input", "tap", str((x1+x2)//2), str((y1+y2)//2))
+    time.sleep(.8)
+    root = capture("36-routine-editor-toggled")
+    after = find_switch(root, "추천 루틴에 포함")
+    if after is None or after.get("checked") == before:
+        raise AssertionError("Recommended switch did not change in the routine editor")
+    results.append("a bundled routine can be renamed, excluded from recommendations and deleted in the same editor")
+    tap_exact("닫기", root)
+    root = wait_for("새 루틴", "37-routine-editor-closed")
 finally:
     (OUT / "journey-results.json").write_text(json.dumps(results, ensure_ascii=False, indent=2), encoding="utf-8")
     (OUT / "journey-logcat.txt").write_bytes(adb("logcat", "-d"))
