@@ -194,15 +194,17 @@ export function FocusedWorkout(props:Props){
         placeholder="자세, 컨디션, 다음 세트를 위한 메모" placeholderTextColor={palette.secondary} multiline
         style={[styles.memo,{color:palette.text,backgroundColor:palette.surface,borderColor:palette.line}]}/>
       {/* 순서·대체·원판은 4칸, 슈퍼세트는 아래 한 칸 — 3+2로 어긋나지 않게 나눕니다. */}
+      <View style={styles.ops}>
       <ToolRow>
-        <Pressable accessibilityRole="button" accessibilityLabel="운동 순서 위로" onPress={()=>props.onMove(-1)} style={[styles.op,{borderColor:palette.line}]}><FormText variant="caption" numberOfLines={1}>↑</FormText></Pressable>
-        <Pressable accessibilityRole="button" accessibilityLabel="운동 순서 아래로" onPress={()=>props.onMove(1)} style={[styles.op,{borderColor:palette.line}]}><FormText variant="caption" numberOfLines={1}>↓</FormText></Pressable>
+        <Pressable accessibilityRole="button" accessibilityLabel="운동 순서 위로" onPress={()=>props.onMove(-1)} style={[styles.op,{borderColor:palette.line}]}><FormText variant="caption" numberOfLines={1}>위로</FormText></Pressable>
+        <Pressable accessibilityRole="button" accessibilityLabel="운동 순서 아래로" onPress={()=>props.onMove(1)} style={[styles.op,{borderColor:palette.line}]}><FormText variant="caption" numberOfLines={1}>아래로</FormText></Pressable>
         <Pressable accessibilityRole="button" accessibilityLabel="대체 운동" onPress={props.onSubstitute} style={[styles.op,{borderColor:palette.line}]}><FormText variant="caption" numberOfLines={1}>대체</FormText></Pressable>
         <Pressable accessibilityRole="button" accessibilityLabel="원판 계산기" onPress={()=>props.onOpenPlates(targetKg)} style={[styles.op,{borderColor:palette.line}]}><FormText variant="caption" numberOfLines={1}>원판</FormText></Pressable>
       </ToolRow>
       <ToolRow>
         <Pressable accessibilityRole="button" accessibilityLabel={props.exercise.superset?'슈퍼세트 풀기':'슈퍼세트 묶기'} onPress={props.onToggleSuperset} style={[styles.op,{borderColor:palette.line}]}><FormText variant="caption" numberOfLines={1}>{props.exercise.superset?'슈퍼세트 풀기':'슈퍼세트 묶기'}</FormText></Pressable>
       </ToolRow>
+      </View>
       {/* 드문 설정은 스크롤 아래에 둡니다. 컨트롤 패널은 세트 완료에만 집중합니다. */}
       <View style={styles.header}>
         <Pressable accessibilityRole="button" accessibilityState={{expanded:detailsOpen}} accessibilityLabel={detailsOpen?'세부 설정 접기':'세부 설정 열기'}
@@ -282,7 +284,7 @@ export function FocusedWorkout(props:Props){
 }
 const styles=StyleSheet.create({
   root:{flex:1},
-  identity:{paddingHorizontal:geometry.screenPadding,gap:geometry.xs},
+  identity:{paddingHorizontal:geometry.screenPadding,paddingTop:geometry.sm,gap:geometry.xs},
   scroll:{flex:1},
   content:{padding:geometry.screenPadding,paddingTop:geometry.md,gap:geometry.lg},
   header:{flexDirection:'row',justifyContent:'space-between',alignItems:'center',gap:12},
@@ -308,7 +310,7 @@ const styles=StyleSheet.create({
   restInputWrap:{flexDirection:'row',alignItems:'center',gap:8,minHeight:36,paddingHorizontal:12,borderRadius:radius.pill,borderWidth:1,...squircle},
   restInput:{minWidth:44,minHeight:34,padding:0,fontSize:14,fontWeight:'600',textAlign:'center',fontVariant:['tabular-nums']},
   controls:{marginHorizontal:12,marginBottom:12,gap:8,padding:12},
-  half:{flex:1,minHeight:44,borderRadius:radius.inner,borderWidth:1,alignItems:'center',justifyContent:'center',...squircle},
+  half:{minHeight:44,borderRadius:radius.inner,borderWidth:1,alignItems:'center',justifyContent:'center',...squircle},
   detailToggle:{flexDirection:'row',justifyContent:'space-between',alignItems:'center',minHeight:44,paddingHorizontal:16,borderRadius:radius.inner,borderWidth:1,...squircle},
   details:{gap:8},
   compact:{marginHorizontal:12,marginBottom:12,paddingHorizontal:12,paddingVertical:12,flexDirection:'row',alignItems:'center',justifyContent:'flex-end',gap:8},
@@ -319,5 +321,6 @@ const styles=StyleSheet.create({
   rpeChip:{minWidth:40,minHeight:36,alignItems:'center',justifyContent:'center',borderRadius:radius.pill,borderWidth:1,...squircle},
   rpeInput:{width:80,minHeight:36,borderRadius:radius.pill,paddingHorizontal:12,fontSize:13,textAlign:'center',...squircle},
   memo:{minHeight:66,borderWidth:1,borderRadius:radius.inner,padding:12,fontSize:14,textAlignVertical:'top',...squircle},
+  ops:{gap:geometry.tightGap},
   op:{minHeight:36,paddingHorizontal:12,borderRadius:radius.pill,borderWidth:1,alignItems:'center',justifyContent:'center',...squircle},
 });
