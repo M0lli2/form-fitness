@@ -149,6 +149,10 @@ test('검색어와 근육 필터는 함께 적용된다', () => {
   assert.ok(result.includes('ohp') && result.includes('machine-shoulder'));
   assert.ok(result.includes('bench')); // 전면 삼각근은 벤치 프레스의 보조근입니다.
   assert.ok(!names(filterExercises(catalog, {query:'프레스', groups:['shoulders'], includeSecondary:false})).includes('bench'));
-  assert.deepEqual(names(filterExercises(catalog, {query: '벤치', muscles: ['pec']})), ['bench', 'db-bench']);
+  // 도감이 늘어나도 '벤치' 검색 + 대흉근 필터의 뜻은 그대로입니다: 이름에 벤치가 있고 가슴 운동인 항목만.
+  const benches = names(filterExercises(catalog, {query: '벤치', muscles: ['pec']}));
+  assert.ok(benches.includes('bench') && benches.includes('db-bench'));
+  assert.ok(benches.every(id => byId(id).name.includes('벤치') && byId(id).muscle === '가슴'));
+  assert.ok(!benches.includes('close-grip-bench')); // 팔 운동은 대흉근 필터에서 빠집니다.
   assert.deepEqual(names(filterExercises(catalog, {query: ''})), catalog.map(e => e.id));
 });

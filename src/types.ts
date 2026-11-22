@@ -39,6 +39,8 @@ export type Session = {
         muscle: string;
         sets: SetEntry[];
         note: string;
+        /** 슈퍼세트 묶음 이름(A, B, …). 없으면 단독 종목입니다. */
+        superset?: string;
     }[];
     sync?: string;
     external?: boolean;
@@ -75,6 +77,8 @@ export type State = {
     routines: Routine[];
     active: Session | null;
     seen: string[];
+    /** 운동도감에서 별표로 저장한 종목 id. 백업에 없으면 빈 목록으로 읽습니다. */
+    favorites?: string[];
     settings: {
         goal: number;
         rest: number;

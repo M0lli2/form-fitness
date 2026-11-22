@@ -6,7 +6,7 @@ import type { State } from './types';
 import data from './exercises.json';
 let db: SQLite.SQLiteDatabase;
 let writes = Promise.resolve();
-export const freshState = (): State => ({ schema: 1, customExercises: [], history: [], body: [], routines: data.routines, active: null, seen: [], settings: { goal: 3, rest: 90, health: false, contrast: false, units: 'kg', theme: 'system', glass: false } });
+export const freshState = (): State => ({ schema: 1, customExercises: [], history: [], body: [], routines: data.routines, active: null, seen: [], favorites: [], settings: { goal: 3, rest: 90, health: false, contrast: false, units: 'kg', theme: 'system', glass: false } });
 export async function loadState(): Promise<State> {
     let key = await SecureStore.getItemAsync('form.database.key');
     if (!key) {
@@ -25,7 +25,7 @@ export async function loadState(): Promise<State> {
     const saved = JSON.parse(row.payload);
     if (saved.schema !== 1)
         throw Error('앱 업데이트가 필요한 데이터 형식입니다.');
-    return { ...freshState(), ...saved, settings: { ...freshState().settings, ...saved.settings } };
+    return { ...freshState(), ...saved, favorites: Array.isArray(saved.favorites) ? saved.favorites.filter((id: unknown) => typeof id === 'string') : [], settings: { ...freshState().settings, ...saved.settings } };
 }
 /** 상태 반영과 워치 ACK 전에 이 Promise가 성공해야 합니다. */
 export function persist(state: State): Promise<void> { const payload = JSON.stringify(state); const next = writes.catch(() => { }).then(async () => { await db.runAsync('INSERT INTO state(id,payload) VALUES(1,?) ON CONFLICT(id) DO UPDATE SET payload=excluded.payload', payload); }); writes = next; return next; }

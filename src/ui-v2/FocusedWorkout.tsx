@@ -2,13 +2,17 @@ import React, {useEffect,useRef,useState} from 'react';
 import {Alert,Pressable,ScrollView,StyleSheet,TextInput,useWindowDimensions,View} from 'react-native';
 import {Action,FormText,Surface} from './Primitives';
 import {useFormTheme} from './Theme';
-import {parseSetInput,remainingSeconds,displayMass,parseMass} from './policy.mjs';
+import {displayMass,parseMass,parseSetInput,remainingSeconds} from './policy.mjs';
+import {parseRpe} from '../core.mjs';
+import {massStep} from '../workout-features.mjs';
 
-export type FocusedSet={id:string;weight:number;reps:number;done:boolean};
+export type FocusedSet={id:string;weight:number;reps:number;done:boolean;kind?:string;rpe?:string};
 export type FocusedExercise={
   id:string;name:string;muscle:string;equipment:string;position:number;total:number;
-  previous:string|null;sets:FocusedSet[];
+  previous:string|null;sets:FocusedSet[];note?:string;superset?:string|null;
+  previousSets?:{weight:number;reps:number}[]|null;
 };
+type Value={weight:number;reps:number};
 type Props={
   exercise:FocusedExercise;
   units:'kg'|'lb';
@@ -22,7 +26,7 @@ type Props={
   goal:'strength'|'hypertrophy'|'endurance';
   onGoalChange:(goal:'strength'|'hypertrophy'|'endurance')=>void;
   guide:React.ReactNode;
-  onComplete:(setId:string,values:{weight:number;reps:number})=>Promise<void>;
+  onComplete:(setId:string,values:Value,rpe:string)=>Promise<void>;
   onSkipRest:()=>void;
   onRestChange:(value:number)=>void;
   onRestNudge:(delta:number)=>void;
@@ -31,39 +35,74 @@ type Props={
   onOpenList:()=>void;
   onOpenGuide:()=>void;
   onNext:()=>void;
+  onSetKind:(setId:string)=>void;
+  onDeleteSet:(setId:string)=>void;
+  onNoteChange:(note:string)=>void;
+  onMove:(direction:-1|1)=>void;
+  onSubstitute:()=>void;
+  onToggleSuperset:()=>void;
+  onOpenPlates:(weightKg:number)=>void;
 };
 const time=(s:number)=>String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0');
 const GOALS=[['strength','스트렝스'],['hypertrophy','근비대'],['endurance','근지구력']] as const;
+const KIND_LABEL:Record<string,string>={normal:'일반',warmup:'워밍업',drop:'드롭'};
 
 /**
- * Planfit 공개 화면에서 확인한 '한 운동에 집중' 구조를 채택한다.
- * 상태 저장·워치 ACK는 호출자가 담당하며, 저장 성공 전에는 완료로 표시하지 않는다.
- * guide는 라이선스를 확보한 자체 콘텐츠를 주입한다. 경쟁사 영상을 번들하지 않는다.
+ * '한 운동에 집중' 화면. 상시 노출은 세트 완료와 휴식 타이머로 좁히고,
+ * 훈련 목적·휴식 상세는 접이식 세부 설정으로 옮겼습니다(0.3.5).
+ * 한 손으로 중량·횟수를 조절하고, 아래 세트를 눌러 완료 세트를 고치거나 다음 세트로 옮겨 갑니다.
  */
 export function FocusedWorkout(props:Props){
   const {palette}=useFormTheme();
   const {fontScale}=useWindowDimensions();
-  const [weight,setWeight]=useState(''),[reps,setReps]=useState('');
+  const [weight,setWeight]=useState(''),[reps,setReps]=useState(''),[rpe,setRpe]=useState('');
   const [restText,setRestText]=useState(String(props.restSeconds));
-  useEffect(()=>{setRestText(String(props.restSeconds));},[props.restSeconds]);
-  // 하단 컨트롤 박스는 기본으로 펼치고, 사용자가 접어 화면 가림을 없앨 수 있습니다(IMG_9257).
   const [controlsOpen,setControlsOpen]=useState(true);
+  const [detailsOpen,setDetailsOpen]=useState(false);
   const [busy,setBusy]=useState(false);
+  const [selectedId,setSelectedId]=useState<string|null>(null);
+  const [memo,setMemo]=useState(props.exercise.note ?? '');
   const lock=useRef(false);
-  const current=props.exercise.sets.find(set=>!set.done);
+  const sets=props.exercise.sets;
+  const pending=sets.find(set=>!set.done) ?? null;
+  const selected=sets.find(set=>set.id===selectedId) ?? pending ?? sets[0] ?? null;
   const rest=props.restDeadline===null?0:remainingSeconds(props.restDeadline,props.now);
+  const hint=(set:FocusedSet)=>props.exercise.previousSets?.[sets.indexOf(set)] ?? null;
 
-  useEffect(()=>{setWeight(current ? String(displayMass(current.weight,props.units)) : '');setReps(current ? String(current.reps) : '');},[current?.id,current?.weight,current?.reps,props.units]);
+  useEffect(()=>{setRestText(String(props.restSeconds));},[props.restSeconds]);
+  useEffect(()=>{setMemo(props.exercise.note ?? '');},[props.exercise.id]);
+  // 완료한 세트는 다음 미완료 세트로 자동 이동합니다. 사용자가 완료 세트를 직접 누를 때는 그대로 둡니다.
+  const doneKey=sets.map(set=>set.id+(set.done?'1':'0')).join(',');
+  useEffect(()=>{
+    if(selectedId && sets.find(set=>set.id===selectedId)?.done && pending) setSelectedId(pending.id);
+  },[doneKey,props.exercise.id]);
+  useEffect(()=>{
+    if(!selected)return;
+    setWeight(String(displayMass(selected.weight,props.units)));
+    setReps(String(selected.reps));
+    setRpe(String(selected.rpe ?? ''));
+  },[selected?.id,selected?.weight,selected?.reps,selected?.rpe,props.units]);
 
+  function nudgeWeight(delta:number){
+    const base=Number(String(weight).trim().replace(',','.'))||0;
+    const next=Math.max(0,Math.round((base+delta)*100)/100);
+    setWeight(String(next));
+  }
+  function nudgeReps(delta:number){
+    const base=Number(String(reps).trim())||0;
+    setReps(String(Math.max(1,Math.round(base+delta))));
+  }
   async function complete(){
-    if(!current || props.paused || lock.current)return;
-    try {
+    if(!selected || props.paused || lock.current)return;
+    try{
       const values=parseSetInput(String(parseMass(weight,props.units)),reps);
+      const validRpe=parseRpe(rpe);
       lock.current=true;setBusy(true);
-      await props.onComplete(current.id,values);
+      await props.onComplete(selected.id,values,validRpe);
     }catch(error){Alert.alert('세트를 저장하지 못했습니다',error instanceof Error?error.message:String(error));}
     finally{lock.current=false;setBusy(false);}
   }
+  const targetKg=Number(String(parseMass(weight || '0',props.units).toFixed(2))) || 0;
 
   return <View style={[styles.root,{backgroundColor:palette.canvas}]}>
     <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.content}>
@@ -72,19 +111,78 @@ export function FocusedWorkout(props:Props){
         <FormText variant="caption" secondary>{props.exercise.position} / {props.exercise.total} 운동</FormText>
       </View>
       <FormText variant="title">{props.exercise.name}</FormText>
-      <FormText variant="caption" secondary>{props.exercise.muscle} · {props.exercise.equipment}</FormText>
+      <View style={styles.header}>
+        <FormText variant="caption" secondary>{props.exercise.muscle} · {props.exercise.equipment}</FormText>
+        {props.exercise.superset ? <View style={[styles.badge,{backgroundColor:palette.raised}]}>
+          <FormText variant="caption" accessibilityLabel={'슈퍼세트 '+props.exercise.superset}>슈퍼세트 {props.exercise.superset}</FormText></View> : null}
+      </View>
+      {props.exercise.superset ? <FormText variant="caption" secondary>같은 슈퍼세트 종목과 번갈아 진행합니다. 세트를 마치면 다음 종목으로 넘어갑니다.</FormText> : null}
       <Surface><View accessibilityLabel="운동 동작 안내">{props.guide}</View><Action secondary title="자세·호흡·주의사항" onPress={props.onOpenGuide}/></Surface>
       {props.recommendationText
         ? <View style={styles.header}><FormText variant="caption" secondary style={styles.flexText}>{props.recommendationText}</FormText><Pressable accessibilityRole="button" accessibilityLabel="추천 적용" onPress={props.onApplyRecommendation} style={styles.nudge}><FormText variant="caption">적용</FormText></Pressable></View>
         : <FormText variant="caption" secondary>{props.exercise.previous ? '지난 기록  '+props.exercise.previous : '첫 기록입니다. 편안한 중량부터 시작하세요.'}</FormText>}
-      <Surface>
-        <FormText variant="heading">{current ? String(props.exercise.sets.indexOf(current)+1)+'번째 세트' : '모든 세트 완료'}</FormText>
-        {current && <View style={[styles.inputs,fontScale>=1.5 && {flexDirection:'column'}]}>
-          <View style={styles.field}><FormText variant="caption" secondary>중량 · {props.units}</FormText><TextInput accessibilityLabel={'현재 세트 중량 '+props.units} keyboardType="decimal-pad" selectTextOnFocus value={weight} onChangeText={setWeight} editable={!busy} style={[styles.input,{color:palette.text,backgroundColor:palette.raised}]}/></View>
-          <View style={styles.field}><FormText variant="caption" secondary>반복 · 회</FormText><TextInput accessibilityLabel="현재 세트 반복 횟수" keyboardType="number-pad" selectTextOnFocus value={reps} onChangeText={setReps} editable={!busy} style={[styles.input,{color:palette.text,backgroundColor:palette.raised}]}/></View>
+      <Surface style={{gap:12}}>
+        <View style={styles.header}>
+          <FormText variant="heading">{selected ? String(sets.indexOf(selected)+1)+'번째 세트' : '모든 세트 완료'}</FormText>
+          {selected ? <Pressable accessibilityRole="button" accessibilityLabel={props.exercise.name+' '+(sets.indexOf(selected)+1)+'세트 종류'}
+            onPress={()=>props.onSetKind(selected.id)} style={styles.nudge}>
+            <FormText variant="caption">{KIND_LABEL[selected.kind ?? 'normal']} ↻</FormText></Pressable> : null}
+        </View>
+        {selected && <View style={[styles.inputs,fontScale>=1.5 && {flexDirection:'column'}]}>
+          <View style={styles.field}>
+            <FormText variant="caption" secondary>중량 · {props.units}</FormText>
+            <View style={styles.stepper}>
+              <Pressable accessibilityRole="button" accessibilityLabel={'중량 '+massStep(props.units)+' 줄이기'} onPress={()=>nudgeWeight(-massStep(props.units))} style={[styles.step,{backgroundColor:palette.raised}]}><FormText variant="heading">−</FormText></Pressable>
+              <TextInput accessibilityLabel={'현재 세트 중량 '+props.units} keyboardType="decimal-pad" selectTextOnFocus value={weight} onChangeText={setWeight} editable={!busy} style={[styles.input,{color:palette.text,backgroundColor:palette.raised}]}/>
+              <Pressable accessibilityRole="button" accessibilityLabel={'중량 '+massStep(props.units)+' 늘리기'} onPress={()=>nudgeWeight(massStep(props.units))} style={[styles.step,{backgroundColor:palette.raised}]}><FormText variant="heading">+</FormText></Pressable>
+            </View>
+            {hint(selected) ? <FormText variant="caption" secondary style={styles.center}>이전 {displayMass(hint(selected)!.weight,props.units)} {props.units} × {hint(selected)!.reps}</FormText> : null}
+          </View>
+          <View style={styles.field}>
+            <FormText variant="caption" secondary>반복 · 회</FormText>
+            <View style={styles.stepper}>
+              <Pressable accessibilityRole="button" accessibilityLabel="횟수 1 줄이기" onPress={()=>nudgeReps(-1)} style={[styles.step,{backgroundColor:palette.raised}]}><FormText variant="heading">−</FormText></Pressable>
+              <TextInput accessibilityLabel="현재 세트 반복 횟수" keyboardType="number-pad" selectTextOnFocus value={reps} onChangeText={setReps} editable={!busy} style={[styles.input,{color:palette.text,backgroundColor:palette.raised}]}/>
+              <Pressable accessibilityRole="button" accessibilityLabel="횟수 1 늘리기" onPress={()=>nudgeReps(1)} style={[styles.step,{backgroundColor:palette.raised}]}><FormText variant="heading">+</FormText></Pressable>
+            </View>
+          </View>
         </View>}
-        {props.exercise.sets.map((set,index)=><View key={set.id} style={styles.history}><FormText variant="caption" secondary>{index+1}세트</FormText><FormText variant="label" style={{fontVariant:['tabular-nums']}}>{displayMass(set.weight,props.units)} {props.units} × {set.reps}</FormText><FormText variant="caption" accessibilityLabel={set.done?'완료':'미완료'}>{set.done?'완료':'대기'}</FormText></View>)}
+        {selected && <View style={styles.header}>
+          <FormText variant="caption" secondary>RPE (선택)</FormText>
+          <View style={styles.rpeRow}>
+            {['7','8','9','10'].map(value=><Pressable key={value} accessibilityRole="button" accessibilityState={{selected:rpe===value}} accessibilityLabel={'RPE '+value}
+              onPress={()=>setRpe(current=>current===value?'':value)} style={[styles.rpeChip,{backgroundColor:rpe===value?palette.raised:'transparent'}]}>
+              <FormText variant="caption" secondary={rpe!==value}>{value}</FormText></Pressable>)}
+            <TextInput accessibilityLabel={`${props.exercise.name} ${sets.indexOf(selected)+1}세트 RPE`} keyboardType="decimal-pad" value={rpe} onChangeText={setRpe} placeholder="예: 8.5"
+              placeholderTextColor={palette.secondary} style={[styles.rpeInput,{color:palette.text,backgroundColor:palette.raised}]}/>
+          </View>
+        </View>}
+        {sets.map((set,index)=><Pressable key={set.id} accessibilityRole="button" accessibilityState={{selected:selected?.id===set.id}}
+          accessibilityLabel={`${props.exercise.name} ${index+1}세트 ${set.done?'완료':'대기'} 기록`} onPress={()=>setSelectedId(set.id)}
+          style={[styles.history,{backgroundColor:selected?.id===set.id?palette.raised:'transparent'}]}>
+          <FormText variant="caption" secondary>{index+1}세트{set.kind && set.kind!=='normal' ? ' · '+KIND_LABEL[set.kind] : ''}</FormText>
+          <View style={styles.flexText}>
+            <FormText variant="label" style={{fontVariant:['tabular-nums']}}>{displayMass(set.weight,props.units)} {props.units} × {set.reps}{set.rpe ? ' · RPE '+set.rpe : ''}</FormText>
+            {hint(set) ? <FormText variant="caption" secondary>이전 {displayMass(hint(set)!.weight,props.units)} {props.units} × {hint(set)!.reps}</FormText> : null}
+          </View>
+          <FormText variant="caption" accessibilityLabel={set.done?'완료':'미완료'}>{set.done?'완료':'대기'}</FormText>
+          <Pressable accessibilityRole="button" accessibilityLabel={`${props.exercise.name} ${index+1}세트 삭제`} onPress={()=>props.onDeleteSet(set.id)} style={styles.deleteSet}>
+            <FormText variant="caption" secondary>×</FormText></Pressable>
+        </Pressable>)}
       </Surface>
+      <View style={styles.header}>
+        <FormText variant="caption" secondary>운동 메모</FormText>
+      </View>
+      <TextInput accessibilityLabel={`${props.exercise.name} 운동 메모`} value={memo} onChangeText={value=>{setMemo(value);props.onNoteChange(value);}}
+        placeholder="자세, 컨디션, 다음 세트를 위한 메모" placeholderTextColor={palette.secondary} multiline
+        style={[styles.memo,{color:palette.text,backgroundColor:palette.surface,borderColor:palette.line}]}/>
+      <View style={styles.ops}>
+        <Pressable accessibilityRole="button" accessibilityLabel="운동 순서 위로" onPress={()=>props.onMove(-1)} style={[styles.op,{borderColor:palette.line}]}><FormText variant="caption">↑ 순서 위</FormText></Pressable>
+        <Pressable accessibilityRole="button" accessibilityLabel="운동 순서 아래로" onPress={()=>props.onMove(1)} style={[styles.op,{borderColor:palette.line}]}><FormText variant="caption">↓ 순서 아래</FormText></Pressable>
+        <Pressable accessibilityRole="button" accessibilityLabel="대체 운동" onPress={props.onSubstitute} style={[styles.op,{borderColor:palette.line}]}><FormText variant="caption">대체 운동</FormText></Pressable>
+        <Pressable accessibilityRole="button" accessibilityLabel={props.exercise.superset?'슈퍼세트 풀기':'슈퍼세트 묶기'} onPress={props.onToggleSuperset} style={[styles.op,{borderColor:palette.line}]}><FormText variant="caption">{props.exercise.superset?'슈퍼세트 풀기':'슈퍼세트 묶기'}</FormText></Pressable>
+        <Pressable accessibilityRole="button" accessibilityLabel="원판 계산기" onPress={()=>props.onOpenPlates(targetKg)} style={[styles.op,{borderColor:palette.line}]}><FormText variant="caption">원판 계산</FormText></Pressable>
+      </View>
     </ScrollView>
     {controlsOpen ? <Surface role="control" style={styles.controls}>
         <View style={styles.header}>
@@ -93,54 +191,74 @@ export function FocusedWorkout(props:Props){
             onPress={()=>setControlsOpen(false)} style={styles.nudge}>
             <FormText variant="caption">컨트롤 숨기기 ▾</FormText></Pressable>
         </View>
-      {rest>0 && <View style={styles.header}><FormText variant="label">휴식 {time(rest)}</FormText><Action secondary title="건너뛰기" onPress={props.onSkipRest}/></View>}
       <View style={styles.header}>
-        {GOALS.map(goal => <Pressable key={goal[0]} accessibilityRole="button" accessibilityState={{selected:props.goal===goal[0]}}
-          accessibilityLabel={'훈련 목적 '+goal[1]} onPress={()=>props.onGoalChange(goal[0])}
-          style={[styles.goal,{backgroundColor:props.goal===goal[0]?palette.raised:'transparent'}]}>
-          <FormText variant="caption" secondary={props.goal!==goal[0]}>{goal[1]}</FormText></Pressable>)}
-      </View>
-      <View style={styles.header}>
-        <FormText variant="caption" secondary>휴식</FormText>
-        <TextInput accessibilityLabel="휴식 시간(초)" keyboardType="number-pad" selectTextOnFocus value={restText} onChangeText={setRestText}
-          onEndEditing={event=>{const text=event.nativeEvent.text.trim(); if(!text){setRestText(String(props.restSeconds)); return; } const value=Number(text.replace(',','.')); if(Number.isFinite(value))props.onRestChange(value); else setRestText(String(props.restSeconds));}}
-          style={[styles.restInput,{color:palette.text,backgroundColor:palette.raised}]}/>
-        <FormText variant="caption" secondary>초{props.suggestedRest && props.suggestedRest!==props.restSeconds ? ' · 추천 '+props.suggestedRest+'초' : ''}</FormText>
+        <FormText variant="label" style={{fontVariant:['tabular-nums']}}>{rest>0?'휴식 '+time(rest):'휴식 준비'}</FormText>
         <View style={styles.header}>
           <Pressable accessibilityRole="button" accessibilityLabel="휴식 15초 줄이기" onPress={()=>props.onRestNudge(-15)} style={styles.nudge}><FormText variant="caption">−15초</FormText></Pressable>
           <Pressable accessibilityRole="button" accessibilityLabel="휴식 15초 늘리기" onPress={()=>props.onRestNudge(15)} style={styles.nudge}><FormText variant="caption">+15초</FormText></Pressable>
-          {props.suggestedRest!==null && <Pressable accessibilityRole="button" accessibilityLabel="추천 휴식 적용" onPress={()=>props.onRestChange(props.suggestedRest as number)} style={styles.nudge}><FormText variant="caption">추천</FormText></Pressable>}
+          {rest>0 && <Pressable accessibilityRole="button" accessibilityLabel="건너뛰기" onPress={props.onSkipRest} style={styles.nudge}><FormText variant="caption">건너뛰기</FormText></Pressable>}
         </View>
       </View>
-      <Action title={busy?'저장 중…':current?'세트 완료':props.exercise.position===props.exercise.total?'운동 결과 확인':'다음 운동'} disabled={busy || props.paused} onPress={current?complete:props.onNext}/>
-      <Action secondary title="+ 세트 추가" onPress={props.onAddSet}/>
+      <Action title={busy?'저장 중…':pending?(selected?.done?'세트 저장':'세트 완료'):props.exercise.position===props.exercise.total?'운동 결과 확인':'다음 운동'} disabled={busy || props.paused} onPress={pending?complete:props.onNext}/>
+      <View style={styles.header}>
+        {selected && selected.done && <Action secondary title="다음 세트로" onPress={()=>pending && setSelectedId(pending.id)}/>}
+        <View style={styles.flexText}><Action secondary title="+ 세트 추가" onPress={props.onAddSet}/></View>
+      </View>
       <Action secondary title="전체 운동 목록" onPress={props.onOpenList}/>
+      <Pressable accessibilityRole="button" accessibilityState={{expanded:detailsOpen}} accessibilityLabel={detailsOpen?'세부 설정 접기':'세부 설정 열기'}
+        onPress={()=>setDetailsOpen(value=>!value)} style={styles.nudge}>
+        <FormText variant="caption">{detailsOpen?'세부 설정 접기 ▴':'세부 설정 열기 ▾'}</FormText></Pressable>
+      {detailsOpen && <>
+        <View style={styles.header}>
+          {GOALS.map(goal => <Pressable key={goal[0]} accessibilityRole="button" accessibilityState={{selected:props.goal===goal[0]}}
+            accessibilityLabel={'훈련 목적 '+goal[1]} onPress={()=>props.onGoalChange(goal[0])}
+            style={[styles.goal,{backgroundColor:props.goal===goal[0]?palette.raised:'transparent'}]}>
+            <FormText variant="caption" secondary={props.goal!==goal[0]}>{goal[1]}</FormText></Pressable>)}
+        </View>
+        <View style={styles.header}>
+          <FormText variant="caption" secondary>휴식</FormText>
+          <TextInput accessibilityLabel="휴식 시간(초)" keyboardType="number-pad" selectTextOnFocus value={restText} onChangeText={setRestText}
+            onEndEditing={event=>{const text=event.nativeEvent.text.trim(); if(!text){setRestText(String(props.restSeconds)); return; } const value=Number(text.replace(',','.')); if(Number.isFinite(value))props.onRestChange(value); else setRestText(String(props.restSeconds));}}
+            style={[styles.restInput,{color:palette.text,backgroundColor:palette.raised}]}/>
+          <FormText variant="caption" secondary>초{props.suggestedRest && props.suggestedRest!==props.restSeconds ? ' · 추천 '+props.suggestedRest+'초' : ''}</FormText>
+          {props.suggestedRest!==null && <Pressable accessibilityRole="button" accessibilityLabel="추천 휴식 적용" onPress={()=>props.onRestChange(props.suggestedRest as number)} style={styles.nudge}><FormText variant="caption">추천</FormText></Pressable>}
+        </View>
+      </>}
     </Surface> : <Surface role="control" style={styles.compact}>
         {rest>0 && <FormText variant="caption" style={{fontVariant:['tabular-nums']}}>휴식 {time(rest)}</FormText>}
         <Pressable accessibilityRole="button" accessibilityState={{expanded:false}} accessibilityLabel="컨트롤 열기"
           onPress={()=>setControlsOpen(true)} style={[styles.compactButton,{backgroundColor:palette.raised}]}>
           <FormText variant="caption">컨트롤 열기 ▴</FormText></Pressable>
-        <Pressable accessibilityRole="button" accessibilityLabel={current?'세트 완료':'다음 운동'} disabled={busy||props.paused}
-          onPress={current?complete:props.onNext}
+        <Pressable accessibilityRole="button" accessibilityLabel={pending?'세트 완료':'다음 운동'} disabled={busy||props.paused}
+          onPress={pending?complete:props.onNext}
           style={[styles.compactButton,styles.compactPrimary,{backgroundColor:palette.action,opacity:(busy||props.paused)?0.55:1}]}>
-          <FormText variant="caption" style={{color:palette.onAction}}>{busy?'저장 중…':current?'세트 완료':'다음 운동'}</FormText></Pressable>
+          <FormText variant="caption" style={{color:palette.onAction}}>{busy?'저장 중…':pending?'세트 완료':'다음 운동'}</FormText></Pressable>
       </Surface>}
   </View>;
 }
 const styles=StyleSheet.create({
-  root:{flex:1},content:{padding:20,gap:16},header:{flexDirection:'row',justifyContent:'space-between',alignItems:'center',gap:12},
+  root:{flex:1},content:{padding:20,gap:16},
+  header:{flexDirection:'row',justifyContent:'space-between',alignItems:'center',gap:12},
   inputs:{flexDirection:'row',gap:16},field:{flex:1,gap:8},
-  input:{minHeight:64,borderRadius:14,padding:14,fontSize:32,fontWeight:'600',fontVariant:['tabular-nums'],textAlign:'center'},
-  history:{flexDirection:'row',justifyContent:'space-between',alignItems:'center',gap:12,paddingVertical:8},
+  stepper:{flexDirection:'row',alignItems:'center',gap:6},
+  step:{width:44,minHeight:56,borderRadius:12,alignItems:'center',justifyContent:'center'},
+  input:{flex:1,minHeight:64,borderRadius:14,padding:10,fontSize:30,fontWeight:'600',fontVariant:['tabular-nums'],textAlign:'center'},
+  history:{flexDirection:'row',justifyContent:'space-between',alignItems:'center',gap:10,paddingVertical:8,paddingHorizontal:4,borderRadius:10},
+  deleteSet:{minWidth:36,minHeight:36,alignItems:'center',justifyContent:'center'},
   nudge:{minHeight:44,justifyContent:'center',paddingHorizontal:8},
   goal:{flex:1,minHeight:44,alignItems:'center',justifyContent:'center',borderRadius:12},
   flexText:{flex:1},
+  center:{textAlign:'center'},
   restInput:{width:76,minHeight:44,borderRadius:10,padding:8,fontSize:16,fontWeight:'600',textAlign:'center'},
   controls:{marginHorizontal:12,marginBottom:12,gap:10},
-  // 접힌 상태: 큰 박스 없이 토글과 세트 완료만 남겨 뒤쪽 안내를 가리지 않습니다.
   compact:{marginHorizontal:12,marginBottom:12,paddingHorizontal:12,paddingVertical:9,flexDirection:'row',alignItems:'center',justifyContent:'flex-end',gap:8},
   compactButton:{minHeight:44,minWidth:44,paddingHorizontal:14,borderRadius:12,alignItems:'center',justifyContent:'center'},
   compactPrimary:{paddingHorizontal:18},
+  badge:{paddingHorizontal:10,paddingVertical:4,borderRadius:9},
+  rpeRow:{flexDirection:'row',alignItems:'center',gap:4,flexWrap:'wrap',justifyContent:'flex-end',flex:1},
+  rpeChip:{minWidth:38,minHeight:38,alignItems:'center',justifyContent:'center',borderRadius:9},
+  rpeInput:{width:74,minHeight:38,borderRadius:9,padding:6,fontSize:14,textAlign:'center'},
+  memo:{minHeight:66,borderWidth:1,borderRadius:12,padding:10,fontSize:14,textAlignVertical:'top'},
+  ops:{flexDirection:'row',flexWrap:'wrap',gap:8},
+  op:{minHeight:40,paddingHorizontal:12,borderRadius:11,borderWidth:StyleSheet.hairlineWidth,alignItems:'center',justifyContent:'center'},
 });
-
-

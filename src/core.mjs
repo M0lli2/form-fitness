@@ -28,6 +28,16 @@ export function validateBody(input) { const date = new Date(input.date); if (!Nu
 } if (out.muscle && out.muscle > out.weight)
     throw Error('골격근량은 체중보다 클 수 없습니다.'); return out; }
 export function volume(session) { return session.exercises.reduce((sum, e) => sum + e.sets.filter(s => s.done && s.kind !== 'warmup').reduce((a, s) => a + (s.weight || 0) * (s.reps || 0), 0), 0); }
+/** RPE(운동 자각도)는 선택 항목입니다. 빈 값은 그대로 두고, 1~10 사이 소수 한 자리까지 받습니다.
+ * 예전 기록에는 rpe가 없거나 ''이므로 그대로 호환됩니다. */
+export function parseRpe(value) {
+    const text = String(value ?? '').trim().replace(',', '.');
+    if (!text) return '';
+    const rpe = Number(text);
+    if (!Number.isFinite(rpe) || rpe < 1 || rpe > 10)
+        throw Error('RPE는 1~10 사이로 입력하세요.');
+    return String(Math.round(rpe * 10) / 10);
+}
 export function estimated1RM(weight, reps) { return weight > 0 && reps > 0 && reps <= 12 ? weight * (1 + reps / 30) : null; }
 export function validateSession(session) { if (!session.exercises.some(e => e.sets.some(s => s.done)))
     throw Error('완료한 세트를 하나 이상 기록하세요.'); for (const e of session.exercises)
