@@ -215,8 +215,9 @@ test('an inbody link becomes one body entry with derived body fat and BMI', () =
 
 test('a measurement day is matched in the device calendar, not by UTC text', () => {
     const built = buildBodyFromPayload({measuredAt: '2026-11-28T08:10:00+09:00', weight: 78.2}).entry;
-    assert.equal(localDateInput(built.date), '2026-11-28');
-    const fromDay = buildBodyFromPayload({date: '2026-11-28', weight: 78.2}).entry;
+    const day = localDateInput(new Date('2026-11-28T08:10:00+09:00'));
+    assert.equal(localDateInput(built.date), day);
+    const fromDay = buildBodyFromPayload({date: day, weight: 78.2}).entry;
     const merged = mergePickleBody([fromDay], built);
     assert.equal(merged.mode, 'updated');
     assert.equal(merged.body.length, 1);

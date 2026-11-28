@@ -467,7 +467,7 @@ export function mergePickleRoutine(routines = [], routine) {
 
 /** 측정일은 `YYYY-MM-DD`(그날 측정) 또는 ISO 8601 시각을 받습니다. */
 function bodyDate(payload) {
-    const direct = payload?.measuredAt ?? payload?.date ?? payload?.at;
+    const direct = payload?.date ?? payload?.measuredAt ?? payload?.at;
     if (direct === undefined || direct === null || String(direct).trim() === '')
         throw Error('측정일이 없습니다. date(YYYY-MM-DD) 또는 measuredAt을 함께 보내 주세요.');
     const text = String(direct).trim();
