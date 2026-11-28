@@ -1,0 +1,26 @@
+{
+  "version": 1,
+  "note": "Form 앱이 실행될 때 읽는 피클 인박스입니다. 공개 저장소이므로 이름·연락처·회원번호 같은 개인 정보는 넣지 않습니다. 앱이 항목을 반영하면 id를 appliedSyncIds에 남겨 다시 반영하지 않습니다.",
+  "items": [
+    {
+      "id": "body-2026-11-28-inbody",
+      "kind": "body",
+      "createdAt": "2026-11-28T10:06:00+09:00",
+      "payload": {
+        "type": "body",
+        "date": "2026-11-28",
+        "measuredAt": "2026-11-28T10:06:00+09:00",
+        "height": 177,
+        "weight": 73.7,
+        "muscleMass": 33.9,
+        "bodyFat": 18.7,
+        "bodyFatMass": 13.8,
+        "bmi": 23.5,
+        "bmr": 1665,
+        "visceralFat": 6,
+        "inbodyScore": 78,
+        "note": "인바디 결과지"
+      }
+    }
+  ]
+}

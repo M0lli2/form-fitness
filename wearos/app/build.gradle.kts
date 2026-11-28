@@ -2,7 +2,7 @@ plugins { id("com.android.application"); id("org.jetbrains.kotlin.android"); id(
 android {
  namespace = "com.mori.form.wear"
  compileSdk = 36
- defaultConfig { applicationId = "com.mori.form"; minSdk = 30; targetSdk = 36; versionCode = 6; versionName = "0.3.7" }
+ defaultConfig { applicationId = "com.mori.form"; minSdk = 30; targetSdk = 36; versionCode = 6; versionName = "0.3.8" }
  // A paired debug build must use the same certificate as the phone app.
  val companionKey = providers.gradleProperty("formDebugKeystore").orNull
  if (companionKey != null) {

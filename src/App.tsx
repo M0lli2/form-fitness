@@ -6,7 +6,7 @@ import {AnatomySides, StandingAnatomy, type AnatomySide} from './AnatomyFigure';
 import {motions} from './motion-guide.mjs';
 import {filterExercises, groupChips, muscleChips, searchExercise} from './muscle-filter.mjs';
 import React, { useEffect, useRef, useState } from 'react';
-import { Alert, AppState, Image, InputAccessoryView, Keyboard, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StatusBar, StyleSheet, Switch, TextInput, useWindowDimensions, View } from 'react-native';
+import { Alert, AppState, Image, InputAccessoryView, Keyboard, KeyboardAvoidingView, Linking, Modal, Platform, Pressable, ScrollView, Share, StatusBar, StyleSheet, Switch, TextInput, useWindowDimensions, View } from 'react-native';
 import { SafeAreaProvider, SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
@@ -25,6 +25,7 @@ import { connectHealth, readHealth, exportBody, exportWorkout } from './health';
 import Device from '../modules/form-device';
 import catalog from './exercises.json';
 import {closeWorkout, toggleWorkoutPause, workoutElapsedSeconds, prepareWorkout, beginPreparedWorkout, measurementDate, localDateInput, nextBodyRevision, validateCustomExercise} from './core.mjs';
+import {PICKLE_INBOX_URL, applyPickleInbox, buildBodyFromPayload, buildRoutineFromPayload, buildSessionFromPayload, feedbackPayload, feedbackText, inboxUrl, mergePickleBody, mergePickleRoutine, mergePickleSession, parsePickleInbox, parsePickleInput} from './pickle-sync.mjs';
 import {FormTheme} from './ui-v2/Theme';
 import {FocusedWorkout} from './ui-v2/FocusedWorkout';
 import {Surface} from './ui-v2/Primitives';
@@ -190,6 +191,184 @@ function Main({ state, setState }: {
         return run(async () => { await change(x => ({ ...x, routines: setRoutineRecommended(x.routines, routine.id, routine.recommended === false) as State['routines'] })); });
     }
     function patchActive(fn: (session: Session) => Session) { return change(x => ({ ...x, active: x.active ? fn(structuredClone(x.active)) : null })); }
+    /** 피클이 보낸 운동 기록·루틴을 저장하기 전에 미리 보여 줍니다. 확인을 받은 뒤에만 기록을 바꿉니다. */
+    const [pickleDraft, setPickleDraft] = useState<{kind: 'session' | 'routine' | 'body'; session?: Session; routine?: any; body?: BodyEntry} | null>(null);
+    const lastPickleLink = useRef('');
+    const syncStarted = useRef(false);
+    /** 동기화 결과는 알림 대신 화면 위 짧은 띠로 알립니다. */
+    const [pickleToast, setPickleToast] = useState('');
+    /** 사용자가 직접 등록한 운동까지 포함한 운동도감입니다(이름·ID 매칭용). */
+    function pickleLibrary() { return [...catalogExercises, ...(stateRef.current.customExercises ?? [])]; }
+    /** 붙여넣은 링크·JSON을 읽습니다. 시작 링크는 바로 준비 화면으로 갑니다. */
+    function readPickleText(text: string) {
+        try {
+            const parsed = parsePickleInput(text) as any;
+            if (parsed.kind === 'start') {
+                void startPickle(parsed);
+                return;
+            }
+            if (parsed.kind === 'session') {
+                const built = buildSessionFromPayload(parsed.payload, pickleLibrary());
+                setPickleDraft({kind: 'session', session: built.session as Session});
+            }
+            else if (parsed.kind === 'body') {
+                const built = buildBodyFromPayload(parsed.payload);
+                setPickleDraft({kind: 'body', body: built.entry as BodyEntry});
+            }
+            else {
+                const built = buildRoutineFromPayload(parsed.payload, pickleLibrary());
+                setPickleDraft({kind: 'routine', routine: built.routine});
+            }
+            setModal({type: 'pickle-preview'});
+        }
+        catch (error) {
+            Alert.alert('피클 데이터를 읽지 못했습니다', errorText(error));
+        }
+    }
+    /** `form://start?routine=이름|ID` 또는 운동 목록을 담은 링크로 준비 화면을 엽니다. */
+    async function startPickle(parsed: any) {
+        if (stateRef.current.active) {
+            Alert.alert('진행 중인 운동이 있습니다', '지금 운동을 마치거나 취소한 뒤에 피클 링크로 시작할 수 있습니다.');
+            return;
+        }
+        try {
+            let name = '', ids: string[] = [];
+            if (parsed.payload) {
+                const built = buildRoutineFromPayload({...parsed.payload, name: parsed.payload.name ?? parsed.target ?? '피클 루틴'}, pickleLibrary());
+                const merged = mergePickleRoutine(stateRef.current.routines, built.routine);
+                await change(x => ({...x, routines: merged.routines as State['routines']}));
+                name = built.routine.name;
+                ids = built.routine.ids;
+            }
+            else {
+                const target = String(parsed.target ?? '');
+                const key = target.replace(/\s+/g, '');
+                const routine = stateRef.current.routines.find(item => item.id === target || item.name.replace(/\s+/g, '') === key);
+                if (!routine) {
+                    Alert.alert('루틴을 찾지 못했습니다', `"${target}" 루틴이 없습니다. 루틴 탭에서 먼저 만들어 주세요.`);
+                    return;
+                }
+                name = routine.name;
+                ids = routine.ids;
+            }
+            await start(name, ids);
+        }
+        catch (error) {
+            Alert.alert('피클 링크를 열지 못했습니다', errorText(error));
+        }
+    }
+    /** 미리보기에서 확인한 기록·루틴만 병합합니다. 같은 기록은 두 번 들어가지 않습니다. */
+    async function applyPickleDraft() {
+        const draft = pickleDraft;
+        if (!draft) return;
+        try {
+            if (draft.kind === 'session' && draft.session) {
+                const merged = mergePickleSession(stateRef.current.history, draft.session);
+                setModal(null);
+                setPickleDraft(null);
+                if (!merged.added) {
+                    Alert.alert('이미 저장된 운동입니다', '같은 시작 시각과 이름의 기록이 있어 다시 추가하지 않았습니다.');
+                    return;
+                }
+                await change(x => ({...x, history: merged.history as Session[]}));
+                setPage('progress');
+                Alert.alert('피클에서 운동을 가져왔습니다', `${draft.session.exercises.reduce((count, item) => count + item.sets.length, 0)}세트 · ${displayWeight(volume(draft.session)).toLocaleString()} ${unit}\n기록 탭에서 확인할 수 있습니다.`);
+            }
+            else if (draft.kind === 'body' && draft.body) {
+                const merged = mergePickleBody(stateRef.current.body, draft.body);
+                setModal(null);
+                setPickleDraft(null);
+                await change(x => ({...x, body: merged.body as BodyEntry[]}));
+                setPage('body');
+                Alert.alert(merged.mode === 'added' ? '인바디 기록을 추가했습니다' : '같은 날 인바디 기록을 새로 고쳤습니다',
+                    `${merged.entry.weight} kg · 골격근 ${merged.entry.muscle ?? '—'} kg · 체지방 ${merged.entry.bodyFat ?? '—'}%`);
+            }
+            else if (draft.kind === 'routine' && draft.routine) {
+                const merged = mergePickleRoutine(stateRef.current.routines, draft.routine);
+                setModal(null);
+                setPickleDraft(null);
+                await change(x => ({...x, routines: merged.routines as State['routines']}));
+                Alert.alert(merged.mode === 'added' ? '피클 루틴을 추가했습니다' : merged.mode === 'merged' ? '루틴에 운동을 합쳤습니다' : '루틴을 새로 고쳤습니다', merged.name);
+            }
+        }
+        catch (error) {
+            Alert.alert('가져오지 못했습니다', errorText(error));
+        }
+    }
+    /** 앱이 꺼져 있을 때와 실행 중일 때 모두 같은 경로로 피클 링크를 받습니다. */
+    useEffect(() => {
+        const handle = (url: string) => {
+            if (!url || url === lastPickleLink.current) return;
+            lastPickleLink.current = url;
+            readPickleText(url);
+        };
+        Linking.getInitialURL().then(url => { if (url) handle(url); }).catch(() => { });
+        const subscription = Linking.addEventListener('url', event => handle(event.url));
+        return () => subscription.remove();
+    }, []);
+    useEffect(() => {
+        if (!pickleToast) return;
+        const timer = setTimeout(() => setPickleToast(''), 4500);
+        return () => clearTimeout(timer);
+    }, [pickleToast]);
+    /** 피클 인박스를 읽어 아직 반영하지 않은 항목만 병합합니다. 실패는 조용히 넘깁니다(오프라인). */
+    async function syncPickleInbox(manual = false) {
+        const settings = stateRef.current.settings;
+        const url = inboxUrl(settings.pickleSyncUrl || PICKLE_INBOX_URL);
+        if (!url) {
+            if (manual) Alert.alert('주소를 확인해 주세요', '피클 동기화 주소가 https://로 시작해야 합니다.');
+            return null;
+        }
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), 8000);
+        try {
+            const response = await fetch(url, {signal: controller.signal, headers: {'Cache-Control': 'no-cache'}});
+            if (!response.ok) throw Error(`동기화 파일을 받지 못했습니다. (HTTP ${response.status})`);
+            const inbox = parsePickleInbox(await response.text());
+            const result = applyPickleInbox(stateRef.current, inbox, {library: pickleLibrary()});
+            if (result.count) {
+                await change(x => ({...x, history: result.patch.history as Session[], body: result.patch.body as BodyEntry[],
+                    routines: result.patch.routines as State['routines'], appliedSyncIds: result.patch.appliedSyncIds}));
+                setPickleToast(`피클에서 ${result.count}건 반영됨`);
+            }
+            else if (manual) setPickleToast('새로 반영할 기록이 없습니다');
+            if (result.errors.length) console.warn('pickle sync', result.errors);
+            return result;
+        }
+        catch (error) {
+            if (manual) Alert.alert('피클 동기화에 실패했습니다', `${errorText(error)}\n네트워크와 동기화 주소를 확인해 주세요.`);
+            return null;
+        }
+        finally {
+            clearTimeout(timer);
+        }
+    }
+    /** 앱을 열 때 한 번만 자동으로 읽습니다. 설정에서 끌 수 있습니다. */
+    useEffect(() => {
+        if (syncStarted.current) return;
+        syncStarted.current = true;
+        if (stateRef.current.settings.pickleSync === false) return;
+        void syncPickleInbox(false);
+    }, []);
+    function latestBodyEntry() { return [...stateRef.current.body].sort((a, b) => String(b.date).localeCompare(String(a.date)))[0] ?? null; }
+    /** 운동 기록을 피클 채팅에 붙여넣을 브리핑으로 내보냅니다(공유 시트에서 복사·피클 앱 선택). */
+    async function sendToPickle(record: Session) {
+        const text = feedbackText(record, stateRef.current.history, {goal: stateRef.current.settings.goal, unit: stateRef.current.settings.units, body: latestBodyEntry()});
+        await Share.share({message: text, title: `${record.name} 운동 기록`});
+    }
+    /** 같은 내용을 JSON 파일로 저장해 피클에 첨부할 수 있게 합니다. */
+    async function savePickleFile(record: Session) {
+        const payload = feedbackPayload(record, stateRef.current.history, {goal: stateRef.current.settings.goal, unit: stateRef.current.settings.units, body: latestBodyEntry()});
+        const path = FS.cacheDirectory + `form-pickle-${String(record.startedAt).slice(0, 10)}.json`;
+        await FS.writeAsStringAsync(path, JSON.stringify(payload, null, 2));
+        await Sharing.shareAsync(path, {mimeType: 'application/json'});
+    }
+    /** 피클이 파일로 보낸 기록도 같은 검증 경로로 읽습니다. */
+    async function pickPickleFile() {
+        const file = await DocumentPicker.getDocumentAsync({type: ['application/json', 'text/plain'], copyToCacheDirectory: true});
+        if (file.canceled) return;
+        readPickleText(await FS.readAsStringAsync(file.assets[0].uri));
+    }
     // Serialize reminder updates so a late set save cannot recreate a paused reminder.
     function refreshRestReminder() {
         const sync = restNotifications.current.catch(()=>{}).then(async () => {
@@ -287,18 +466,22 @@ function Main({ state, setState }: {
             result.record = record;
             return {...current, history:[record,...current.history], active:null};
         });
-        if (!result.record) return;
+        const record = result.record;
+        if (!record) return;
         refreshRestReminder();
         setPage('progress');
         // 완료 카드와 같은 요약을 알림에도 담아 직전 대비 볼륨·PR·주간 목표를 한 번에 보여 줍니다.
-        const summary = sessionSummary(stateRef.current.history, result.record, stateRef.current.settings.goal);
+        const summary = sessionSummary(stateRef.current.history, record, stateRef.current.settings.goal);
         const delta = summary.volumeDelta;
         Alert.alert('오늘의 운동을 기록했습니다', [
             `${summary.sets}세트 · ${displayWeight(summary.volume).toLocaleString()} ${unit} 볼륨`,
             delta === null ? '이번 운동이 첫 기록입니다.' : `직전 운동 대비 ${delta > 0 ? '+' : ''}${displayWeight(delta).toLocaleString()} ${unit}`,
             summary.prs.length ? 'PR ' + summary.prs.map(pr => `${pr.name} ${displayWeight(pr.value)} ${unit}`).join(' · ') : '',
             `이번 주 ${summary.weekCount}/${summary.weekGoal}회`,
-        ].filter(Boolean).join('\n'));
+        ].filter(Boolean).join('\n'), [
+            {text: '피클에 보내기', onPress: () => { sendToPickle(record).catch(error => Alert.alert('공유하지 못했습니다', errorText(error))); }},
+            {text: '확인'},
+        ]);
     }
     function requestStop(session: Session) {
         if (session.preparing) {
@@ -690,7 +873,7 @@ function Main({ state, setState }: {
     }
     /** 사용자 선택 없이 권한 팝업이나 건강 읽기를 시작하지 않습니다. */
     function settings() { return <><Glass><Section title="화면 스타일"/><Segmented value={state.settings.theme} onChange={key => change(x => ({ ...x, settings: { ...x.settings, theme: key } }))}
-                options={[{key:'system',label:'시스템'},{key:'light',label:'라이트'},{key:'dark',label:'다크'}] as const}/><View style={s.spread}><Label>Liquid Glass</Label><Switch accessibilityLabel="Liquid Glass 효과" value={state.settings.glass} onValueChange={glass => change(x => ({ ...x, settings: { ...x.settings, glass } }))}/></View><View style={s.spread}><Label>투명도 줄이기</Label><Switch accessibilityLabel="투명도 줄이기" value={state.settings.contrast} onValueChange={contrast => change(x => ({ ...x, settings: { ...x.settings, contrast } }))}/></View><Label muted size={13}>탭과 조작 영역에 유리 효과를 적용합니다. 투명도 줄이기를 켜면 단색을 사용합니다.</Label></Glass><Glass><Section title="운동 설정"/><View style={s.spread}><Label>무게 표시</Label><View style={s.row}>{['kg', 'lb'].map(u => <Chip key={u} title={u} active={unit === u} onPress={() => change(x => ({ ...x, settings: { ...x.settings, units: u as any } }))}/>)}</View></View><View style={s.settingStepperRow}><Label style={s.flex}>주간 목표</Label><Stepper name="주간 목표" value={state.settings.goal} min={1} max={7} onChange={goal => change(x => ({ ...x, settings: { ...x.settings, goal } }))}/></View><View style={{gap:8}}><Label>훈련 목적</Label><View style={[s.row,{flexWrap:'wrap'}]}>{Object.values(TRAINING_GOALS).map(goal => <Chip key={goal.id} title={goal.label} active={training === goal.id} onPress={() => run(() => setTrainingGoal(goal.id))}/>)}</View><Label muted size={13}>추천 무게·반복·세트와 휴식 시간이 선택한 목적에 맞춰 바뀝니다.</Label></View><View style={s.settingStepperRow}><Label style={s.flex}>휴식 시간 (초)</Label><Stepper name="휴식 시간" value={state.settings.rest} min={15} max={600} step={15} onChange={rest => change(x => ({ ...x, settings: { ...x.settings, rest } }))}/></View><Button secondary title="휴식 알림 권한 설정" onPress={() => run(async () => { const p = await Notifications.requestPermissionsAsync(); Alert.alert(p.granted ? '알림이 허용되었습니다' : '알림이 허용되지 않았습니다'); })}/></Glass><Glass><Section title={Platform.OS === 'ios' ? 'Apple 건강 · 피트니스' : 'Health Connect · Samsung Health'}/><Label muted size={13}>읽기: 걸음·심박·체중·체지방·최근 30일 운동. 쓰기: 선택한 운동·체중·체지방. 기기 및 앱이 공유하는 데이터만 표시됩니다.</Label><Button disabled={busy} title={health ? "건강 데이터 다시 연결" : "건강 앱 연결"} onPress={() => run(async () => { setHealth(await connectHealth()); await change(x => ({ ...x, settings: { ...x.settings, health: true } })); })}/>{health && <><Label>오늘 걸음 {health.steps ?? '데이터 없음'} · 최근 심박 {health.heartRate ?? '—'} bpm</Label><Label>체중 {health.weight ?? '—'} kg · 체지방 {health.bodyFat ?? '—'}%</Label><Label muted size={11}>권한 거부와 데이터 부재는 iOS에서 구분할 수 없습니다.</Label>{health.workouts?.slice(0, 5).map((h: any) => <Label key={h.id} muted size={11}>{dateText(h.start)} · {h.name}</Label>)}<Button secondary title="새로고침" onPress={() => run(async () => setHealth(await readHealth()))}/></>}<Label muted size={11}>피트니스 링은 Apple이 실제 측정 데이터와 정책에 따라 반영합니다. 골격근량은 건강 앱 제지방량으로 내보내지 않습니다.</Label></Glass><Glass><Section title={Platform.OS === 'ios' ? 'Apple Watch' : 'Galaxy Watch · Wear OS'}/><Label muted size={13}>동일한 앱을 워치에도 설치해야 합니다. Galaxy Watch4 이후 Wear OS 기기가 대상이며 Tizen 기기는 지원하지 않습니다.</Label><Button secondary title="워치 연결 확인" onPress={() => run(async () => setWatch(await Device.watchStatus()))}/>{watch && <Label>{watch.connected ? '워치와 연결되어 있습니다.' : watch.paired ? '페어링됨 · 현재 연결 대기' : '연결된 워치 앱이 없습니다.'}</Label>}<Label muted size={13}>워치에서 다음 세트를 확인하고 완료를 기록할 수 있습니다.</Label></Glass><Glass><Section title="내 데이터"/><Label muted size={13}>인바디·체성분은 기록 탭에서 조회·입력합니다.</Label><Button secondary title="백업 파일 내보내기" onPress={() => Alert.alert('백업 파일', '백업은 암호화되지 않은 건강 기록을 포함합니다. 결과지 사진은 제외됩니다. 안전한 위치에 저장하세요.', [{ text: '취소' }, { text: '내보내기', onPress: () => run(async () => { const path = FS.cacheDirectory + 'form-backup.json'; await FS.writeAsStringAsync(path, JSON.stringify({ ...state, active: null, body: state.body.map(x => ({ ...x, photo: null })) }, null, 2)); await Sharing.shareAsync(path, { mimeType: 'application/json' }); }) }])}/><Button secondary title="백업 가져오기" onPress={() => run(async () => { const file = await DocumentPicker.getDocumentAsync({ type: 'application/json', copyToCacheDirectory: true }); if (file.canceled)
+                options={[{key:'system',label:'시스템'},{key:'light',label:'라이트'},{key:'dark',label:'다크'}] as const}/><View style={s.spread}><Label>Liquid Glass</Label><Switch accessibilityLabel="Liquid Glass 효과" value={state.settings.glass} onValueChange={glass => change(x => ({ ...x, settings: { ...x.settings, glass } }))}/></View><View style={s.spread}><Label>투명도 줄이기</Label><Switch accessibilityLabel="투명도 줄이기" value={state.settings.contrast} onValueChange={contrast => change(x => ({ ...x, settings: { ...x.settings, contrast } }))}/></View><Label muted size={13}>탭과 조작 영역에 유리 효과를 적용합니다. 투명도 줄이기를 켜면 단색을 사용합니다.</Label></Glass><Glass><Section title="운동 설정"/><View style={s.spread}><Label>무게 표시</Label><View style={s.row}>{['kg', 'lb'].map(u => <Chip key={u} title={u} active={unit === u} onPress={() => change(x => ({ ...x, settings: { ...x.settings, units: u as any } }))}/>)}</View></View><View style={s.settingStepperRow}><Label style={s.flex}>주간 목표</Label><Stepper name="주간 목표" value={state.settings.goal} min={1} max={7} onChange={goal => change(x => ({ ...x, settings: { ...x.settings, goal } }))}/></View><View style={{gap:8}}><Label>훈련 목적</Label><View style={[s.row,{flexWrap:'wrap'}]}>{Object.values(TRAINING_GOALS).map(goal => <Chip key={goal.id} title={goal.label} active={training === goal.id} onPress={() => run(() => setTrainingGoal(goal.id))}/>)}</View><Label muted size={13}>추천 무게·반복·세트와 휴식 시간이 선택한 목적에 맞춰 바뀝니다.</Label></View><View style={s.settingStepperRow}><Label style={s.flex}>휴식 시간 (초)</Label><Stepper name="휴식 시간" value={state.settings.rest} min={15} max={600} step={15} onChange={rest => change(x => ({ ...x, settings: { ...x.settings, rest } }))}/></View><Button secondary title="휴식 알림 권한 설정" onPress={() => run(async () => { const p = await Notifications.requestPermissionsAsync(); Alert.alert(p.granted ? '알림이 허용되었습니다' : '알림이 허용되지 않았습니다'); })}/></Glass><Glass><Section title={Platform.OS === 'ios' ? 'Apple 건강 · 피트니스' : 'Health Connect · Samsung Health'}/><Label muted size={13}>읽기: 걸음·심박·체중·체지방·최근 30일 운동. 쓰기: 선택한 운동·체중·체지방. 기기 및 앱이 공유하는 데이터만 표시됩니다.</Label><Button disabled={busy} title={health ? "건강 데이터 다시 연결" : "건강 앱 연결"} onPress={() => run(async () => { setHealth(await connectHealth()); await change(x => ({ ...x, settings: { ...x.settings, health: true } })); })}/>{health && <><Label>오늘 걸음 {health.steps ?? '데이터 없음'} · 최근 심박 {health.heartRate ?? '—'} bpm</Label><Label>체중 {health.weight ?? '—'} kg · 체지방 {health.bodyFat ?? '—'}%</Label><Label muted size={11}>권한 거부와 데이터 부재는 iOS에서 구분할 수 없습니다.</Label>{health.workouts?.slice(0, 5).map((h: any) => <Label key={h.id} muted size={11}>{dateText(h.start)} · {h.name}</Label>)}<Button secondary title="새로고침" onPress={() => run(async () => setHealth(await readHealth()))}/></>}<Label muted size={11}>피트니스 링은 Apple이 실제 측정 데이터와 정책에 따라 반영합니다. 골격근량은 건강 앱 제지방량으로 내보내지 않습니다.</Label></Glass><Glass><Section title={Platform.OS === 'ios' ? 'Apple Watch' : 'Galaxy Watch · Wear OS'}/><Label muted size={13}>동일한 앱을 워치에도 설치해야 합니다. Galaxy Watch4 이후 Wear OS 기기가 대상이며 Tizen 기기는 지원하지 않습니다.</Label><Button secondary title="워치 연결 확인" onPress={() => run(async () => setWatch(await Device.watchStatus()))}/>{watch && <Label>{watch.connected ? '워치와 연결되어 있습니다.' : watch.paired ? '페어링됨 · 현재 연결 대기' : '연결된 워치 앱이 없습니다.'}</Label>}<Label muted size={13}>워치에서 다음 세트를 확인하고 완료를 기록할 수 있습니다.</Label></Glass><Glass><Section title="피클 연계"/><Label muted size={13}>피클이 보낸 운동 기록·루틴·인바디를 링크·붙여넣기·자동 동기화로 저장합니다. 끝낸 운동은 기록 상세에서 ‘피클에 보내기’로 피드백을 받습니다.</Label><Button secondary title="피클에서 기록·루틴 가져오기" onPress={() => setModal({type: 'pickle-import'})}/><View style={s.spread}><View style={s.flex}><Label>앱을 열 때 자동 동기화</Label><Label muted size={11}>피클이 올려 둔 인박스를 앱을 열 때 한 번 읽습니다.</Label></View><Switch accessibilityLabel="피클 자동 동기화" value={state.settings.pickleSync !== false} onValueChange={pickleSync => change(x => ({ ...x, settings: { ...x.settings, pickleSync } }))}/></View><Button secondary title="지금 피클 동기화" onPress={() => run(async () => { await syncPickleInbox(true); })}/><PickleSyncAddress value={state.settings.pickleSyncUrl ?? PICKLE_INBOX_URL} onSave={value => change(x => ({ ...x, settings: { ...x.settings, pickleSyncUrl: value } }))}/><Label muted size={11}>운동 기록 · 루틴 · 인바디를 모두 가져올 수 있습니다. 이미 반영한 항목은 다시 들어오지 않습니다.</Label></Glass><Glass><Section title="내 데이터"/><Label muted size={13}>인바디·체성분은 기록 탭에서 조회·입력합니다.</Label><Button secondary title="백업 파일 내보내기" onPress={() => Alert.alert('백업 파일', '백업은 암호화되지 않은 건강 기록을 포함합니다. 결과지 사진은 제외됩니다. 안전한 위치에 저장하세요.', [{ text: '취소' }, { text: '내보내기', onPress: () => run(async () => { const path = FS.cacheDirectory + 'form-backup.json'; await FS.writeAsStringAsync(path, JSON.stringify({ ...state, active: null, body: state.body.map(x => ({ ...x, photo: null })) }, null, 2)); await Sharing.shareAsync(path, { mimeType: 'application/json' }); }) }])}/><Button secondary title="백업 가져오기" onPress={() => run(async () => { const file = await DocumentPicker.getDocumentAsync({ type: 'application/json', copyToCacheDirectory: true }); if (file.canceled)
         return; const parsed = validateBackup(JSON.parse(await FS.readAsStringAsync(file.assets[0].uri))); Alert.alert('백업 병합', '동일한 ID는 현재 기록을 유지하고, 새로운 기록만 가져옵니다.', [{ text: '취소' }, { text: '병합', onPress: () => change(x => ({ ...x, history: [...x.history, ...parsed.history.filter((h: Session) => !x.history.some(a => a.id === h.id))], body: [...x.body, ...parsed.body.filter((h: BodyEntry) => !x.body.some(a => a.id === h.id)).map((h: BodyEntry) => ({ ...h, photo: null }))], customExercises: [...(x.customExercises ?? []), ...(parsed.customExercises ?? []).filter((e: Exercise) => !(x.customExercises ?? []).some(a => a.id === e.id))], routines: [...x.routines, ...parsed.routines.filter((r: any) => !x.routines.some(a => a.id === r.id))] })) }]); })}/><Button secondary danger title="이 기기의 앱 기록 삭제" onPress={() => Alert.alert('앱 기록 삭제', '이 기기의 운동·체성분 기록을 삭제합니다. 건강 앱에 내보낸 기록은 해당 앱에서 별도로 삭제해야 합니다.', [{ text: '취소' }, { text: '삭제', style: 'destructive', onPress: () => run(async () => { await change(() => freshState()); if (notification.current)
                 await Notifications.cancelScheduledNotificationAsync(notification.current); const folder = FS.documentDirectory + 'inbody/'; await FS.deleteAsync(folder, { idempotent: true }); }) }])}/><Label muted size={11}>건강 데이터는 암호화된 로컬 DB에 저장됩니다. 사진은 앱 전용 폴더에 저장되며 별도 파일 암호화는 적용하지 않았습니다. 로그인·서버·광고 SDK는 없습니다.</Label></Glass></>; }
     // A focused workout owns its scroll region; its controls must remain above the tab bar.
@@ -728,10 +911,39 @@ function Main({ state, setState }: {
                 <Label bold size={15} style={{color:colors.accent}}>완료</Label></Pressable>
         </View>
     </InputAccessoryView>}
-    <Modal visible={!!modal} transparent animationType="slide" onRequestClose={() => setModal(null)}><KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={s.modalOverlay}><SafeAreaView edges={['bottom']} accessibilityViewIsModal style={[s.modal,{backgroundColor:colors.solid}]}><View style={[s.sheetGrip,{backgroundColor:colors.line}]}/><View style={s.spread}><Label heading bold size={18} style={s.flex}>{({ start: '어떤 운동을 할까요?', routine: modal?.item ? '루틴 편집' : '새 루틴', exercise: '운동 자세 가이드', body: '인바디 기록', history: '운동 상세', add: '운동 추가', 'custom-exercise': '사용자 운동 등록', substitute: '대체 운동', plates: '원판 계산기' } as any)[modal?.type ?? '']}</Label><Pressable accessibilityRole="button" accessibilityLabel="닫기" onPress={() => setModal(null)} style={s.close}><Label size={24}>×</Label></Pressable></View><ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ gap: 17, paddingBottom: 22 }}>{modal?.type === 'custom-exercise' && <CustomExerciseForm onSave={entry => run(async () => {
+    {pickleToast ? <View pointerEvents="none" accessibilityLiveRegion="polite" style={[s.pickleToast,{backgroundColor:colors.solid,borderColor:colors.line}]}><Label size={13} bold>{pickleToast}</Label></View> : null}
+    <Modal visible={!!modal} transparent animationType="slide" onRequestClose={() => setModal(null)}><KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={s.modalOverlay}><SafeAreaView edges={['bottom']} accessibilityViewIsModal style={[s.modal,{backgroundColor:colors.solid}]}><View style={[s.sheetGrip,{backgroundColor:colors.line}]}/><View style={s.spread}><Label heading bold size={18} style={s.flex}>{({ start: '어떤 운동을 할까요?', routine: modal?.item ? '루틴 편집' : '새 루틴', exercise: '운동 자세 가이드', body: '인바디 기록', history: '운동 상세', add: '운동 추가', 'custom-exercise': '사용자 운동 등록', substitute: '대체 운동', plates: '원판 계산기', 'pickle-import': '피클에서 가져오기', 'pickle-preview': '피클에서 받은 데이터' } as any)[modal?.type ?? '']}</Label><Pressable accessibilityRole="button" accessibilityLabel="닫기" onPress={() => setModal(null)} style={s.close}><Label size={24}>×</Label></Pressable></View><ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ gap: 17, paddingBottom: 22 }}>{modal?.type === 'custom-exercise' && <CustomExerciseForm onSave={entry => run(async () => {
     await change(x => ({...x, customExercises: [...(x.customExercises ?? []), entry]}));
     setModal(null);
-})}/>} {modal?.type === 'plates' && <PlateCalculator initialKg={modal.item?.weight ?? 0}/>} {modal?.type === 'substitute' && (() => {
+})}/>} {modal?.type === 'pickle-import' && <PickleImportForm onSubmit={text => readPickleText(text)} onPickFile={() => run(pickPickleFile)}/>} {modal?.type === 'pickle-preview' && pickleDraft && (pickleDraft.kind === 'session' && pickleDraft.session
+                ? <><Label size={22} bold>{pickleDraft.session.name}</Label>
+                    <Label muted>{dateText(pickleDraft.session.startedAt)} · {pickleDraft.session.exercises.reduce((count, item) => count + item.sets.length, 0)}세트 · {displayWeight(volume(pickleDraft.session)).toLocaleString()} {unit} · {Math.max(1, Math.round(workoutElapsedSeconds(pickleDraft.session) / 60))}분</Label>
+                    {pickleDraft.session.exercises.map(item => <View key={item.id} style={{gap:4}}>
+                        <Label bold>{item.name}</Label>
+                        {item.sets.map((set, index) => <Label key={set.id} muted size={13}>{index + 1}세트 · {item.type === 'strength' ? `${displayWeight(set.weight)} ${unit} × ${set.reps}회` : `${set.seconds}초`}{set.rpe ? ` · RPE ${set.rpe}` : ''}{set.kind === 'warmup' ? ' · 워밍업' : ''}{set.kind === 'drop' ? ' · 드롭세트' : ''}</Label>)}
+                        {item.note ? <Label size={13}>{item.note}</Label> : null}
+                    </View>)}
+                    <Label muted size={13}>기존 기록은 그대로 두고 이 운동만 추가합니다. 같은 기록이 있으면 다시 추가하지 않습니다.</Label>
+                    <Button title="기록에 추가" disabled={busy} onPress={() => run(applyPickleDraft)}/>
+                    <Button secondary title="가져오지 않기" onPress={() => { setModal(null); setPickleDraft(null); }}/>
+                </>
+                : pickleDraft.kind === 'body' && pickleDraft.body
+                ? <><Label size={22} bold>{dateText(pickleDraft.body.date)}</Label>
+                    <Label muted>{pickleDraft.body.weight} kg · 골격근 {pickleDraft.body.muscle ?? '—'} kg · 체지방 {pickleDraft.body.bodyFat ?? '—'}%</Label>
+                    <Label muted size={13}>{pickleDraft.body.bmi ? `BMI ${pickleDraft.body.bmi}` : ''}{pickleDraft.body.bodyFatMass ? ` · 체지방량 ${pickleDraft.body.bodyFatMass} kg` : ''}{pickleDraft.body.inbodyScore ? ` · 인바디 점수 ${pickleDraft.body.inbodyScore}` : ''}{pickleDraft.body.bmr ? ` · 기초대사량 ${pickleDraft.body.bmr} kcal` : ''}</Label>
+                    <Label muted size={13}>같은 날 측정 기록이 있으면 값을 새로 고치고, 없으면 새로 추가합니다. 결과지 사진과 메모는 지우지 않습니다.</Label>
+                    <Button title="체성분에 저장" disabled={busy} onPress={() => run(applyPickleDraft)}/>
+                    <Button secondary title="가져오지 않기" onPress={() => { setModal(null); setPickleDraft(null); }}/>
+                </>
+                : pickleDraft.routine
+                ? <><Label size={22} bold>{pickleDraft.routine.name}</Label>
+                    <Label muted>{pickleDraft.routine.subtitle} · {pickleDraft.routine.ids.length}개 운동</Label>
+                    {pickleDraft.routine.ids.map((id: string) => <Label key={id}>· {exercises.find(item => item.id === id)?.name ?? id}</Label>)}
+                    <Label muted size={13}>같은 이름의 루틴이 있으면 운동 목록을 합칩니다. 기존 루틴의 운동은 지우지 않습니다.</Label>
+                    <Button title="루틴에 저장" disabled={busy} onPress={() => run(applyPickleDraft)}/>
+                    <Button secondary title="가져오지 않기" onPress={() => { setModal(null); setPickleDraft(null); }}/>
+                </>
+                : null)} {modal?.type === 'plates' && <PlateCalculator initialKg={modal.item?.weight ?? 0}/>} {modal?.type === 'substitute' && (() => {
                 const detail = exercises.find(e => e.id === modal.item?.exerciseId);
                 const candidates = substitutionCandidates(exercises, detail, state.active);
                 return <>
@@ -750,7 +962,7 @@ function Main({ state, setState }: {
         await start(modal.item.name, [modal.item.id]);
     else
         await addExercise(modal.item); setModal(null); setPage('workout'); })}/><Pressable accessibilityRole="button" accessibilityState={{selected:favorites.includes(modal.item.id)}} accessibilityLabel="이 운동 즐겨찾기" style={s.inlineLink} onPress={()=>run(async()=>{await change(x=>({...x,favorites:toggleFavorite(x.favorites ?? [],modal.item.id)}));})}><Label size={13} muted={!favorites.includes(modal.item.id)}>{favorites.includes(modal.item.id)?'★ 즐겨찾기 해제':'☆ 즐겨찾기에 추가'}</Label></Pressable></>}{modal?.type === 'add' && <ExercisePicker items={exercises} onPick={e => setModal({type:'exercise', item:e, fromPicker:true})}/>} {modal?.type === 'routine' && <RoutineForm items={exercises} item={modal.item} onSave={commitRoutine}
-                onDelete={modal.item ? () => confirmDeleteRoutine(modal.item, true) : undefined}/>} {modal?.type === 'body' && <BodyForm item={modal.item} lastHeight={state.body.find(entry => entry.height)?.height ?? null} onSave={entry => run(async () => { await change(x => ({ ...x, body: [{...entry, revision: nextBodyRevision(x.body.find(v => v.id === entry.id))}, ...x.body.filter(v => v.id !== entry.id)] })); setModal(null); })} onExport={entry => run(async () => { await exportBody(entry); Alert.alert('건강 데이터로 저장했습니다'); })}/>} {modal?.type === 'history' && <><Label size={22} bold>{modal.item.name}</Label><Label muted>{dateText(modal.item.startedAt)}</Label>{modal.item.exercises.map((e: any) => <View key={e.id}><Label bold>{e.name}</Label>{e.sets.filter((x: any) => x.done).map((x: any, i: number) => <Label key={x.id} muted>{i + 1}세트 · {e.type === 'strength' ? `${displayWeight(x.weight)} ${unit} × ${x.reps}회` : `${x.seconds}초`} {x.kind === 'warmup' ? '워밍업' : ''}</Label>)}{e.note && <Label>{e.note}</Label>}</View>)}{(!modal.item.external || modal.item.sync === 'watch') && <Button title="건강 앱에 운동 내보내기" onPress={() => run(async () => { await exportWorkout(modal.item); Alert.alert('운동을 내보냈습니다'); })}/>}<Button secondary title="같은 구성으로 다시 운동" onPress={() => run(async () => { await start(modal.item.name, modal.item.exercises.map((x: any) => x.id)); setModal(null); })}/><Button secondary danger title="이 기록 삭제" onPress={() => Alert.alert('기록 삭제', '건강 앱으로 내보낸 기록은 별도로 남아 있습니다.', [{ text: '취소' }, { text: '삭제', style: 'destructive', onPress: () => run(async () => { await change(x => ({ ...x, history: x.history.filter(h => h.id !== modal.item.id) })); setModal(null); }) }])}/></>}</ScrollView></SafeAreaView></KeyboardAvoidingView></Modal></SafeAreaView>;
+                onDelete={modal.item ? () => confirmDeleteRoutine(modal.item, true) : undefined}/>} {modal?.type === 'body' && <BodyForm item={modal.item} lastHeight={state.body.find(entry => entry.height)?.height ?? null} onSave={entry => run(async () => { await change(x => ({ ...x, body: [{...entry, revision: nextBodyRevision(x.body.find(v => v.id === entry.id))}, ...x.body.filter(v => v.id !== entry.id)] })); setModal(null); })} onExport={entry => run(async () => { await exportBody(entry); Alert.alert('건강 데이터로 저장했습니다'); })}/>} {modal?.type === 'history' && <><Label size={22} bold>{modal.item.name}</Label><Label muted>{dateText(modal.item.startedAt)}</Label>{modal.item.exercises.map((e: any) => <View key={e.id}><Label bold>{e.name}</Label>{e.sets.filter((x: any) => x.done).map((x: any, i: number) => <Label key={x.id} muted>{i + 1}세트 · {e.type === 'strength' ? `${displayWeight(x.weight)} ${unit} × ${x.reps}회` : `${x.seconds}초`} {x.kind === 'warmup' ? '워밍업' : ''}</Label>)}{e.note && <Label>{e.note}</Label>}</View>)}{(!modal.item.external || modal.item.sync === 'watch') && <Button title="건강 앱에 운동 내보내기" onPress={() => run(async () => { await exportWorkout(modal.item); Alert.alert('운동을 내보냈습니다'); })}/>}<Button title="피클에 보내기" onPress={() => run(async () => { await sendToPickle(modal.item); })}/><Button secondary title="피클용 JSON 저장" onPress={() => run(async () => { await savePickleFile(modal.item); })}/><Label muted size={13}>세트·중량·RPE·메모와 주간 볼륨이 브리핑 문장으로 담깁니다. 공유 시트에서 복사하거나 피클 앱으로 보내세요.</Label><Button secondary title="같은 구성으로 다시 운동" onPress={() => run(async () => { await start(modal.item.name, modal.item.exercises.map((x: any) => x.id)); setModal(null); })}/><Button secondary danger title="이 기록 삭제" onPress={() => Alert.alert('기록 삭제', '건강 앱으로 내보낸 기록은 별도로 남아 있습니다.', [{ text: '취소' }, { text: '삭제', style: 'destructive', onPress: () => run(async () => { await change(x => ({ ...x, history: x.history.filter(h => h.id !== modal.item.id) })); setModal(null); }) }])}/></>}</ScrollView></SafeAreaView></KeyboardAvoidingView></Modal></SafeAreaView>;
     async function addExercise(e: Exercise) {
         await patchActive(active => {
             if (active.exercises.some(item=>item.id===e.id)) throw Error('이미 추가된 운동입니다.');
@@ -974,6 +1186,31 @@ function CustomExerciseForm({onSave}: {onSave: (exercise: Exercise) => void}) {
     </>;
 }
 
+/** 동기화 주소는 저장 버튼을 눌렀을 때만 반영합니다(입력 중 저장 금지). */
+function PickleSyncAddress({value, onSave}: {value: string; onSave: (value: string) => void}) {
+    const [text, setText] = useState(value);
+    useEffect(() => { setText(value); }, [value]);
+    return <>
+        <Input value={text} onChangeText={setText} placeholder="피클 동기화 주소"/>
+        <Button secondary title="주소 저장" disabled={!text.trim() || text.trim() === value} onPress={() => onSave(text.trim())}/>
+    </>;
+}
+
+/** 피클이 보낸 링크·JSON을 붙여넣거나 파일로 고릅니다. 붙여넣은 글은 저장 전에 검증만 합니다. */
+function PickleImportForm({onSubmit, onPickFile}: {onSubmit: (text: string) => void; onPickFile: () => void}) {
+    const { colors } = useTheme();
+    const [text, setText] = useState('');
+    return <>
+        <Label muted size={13}>피클 채팅에서 받은 form:// 링크나 JSON을 그대로 붙여넣으세요. 운동 기록은 기존 기록을 유지한 채 추가됩니다.</Label>
+        <TextInput accessibilityLabel="피클 링크 또는 JSON" multiline value={text} onChangeText={setText}
+            placeholder={'form://import-session?data=…\n또는 {"type":"session", …}'} placeholderTextColor={colors.muted}
+            style={[s.input, s.picklePaste, {color: colors.ink, borderColor: colors.line, backgroundColor: colors.solid}]}/>
+        <Button title="가져오기" disabled={!text.trim()} onPress={() => onSubmit(text)}/>
+        <Button secondary title="JSON 파일 고르기" onPress={onPickFile}/>
+        <Label muted size={11}>운동은 도감 이름이나 ID로 찾습니다. 찾지 못한 이름은 그대로 알려 드립니다.</Label>
+    </>;
+}
+
 /** 인바디는 수동 등록 및 결과지 첨부. OCR이나 제조사 계정 연동으로 오인하지 않게 합니다. */
 function BodyForm({ item, lastHeight, onSave, onExport }: {
     item?: BodyEntry;
@@ -1085,6 +1322,8 @@ const s = StyleSheet.create({
     nav:{width:'100%',maxWidth:740,borderWidth:1,padding:geometry.navPadding,gap:0,flexDirection:'row'},
     navItem:{alignItems:'center',justifyContent:'center',gap:geometry.xs,minHeight:52,flex:1,borderRadius:geometry.navItemRadius,...squircle},
     input:{minHeight:48,borderWidth:1,borderRadius:radius.inner,paddingHorizontal:12,paddingVertical:10,fontSize:15,fontVariant:['tabular-nums'],...squircle},
+    picklePaste:{minHeight:120,paddingTop:12,textAlignVertical:'top',fontVariant:[]},
+    pickleToast:{position:'absolute',top:56,left:20,right:20,paddingHorizontal:16,paddingVertical:12,borderRadius:radius.pill,borderWidth:1,alignItems:'center',zIndex:20,...squircle},
     check:{width:48,height:48,borderRadius:radius.inner,alignItems:'center',justifyContent:'center',...squircle},
     rest:{padding:12,borderRadius:radius.inner,flexDirection:'row',alignItems:'center',justifyContent:'space-between',...squircle},
     chip:{paddingHorizontal:14,paddingVertical:8,borderRadius:radius.pill,minHeight:36,justifyContent:'center',...squircle},
