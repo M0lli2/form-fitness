@@ -59,6 +59,10 @@ export type BodyEntry = {
     source: string;
     note: string;
     photo: string | null;
+    /** 인바디 결과지·피클에서 함께 온 값. 없으면 화면에 표시하지 않습니다. */
+    bodyFatMass?: number;
+    bmi?: number;
+    inbodyScore?: number;
     sync?: string;
 };
 export type Routine = {
@@ -79,6 +83,8 @@ export type State = {
     seen: string[];
     /** 운동도감에서 별표로 저장한 종목 id. 백업에 없으면 빈 목록으로 읽습니다. */
     favorites?: string[];
+    /** 이미 반영한 피클 인박스 항목 id. 같은 항목을 두 번 반영하지 않습니다. */
+    appliedSyncIds?: string[];
     settings: {
         goal: number;
         rest: number;
@@ -89,6 +95,10 @@ export type State = {
         units: 'kg' | 'lb';
         theme: 'light' | 'dark' | 'system';
         glass: boolean;
+        /** 앱을 열 때 피클 인박스를 자동으로 읽을지 여부(없으면 켜짐). */
+        pickleSync?: boolean;
+        /** 피클 인박스 주소. 없으면 기본 주소를 씁니다. */
+        pickleSyncUrl?: string;
     };
 };
 

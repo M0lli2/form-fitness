@@ -2,7 +2,19 @@
 
 iPhone·iPad와 Android에서 운동을 기록하는 네이티브 앱입니다. 루틴·세트 기록, 3D 운동 자세, 인바디, Apple 건강·Health Connect, Apple Watch·Wear OS 동반 앱을 제공합니다.
 
-**현재 버전은 Form 0.3.7 네이티브 테스트 빌드입니다.** Android 휴대폰과 Wear OS는 테스트 APK, iPhone·iPad와 Apple Watch는 서명이 필요한 IPA로 제공됩니다. 저장소가 공개되어 있어 GitHub 로그인 없이 내려받을 수 있고, 기기에서 건강 연동과 워치 페어링을 검증하는 절차는 설치 문서에 있습니다. [v0.3.7 다운로드](https://github.com/M0lli2/form-fitness/releases/tag/v0.3.7) · [설치 및 실기기 검증](docs/INSTALL.md)
+**현재 버전은 Form 0.3.8 네이티브 테스트 빌드입니다.** Android 휴대폰과 Wear OS는 테스트 APK, iPhone·iPad와 Apple Watch는 서명이 필요한 IPA로 제공됩니다. 저장소가 공개되어 있어 GitHub 로그인 없이 내려받을 수 있고, 기기에서 건강 연동과 워치 페어링을 검증하는 절차는 설치 문서에 있습니다. [v0.3.8 다운로드](https://github.com/M0lli2/form-fitness/releases/tag/v0.3.8) · [설치 및 실기기 검증](docs/INSTALL.md)
+
+## 0.3.8 변경사항
+
+피클(Pickle)과 Form이 운동 기록·루틴·체성분을 주고받는 연계 릴리스입니다.
+
+- **피클 → Form (자동)**: 앱을 열면 피클이 저장소에 올려 둔 `sync/pickle-inbox.json`을 한 번 읽어, 아직 반영하지 않은 인바디·운동 기록·루틴을 조용히 병합하고 `피클에서 N건 반영됨`을 4.5초 보여 줍니다. 반영한 항목 id는 `appliedSyncIds`에 남겨 두 번 들어가지 않습니다. 오프라인이면 아무 일 없이 원래대로 동작합니다.
+- **피클 → Form (링크·붙여넣기)**: `form://import-session`, `form://import-routine`, `form://import-body`, `form://start`를 지원합니다. 앱이 꺼져 있을 때와 실행 중일 때 모두 같은 경로로 받고, 저장 전에 미리보기 시트에서 확인을 받습니다. 링크가 길어 잘릴 때는 내 정보 > 피클 연계에 링크나 JSON을 붙여넣거나 `.json` 파일을 고르면 됩니다.
+- **인바디 가져오기**: `form://import-body`로 키·체중·골격근량·체지방률·체지방량·BMI·기초대사량·내장지방·인바디 점수를 받습니다. 체지방량만 있으면 체지방률을 계산하고, 같은 날(기기 달력 기준) 기록이 있으면 사진·메모를 지우지 않고 값만 새로 고치며 `revision`을 올립니다.
+- **Form → 피클**: 운동을 마친 알림과 기록 상세에 `피클에 보내기`를 넣었습니다. 세트·중량·RPE·메모·PR·주간 볼륨·최근 체성분을 한국어 브리핑 한 덩어리로 공유 시트에 넘기고, `피클용 JSON 저장`으로 같은 내용을 파일로도 보냅니다.
+- **덮어쓰지 않습니다**: 기존 운동 기록·루틴은 그대로 두고 새 항목만 더하며, 같은 기록(같은 ID 또는 같은 시작 시각+이름)은 다시 들어가지 않습니다. 운동 이름은 도감 ID·이름·짧은 별칭(`벤치`, `스쿼트` 등)으로 찾고, 못 찾거나 여럿이면 후보를 알려 줍니다.
+- **새 네이티브 의존성은 없습니다.** React Native 기본 `Linking`·`Share`·`fetch`만 씁니다.
+- 스키마·오류 문구·검증 결과는 [0.3.8 작업 기록](docs/PROGRESS-2026-11-28-v038.md)에 정리했습니다.
 
 ## 0.3.7 변경사항
 
@@ -169,6 +181,7 @@ Apple Human Interface Guidelines의 곡률·비율 원칙을 화면 전체에 �
 
 | 버전 | 배포·변경 내용 |
 |---|---|
+| **0.3.8** | 피클(Pickle) 연계 릴리스입니다. `form://import-session`·`import-routine`·`import-body`·`start` 딥링크, 붙여넣기·JSON 파일 가져오기, `sync/pickle-inbox.json` 자동 동기화와 중복 방지, 인바디 체성분 가져오기(같은 날 갱신·revision), 운동 기록을 피클 브리핑·JSON으로 내보내기를 반영했습니다. [릴리스](https://github.com/M0lli2/form-fitness/releases/tag/v0.3.8) |
 | **0.3.7** | Apple 수준 곡률·비율 폴리싱 릴리스입니다. 6단 반경 사다리와 squircle(연속 곡률), 동심원 곡률 식, 4pt 그리드, 4칸/2칸 도구 줄, 집중 운동 고정 머리말, 배지·한 줄로 나눈 추천 문구, 3등분 세트 필, 기록 카드 중복 제거, 텍스트·단위·마침표 통일을 반영했습니다. [릴리스](https://github.com/M0lli2/form-fitness/releases/tag/v0.3.7) |
 | **0.3.6** | UI/UX 밸런스·통일성 개선 릴리스입니다. 모노크롬 탭 아이콘, 디자인 시스템 단일화(색·타이포·반경·간격), 상단 액션 양분 배치, 운동 카드 필 툴바, 세트 표 열 정렬, 집중 운동 휴식 2단·프리셋 필, 도감 3분할 세그먼트, 기록 지표 타일과 주간 목표 결합을 반영했습니다. [릴리스](https://github.com/M0lli2/form-fitness/releases/tag/v0.3.6) |
 | **0.3.5** | 운동 중 순서 변경·대체 운동·슈퍼세트, 세트별 직전 기록, 종목 성장 그래프와 PR 배지, 선택형 RPE, 원판 계산기, 기본 118종, 집중 운동 경량 컨트롤·빠른 조절·세트 목록 터치, 도감 최근/즐겨찾기/기구 필터, 체성분 꺾은선, 직관적 탭 아이콘과 운동 완료 요약을 반영했습니다. [릴리스](https://github.com/M0lli2/form-fitness/releases/tag/v0.3.5) |
@@ -233,12 +246,12 @@ Apple Human Interface Guidelines의 곡률·비율 원칙을 화면 전체에 �
 
 | 환경 | 파일 및 설치 방법 |
 |---|---|
-| Android 휴대폰 | [Form-0.3.7-Android.apk](https://github.com/M0lli2/form-fitness/releases/download/v0.3.7/Form-0.3.7-Android.apk). 기존 Form 테스트 APK와 같은 인증서로 업데이트할 수 있습니다. |
-| Wear OS · Galaxy Watch4 이후 | [Form-0.3.7-Wear-OS.apk](https://github.com/M0lli2/form-fitness/releases/download/v0.3.7/Form-0.3.7-Wear-OS.apk). 휴대폰 APK와 같은 테스트 인증서를 사용합니다. |
-| iPhone · iPad | [Form-0.3.7-iOS-unsigned.ipa](https://github.com/M0lli2/form-fitness/releases/download/v0.3.7/Form-0.3.7-iOS-unsigned.ipa). 설치 전에 Apple 서명과 프로비저닝이 필요합니다. |
-| iPhone + Apple Watch | [Form-0.3.7-iOS-unsigned-watch.ipa](https://github.com/M0lli2/form-fitness/releases/download/v0.3.7/Form-0.3.7-iOS-unsigned-watch.ipa). 휴대폰·워치 앱 각각에 올바른 서명과 권한 구성이 필요합니다. |
+| Android 휴대폰 | [Form-0.3.8-Android.apk](https://github.com/M0lli2/form-fitness/releases/download/v0.3.8/Form-0.3.8-Android.apk). 기존 Form 테스트 APK와 같은 인증서로 업데이트할 수 있습니다. |
+| Wear OS · Galaxy Watch4 이후 | [Form-0.3.8-Wear-OS.apk](https://github.com/M0lli2/form-fitness/releases/download/v0.3.8/Form-0.3.8-Wear-OS.apk). 휴대폰 APK와 같은 테스트 인증서를 사용합니다. |
+| iPhone · iPad | [Form-0.3.8-iOS-unsigned.ipa](https://github.com/M0lli2/form-fitness/releases/download/v0.3.8/Form-0.3.8-iOS-unsigned.ipa). 설치 전에 Apple 서명과 프로비저닝이 필요합니다. |
+| iPhone + Apple Watch | [Form-0.3.8-iOS-unsigned-watch.ipa](https://github.com/M0lli2/form-fitness/releases/download/v0.3.8/Form-0.3.8-iOS-unsigned-watch.ipa). 휴대폰·워치 앱 각각에 올바른 서명과 권한 구성이 필요합니다. |
 
-[SHA-256 체크섬](https://github.com/M0lli2/form-fitness/releases/download/v0.3.7/Form-0.3.7-SHA256SUMS.txt) · [설치 순서 및 TestFlight 준비](docs/INSTALL.md)
+[SHA-256 체크섬](https://github.com/M0lli2/form-fitness/releases/download/v0.3.8/Form-0.3.8-SHA256SUMS.txt) · [설치 순서 및 TestFlight 준비](docs/INSTALL.md)
 
 네 파일 모두 공개 저장소의 릴리스에 올라 있어 GitHub 계정 없이 내려받을 수 있습니다. iPhone·iPad와 Apple Watch 파일은 미서명이므로 설치하려면 Apple 서명과 프로비저닝이 필요합니다.
 

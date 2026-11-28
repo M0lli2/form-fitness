@@ -4,9 +4,10 @@ import * as SecureStore from 'expo-secure-store';
 import * as Crypto from 'expo-crypto';
 import type { State } from './types';
 import data from './exercises.json';
+import {PICKLE_INBOX_URL} from './pickle-sync.mjs';
 let db: SQLite.SQLiteDatabase;
 let writes = Promise.resolve();
-export const freshState = (): State => ({ schema: 1, customExercises: [], history: [], body: [], routines: data.routines, active: null, seen: [], favorites: [], settings: { goal: 3, rest: 90, health: false, contrast: false, units: 'kg', theme: 'system', glass: false } });
+export const freshState = (): State => ({ schema: 1, customExercises: [], history: [], body: [], routines: data.routines, active: null, seen: [], favorites: [], appliedSyncIds: [], settings: { goal: 3, rest: 90, health: false, contrast: false, units: 'kg', theme: 'system', glass: false, pickleSync: true, pickleSyncUrl: PICKLE_INBOX_URL } });
 export async function loadState(): Promise<State> {
     let key = await SecureStore.getItemAsync('form.database.key');
     if (!key) {
